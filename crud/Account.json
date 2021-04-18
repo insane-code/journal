@@ -1,0 +1,54 @@
+{
+    "type": "api",
+    "fields": [{
+            "name": "display_id",
+            "length": 200,
+            "type": "string",
+            "index": true
+        },
+        {
+            "name": "name",
+            "length": 200,
+            "type": "string",
+            "index": true
+        },
+        {
+            "name": "description",
+            "length": 200,
+            "type": "string",
+            "nullable": true
+        },
+        {
+            "name": "currency_code",
+            "length": 4,
+            "type": "string",
+            "default": "DOP"
+        },
+        {
+            "name": "index",
+            "length": 4,
+            "type": "integer",
+            "default": 0
+        },
+        {
+            "name": "archivable",
+            "type": "boolean",
+            "default": 0
+        },
+        {
+            "name": "archived",
+            "type": "boolean",
+            "default": 0
+        }
+    ],
+    "relationships": [{
+            "name": "user",
+            "type": "belongsTo",
+            "model": "User"
+        }, {
+            "name": "team",
+            "type": "belongsTo",
+            "model": "team"
+        }
+    ]
+}
