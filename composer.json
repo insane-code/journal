@@ -1,6 +1,6 @@
 {
-    "name": "insane/payment",
-    "description": "Payment module for neatlancer",
+    "name": "insane/journal",
+    "description": "Accounting module for atmosphere and laravel",
     "type": "library",
     "license": "MIT",
     "keywords": [
@@ -46,10 +46,10 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Insane\\Journal\\PaymentServiceProvider"
+                "Insane\\Journal\\JournalServiceProvider"
             ],
             "aliases": {
-                "Insane": "Insane\\Journal\\PaymentFacade"
+                "Insane": "Insane\\Journal\\JournalFacade"
             }
         }
     }
