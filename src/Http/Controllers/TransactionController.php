@@ -22,9 +22,22 @@ class TransactionController
     }
 
     public function index(Request $request) {
+        $transaction =  Transaction::orderBy('date')->with(['mainLine', 'lines'])->paginate();
         return Jetstream::inertia()->render($request, config('journal.transactions_inertia_path') . '/Index', [
-            "transactions" => Transaction::orderBy('index')->get(),
+            "transactions" => $transaction->through(function ($transaction) {
+                return [
+                    'id' => $transaction->id,
+                    'date' => $transaction->date,
+                    'description' => $transaction->description,
+                    'account' => $transaction->mainLine ? $transaction->mainLine : null,
+                    'account' => $transaction->mainLine ? $transaction->mainLine : null,
+                    'total' => $transaction->total,
+                    'lines' => $transaction->lines,
+                    'mainLine' => $transaction->mainLine,
+                ];
+            })
         ]);
+
     }
 
     public function store(Request $request, Response $response) {
