@@ -7,7 +7,19 @@ use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model
 {
-    protected $fillable = ['team_id','user_id','category_id', 'display_id', 'name', 'description', 'currency_code', 'index', 'archivable', 'archived'];
+    protected $fillable = ['team_id','user_id', 'date','number', 'description', 'direction', 'notes', 'total'];
+
+       /**
+     * The "booted" method of the model.
+     *
+     * @return void
+     */
+    protected static function booted()
+    {
+        static::creating(function ($transaction) {
+            self::setNumber($transaction);
+        });
+    }
 
     public function user()
     {
@@ -20,10 +32,72 @@ class Transaction extends Model
     }
 
     public function mainLine() {
-        return $this->hasMany('Insane/Journal/TransactionLine', 'id', 'transaction_id');
+        return $this->hasOne('Insane\Journal\TransactionLine', 'transaction_id')->where('anchor', true);
     }
 
     public function lines() {
-        return $this->hasMany('Insane/Journal/TransactionLine', 'id', 'transaction_id');
+        return $this->hasMany('Insane\Journal\TransactionLine', 'transaction_id');
+    }
+
+     //  Utils
+     static public function setNumber($transaction) {
+        $isInvalidNumber = true;
+
+        if ($transaction->number) {
+            $isInvalidNumber = Transaction::where([
+                "team_id" => $transaction->team_id,
+                "number" => $transaction->number,
+            ])->whereNot([
+                "id" => $transaction->id
+            ]);
+
+            $isInvalidNumber = count($isInvalidNumber);
+        }
+
+        if ($isInvalidNumber) {
+            $result = Transaction::where([
+                "team_id" => $transaction->team_id,
+            ])->max('number');
+            $transaction->number = $result + 1;
+        }
+    }
+
+    public function createLines($transactionData, $items = []) {
+        TransactionLine::query()->where('transaction_id', $this->id)->delete();
+        if (!count($items)) {
+            $this->lines()->create([
+                "amount" => $this->total,
+                "concept" => $this->description,
+                "index" => 0,
+                "anchor" => 1,
+                "type"=> $this->direction == 'DEPOSIT' ? 1 : -1,
+                "account_id" => $transactionData['account_id'],
+                "category_id" => $transactionData['category_id'],
+                "team_id" => $this->team_id
+            ]);
+
+            $this->lines()->create([
+                "amount" => $this->total,
+                "concept" => $this->description,
+                "index" => 1,
+                "type"=> $this->direction == 'DEPOSIT' ? -1 : 1,
+                "account_id" => $transactionData['category_id'],
+                "category_id" => $transactionData['account_id'],
+                "team_id" => $this->team_id
+            ]);
+
+        } else {
+            foreach ($items as $item) {
+                $this->lines->create([
+                    "amount" => $item['amount'],
+                    "concept" => $item['concept'],
+                    "index" => $item['index'],
+                    "type"=> $item['type'],
+                    "account_id" => $item['account_id'],
+                    "category_id" => $item['category_id'],
+                    "team_id" => $this->team_id
+                ]);
+            }
+        }
     }
 }

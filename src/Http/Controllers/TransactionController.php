@@ -22,20 +22,21 @@ class TransactionController
     }
 
     public function index(Request $request) {
-        $transaction =  Transaction::orderBy('date')->with(['mainLine', 'lines'])->paginate();
         return Jetstream::inertia()->render($request, config('journal.transactions_inertia_path') . '/Index', [
-            "transactions" => $transaction->through(function ($transaction) {
+            "transactions" => Transaction::orderByDesc('date')->orderByDesc('number')->with(['mainLine', 'lines', 'mainLine.category', 'mainLine.account'])->paginate()->through(function ($transaction) {
                 return [
                     'id' => $transaction->id,
                     'date' => $transaction->date,
+                    'number' => $transaction->number,
                     'description' => $transaction->description,
-                    'account' => $transaction->mainLine ? $transaction->mainLine : null,
-                    'account' => $transaction->mainLine ? $transaction->mainLine : null,
+                    'account' => $transaction->mainLine ? $transaction->mainLine->account: null,
+                    'category' => $transaction->mainLine ? $transaction->mainLine->category : null,
                     'total' => $transaction->total,
                     'lines' => $transaction->lines,
                     'mainLine' => $transaction->mainLine,
                 ];
-            })
+            }),
+            "categories" => Category::where('depth', 1)->with(['accounts'])->get(),
         ]);
 
     }
@@ -46,6 +47,7 @@ class TransactionController
         $postData['team_id'] = $request->user()->current_team_id;
         $transaction = new Transaction();
         $transaction = $transaction::create($postData);
+        $transaction->createLines($postData, $postData['items'] ?? []);
         return $response->sendContent($transaction);
     }
 }
