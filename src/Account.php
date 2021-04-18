@@ -18,4 +18,8 @@ class Account extends Model
         return $this->belongsTo(team::class);
     }
 
+    public function lastTransactionDate() {
+        return $this->hasOneThrough(Transaction::class, TransactionLine::class, 'account_id', 'id')->orderByDesc('date')->limit(1);
+    }
+
 }

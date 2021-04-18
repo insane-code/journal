@@ -29,6 +29,7 @@ class TransactionController
                     'date' => $transaction->date,
                     'number' => $transaction->number,
                     'description' => $transaction->description,
+                    'direction' => $transaction->direction,
                     'account' => $transaction->mainLine ? $transaction->mainLine->account: null,
                     'category' => $transaction->mainLine ? $transaction->mainLine->category : null,
                     'total' => $transaction->total,

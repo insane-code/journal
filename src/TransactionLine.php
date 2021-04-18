@@ -24,6 +24,6 @@ class TransactionLine extends Model
     }
 
     public function category() {
-        return $this->belongsTo('Insane\Journal\Category');
+        return $this->belongsTo('Insane\Journal\Account');
     }
 }
