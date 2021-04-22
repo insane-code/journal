@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateImagesTable extends Migration
+class CreateInvoiceLines extends Migration
 {
     /**
      * Run the migrations.
@@ -13,17 +13,18 @@ class CreateImagesTable extends Migration
      */
     public function up()
     {
-        Schema::create('images', function (Blueprint $table) {
+        Schema::create('invoices_lines', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id');
             $table->foreignId('team_id');
-            $table->foreignId('imageable_id');
+            $table->foreignId('invoice_id');
+            $table->foreignId('product_id')->nullable();
 
             // content
-            $table->string('name');
-            $table->string('url');
-            $table->string('imageable_type');
-
+            $table->text('concept', 200);
+            $table->decimal('price', 11, 2)->default(0.00);
+            $table->decimal('quantity', 11, 2)->default(0.00);
+            $table->integer('index')->nullable();
             // structure
             $table->timestamps();
         });
@@ -36,6 +37,6 @@ class CreateImagesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('images');
+        Schema::dropIfExists('invoices_lines');
     }
 }

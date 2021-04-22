@@ -37,6 +37,6 @@ class CreateProductsOptionsValuesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('transaction_lines');
+        Schema::dropIfExists('products_options_values');
     }
 }

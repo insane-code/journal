@@ -17,25 +17,18 @@ class CreateProductsPricesTable extends Migration
             $table->id();
             $table->foreignId('user_id');
             $table->foreignId('team_id');
-            $table->foreignId('product_type_id');
-            $table->foreignId('category_id');
+            $table->foreignId('product_id')->nullable();
+            $table->foreignId('products_variant_id')->nullable();
+
 
             // content
-            $table->string('name');
-            $table->string('slug');
-            $table->string('sku');
-            $table->text('description');
-            $table->text('descriptionHTML');
-            $table->integer('weight');
-            $table->boolean('available');
-            //
-            // $table->decimal('price', 11, 2)->default(0.00);
-            // $table->decimal('variants', 11, 2)->default(0.00);
-            // $table->decimal('product Option, 11, 2)->default(0.00);
-            // $table->decimal('images, 11, 2)->default(0.00);
-
-            // secondary
-
+            $table->decimal('value', 11, 2)->default(0);
+            $table->string('name')->default('DOP');
+            $table->decimal('retail_price', 11, 2)->nullable();
+            $table->decimal('sale_price', 11, 2)->nullable();
+            $table->decimal('list_price', 11, 2)->nullable();
+            $table->decimal('extended_sale_price', 11, 2)->nullable();
+            $table->decimal('extended_list_price', 11, 2)->nullable();
 
             // structure
             $table->timestamps();
@@ -49,6 +42,6 @@ class CreateProductsPricesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('transaction_lines');
+        Schema::dropIfExists('products_prices');
     }
 }

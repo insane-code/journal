@@ -17,18 +17,17 @@ class CreateProductsVariantsTable extends Migration
             $table->id();
             $table->foreignId('user_id');
             $table->foreignId('team_id');
-            $table->foreignId('product_id')->nullable();
-            $table->foreignId('products_variant_id')->nullable();
-
+            $table->foreignId('product_type_id');
+            $table->foreignId('category_id');
 
             // content
-            $table->decimal('value', 11, 2)->default(0);
-            $table->string('currency_code')->default('DOP');
-            $table->decimal('retail_price', 11, 2)->nullable();
-            $table->decimal('sale_price', 11, 2)->nullable();
-            $table->decimal('list_price', 11, 2)->nullable();
-            $table->decimal('extended_sale_price', 11, 2)->nullable();
-            $table->decimal('extended_list_price', 11, 2)->nullable();
+            $table->string('name');
+            $table->string('slug');
+            $table->string('sku');
+            $table->text('description');
+            $table->text('descriptionHTML');
+            $table->integer('weight');
+            $table->boolean('available');
 
             // structure
             $table->timestamps();
@@ -42,6 +41,6 @@ class CreateProductsVariantsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('transaction_lines');
+        Schema::dropIfExists('products_variants');
     }
 }

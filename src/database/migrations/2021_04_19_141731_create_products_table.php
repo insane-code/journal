@@ -17,17 +17,17 @@ class CreateProductsTable extends Migration
             $table->id();
             $table->foreignId('user_id');
             $table->foreignId('team_id');
-            $table->foreignId('product_type_id');
-            $table->foreignId('category_id');
+            $table->foreignId('product_type_id')->nullable();
+            $table->foreignId('category_id')->nullable();
 
             // content
             $table->string('name');
-            $table->string('slug');
+            $table->string('slug')->nullable();
             $table->string('sku');
             $table->text('description');
-            $table->text('descriptionHTML');
-            $table->integer('weight');
-            $table->boolean('available');
+            $table->text('descriptionHTML')->nullable();
+            $table->integer('weight')->nullable();
+            $table->boolean('available')->default(1);
             // structure
             $table->timestamps();
         });
@@ -40,6 +40,6 @@ class CreateProductsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('transaction_lines');
+        Schema::dropIfExists('products');
     }
 }
