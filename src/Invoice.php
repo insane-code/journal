@@ -3,6 +3,7 @@
 namespace Insane\Journal;
 
 use App\Models\Client;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
 class Invoice extends Model
@@ -22,11 +23,13 @@ class Invoice extends Model
         });
 
         static::saving(function ($invoice) {
+            Invoice::calculateTotal($invoice);
             Invoice::checkPayments($invoice);
+            $invoice->account_id = Invoice::createClientAccount($invoice);
         });
 
-        static::saved(function ($invoice) {
-            Invoice::calculateTotal($invoice);
+        static::saved(function (Invoice $invoice) {
+            $invoice->createTransaction();
         });
 
         static::deleting(function ($invoice) {
@@ -38,11 +41,7 @@ class Invoice extends Model
                 }
             }
 
-            // await PaymentDoc
-            // .query()
-            // .where('resource_id', InvoiceInstance.id)
-            // .delete()
-
+            Payment::where('invoice_id', $invoice->id)->delete();
             InvoiceLine::where('invoice_id', $invoice->id)->delete();
         });
     }
@@ -56,9 +55,19 @@ class Invoice extends Model
     {
         return $this->belongsTo(Team::class);
     }
+
     public function client()
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
+    }
+
+    public function transaction() {
+        return $this->morphOne(Transaction::class, "transactionable");
     }
 
     public function lines()
@@ -66,7 +75,7 @@ class Invoice extends Model
         return $this->hasMany(InvoiceLine::class);
     }
 
-    
+
     public function payments()
     {
         return $this->morphMany(Payment::class, 'payable');
@@ -133,6 +142,28 @@ class Invoice extends Model
         }
     }
 
+    // accounting
+
+    public static function createClientAccount($invoice)
+    {
+        $accounts = Account::where('client_id', $invoice->client_id)->limit(1)->get();
+        if (count($accounts)) {
+           return $accounts[0]->id;
+        } else {
+           $account = Account::create([
+                "team_id" => $invoice->team_id,
+                "client_id" => $invoice->client_id,
+                "user_id" => $invoice->user_id,
+                "category_id" => 18,
+                "display_id" => "client_{$invoice->user_id}_{$invoice->user->names}",
+                "name" => "Payment from {$invoice->client->names}",
+                "currency_code" => "DOP"
+            ]);
+            return $account->id;
+        }
+
+    }
+
     public static function checkPayments($invoice)
     {
         if ($invoice && $invoice->payments) {
@@ -141,7 +172,7 @@ class Invoice extends Model
             $invoice->status = Invoice::checkStatus($invoice);
         }
     }
- 
+
     public static function checkStatus($invoice)
     {
         $status = $invoice->status;
@@ -154,14 +185,14 @@ class Invoice extends Model
         } else {
             $status = 'draft';
         }
- 
+
         return $status;
     }
 
     public function createPayment($formData)
     {
         $formData['amount'] = $formData['amount'] > $this->debt ? $this->debt : $formData['amount'];
- 
+
         return $this->payments()->create(array_merge(
             $formData,
             [
@@ -171,9 +202,29 @@ class Invoice extends Model
             ]
         ));
     }
- 
+
     public function deletePayment($id)
     {
         Payment::find($id)->delete();
+    }
+
+    public function createTransaction() {
+        $transactionData = [
+            "team_id" => $this->team_id,
+            "user_id" => $this->user_id,
+            "date" => $this->date,
+            "description" => $this->concept,
+            "direction" => "DEPOSIT",
+            "total" => $this->total,
+            "account_id" => $this->account_id,
+            "category_id" => 10
+        ];
+        if (!$this->transaction) {
+            $transaction = $this->transaction()->create($transactionData);
+        } else {
+            $this->transaction->update($transactionData);
+            $transaction = $this->transaction;
+        }
+        $transaction->createLines($transactionData, []);
     }
 }

@@ -8,28 +8,21 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Response as FacadesResponse;
 use Insane\Journal\Category;
-use Insane\Journal\Invoice;
+use Insane\Journal\Payment;
 use Insane\Journal\Product;
 use Laravel\Jetstream\Jetstream;
 
-class InvoiceController
+class PaymentsController
 {
-    public function __construct()
-    {
-        $this->model = new Invoice();
-        $this->searchable = ['name'];
-        $this->validationRules = [];
-    }
 
     public function index(Request $request)
     {
-        return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Index', [
-            "invoices" => Invoice::orderByDesc('date')->orderByDesc('number')->paginate()->through(function ($invoice) {
+        return Jetstream::inertia()->render($request, config('journal.payments_inertia_path') . '/Index', [
+            "invoices" => Payment::orderByDesc('payment_date')->paginate()->through(function ($invoice) {
                 return [
                     "id" => $invoice->id,
                     "concept" => $invoice->concept,
-                    "date" => $invoice->date,
-                    "client_name" => $invoice->client->names,
+                    "date" => $invoice->payment_date,
                     "number" => $invoice->number,
                     "series" => $invoice->series,
                     "status" => $invoice->status,

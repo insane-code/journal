@@ -4,7 +4,7 @@ namespace Insane\Journal;
 
 use Illuminate\Support\Facades\Facade;
 
-class JournaltFacade extends Facade
+class JournalFacade extends Facade
 {
     /**
      * Get the registered name of the component.

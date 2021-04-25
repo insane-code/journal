@@ -3,7 +3,8 @@
 namespace Insane\Journal;
 
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Route;
+use Insane\Journal\Console\SetAccountsCommand;
+use Insane\Journal\Console\SetChartAccountsCommand;
 
 class JournalServiceProvider extends ServiceProvider
 {
@@ -15,11 +16,16 @@ class JournalServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/Journal.php', 'journal');
-
         $this->publishConfig();
-
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
         $this->registerRoutes();
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                SetAccountsCommand::class,
+                SetChartAccountsCommand::class
+            ]);
+        }
     }
 
     /**

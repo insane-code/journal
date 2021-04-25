@@ -46,8 +46,7 @@ class TransactionController
         $postData = $request->post();
         $postData['user_id'] = $request->user()->id;
         $postData['team_id'] = $request->user()->current_team_id;
-        $transaction = new Transaction();
-        $transaction = $transaction::create($postData);
+        $transaction = Transaction::create($postData);
         $transaction->createLines($postData, $postData['items'] ?? []);
         return $response->sendContent($transaction);
     }

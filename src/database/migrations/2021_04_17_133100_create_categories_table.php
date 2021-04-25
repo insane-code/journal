@@ -22,6 +22,7 @@ class CreateCategoriesTable extends Migration
             $table->foreignId('resource_type_id')->nullable();
 
             $table->string('resource_type', 100)->nullable();
+            $table->string('display_id');
             $table->string('name', 100);
             $table->string('description', 200)->nullable();
             $table->integer('index')->default(0);

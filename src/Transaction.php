@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model
 {
-    protected $fillable = ['team_id','user_id', 'date','number', 'description', 'direction', 'notes', 'total'];
+    protected $fillable = ['team_id','user_id', 'transactionable_id', 'transactionable_type' , 'date','number', 'description', 'direction', 'notes', 'total'];
 
        /**
      * The "booted" method of the model.
@@ -16,8 +16,13 @@ class Transaction extends Model
      */
     protected static function booted()
     {
+
         static::creating(function ($transaction) {
             self::setNumber($transaction);
+        });
+
+        static::deleting(function ($transaction) {
+            TransactionLine::where('transaction_id', $transaction->id)->delete();
         });
     }
 
@@ -39,8 +44,8 @@ class Transaction extends Model
         return $this->hasMany('Insane\Journal\TransactionLine', 'transaction_id');
     }
 
-     //  Utils
-     static public function setNumber($transaction) {
+    //  Utils
+    static public function setNumber($transaction) {
         $isInvalidNumber = true;
 
         if ($transaction->number) {
@@ -60,6 +65,11 @@ class Transaction extends Model
             ])->max('number');
             $transaction->number = $result + 1;
         }
+    }
+
+    static public function createTransaction($transactionData) {
+        $transaction = Transaction::create($transactionData);
+        $transaction->createLines($transactionData, $transactionData['items'] ?? []);
     }
 
     public function createLines($transactionData, $items = []) {

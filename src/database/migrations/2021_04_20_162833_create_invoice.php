@@ -18,6 +18,7 @@ class CreateInvoice extends Migration
             $table->foreignId('user_id');
             $table->foreignId('team_id');
             $table->foreignId('client_id');
+            $table->foreignId('account_id')->nullable();
             $table->foreignId('invoiceable_id')->nullable();
             $table->string('invoiceable_type');
 

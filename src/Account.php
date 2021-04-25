@@ -2,11 +2,22 @@
 
 namespace Insane\Journal;
 
+use App\Models\Team;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
 class Account extends Model
 {
-    protected $fillable = ['team_id','user_id','category_id', 'display_id', 'name', 'description', 'currency_code', 'index', 'archivable', 'archived'];
+    protected $fillable = ['team_id','user_id','category_id', 'client_id', 'display_id', 'name', 'description', 'currency_code', 'index', 'archivable', 'archived'];
+
+    protected static function booted()
+    {
+        static::creating(function ($account) {
+            if (is_string($account->category_id)) {
+                $account->category_id = Category::findOrCreateByName($account->category_id);
+            }
+        });
+    }
 
     public function user()
     {
@@ -15,7 +26,7 @@ class Account extends Model
 
     public function team()
     {
-        return $this->belongsTo(team::class);
+        return $this->belongsTo(Team::class);
     }
 
     public function lastTransactionDate() {
