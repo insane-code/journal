@@ -20,6 +20,3 @@ Route::middleware(config('jetstream.middleware', ['web']))->group(function() {
         Route::delete('/invoices/{id}/payment/{paymentId}', [InvoiceController::class, 'deletePayment']);
     });
 });
-
-Route::apiResource('account','AccountController');
-Route::apiResource('transaction','TransactionController');
