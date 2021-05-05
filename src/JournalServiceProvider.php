@@ -15,7 +15,7 @@ class JournalServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/Journal.php', 'journal');
+        $this->mergeConfigFrom(__DIR__ . '/../config/journal.php', 'journal');
         $this->publishConfig();
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
         $this->registerRoutes();
