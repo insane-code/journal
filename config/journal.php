@@ -48,6 +48,7 @@ return [
         [
             "resource" => "categories",
             "name" => "Liabilities & Credit Cards",
+            "display_id" => "liabilities",
             "Description" => "",
             "depth" => 0,
             "childs" => [
@@ -97,6 +98,7 @@ return [
                 ],
                 [
                     "resource" => "categories",
+                    "display_id" => "customer_prepayments",
                     "name" => "Customer Prepayments and Customer Credits",
                     "Description" => "",
                     "depth" => 1,
@@ -106,6 +108,7 @@ return [
         [
             "resource" => "categories",
             "name" => "Incomes",
+            "display_id" => "incomes",
             "Description" => "",
             "depth" => 0,
             "childs" => [
@@ -118,6 +121,7 @@ return [
                 ],
                 [
                     "resource" => "categories",
+                    "display_id" => "discount",
                     "name" => "Discounts",
                     "Description" => "",
                     "depth" => 1,
@@ -127,42 +131,49 @@ return [
         [
             "resource" => "categories",
             "name" => "Expense",
+            "display_id" => "expenses",
             "Description" => "",
             "depth" => 0,
             "childs" => [
                 [
                     "resource" => "categories",
+                    "display_id" => "operating_expense",
                     "name" => "Operating Expense",
                     "Description" => "",
                     "depth" => 1,
                 ],
                 [
                     "resource" => "categories",
+                    "display_id" => "cost_goods_sold",
                     "name" => "Cost of Goods Sold",
                     "Description" => "",
                     "depth" => 1,
                 ],
                 [
                     "resource" => "categories",
+                    "display_id" => "payment_processing_fee",
                     "name" => "Payment Processing Fee",
                     "Description" => "",
                     "depth" => 1,
                 ],
                 [
                     "resource" => "categories",
+                    "display_id" => "payroll_expense",
                     "name" => "Payroll Expense",
                     "Description" => "",
                     "depth" => 1,
                 ],
                 [
                     "resource" => "categories",
+                    "display_id" => "uncategorized_expense",
                     "name" => "Uncategorized Expense",
                     "Description" => "",
                     "depth" => 1,
                 ],
                 [
                     "resource" => "categories",
-                    "name" => "Loss on Foreign Echange",
+                    "display_id" => "loss_foreign_exchange",
+                    "name" => "Loss on Foreign Exchange",
                     "Description" => "",
                     "depth" => 1,
                 ],

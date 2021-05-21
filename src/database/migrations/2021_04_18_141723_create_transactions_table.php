@@ -19,11 +19,13 @@ class CreateTransactionsTable extends Migration
             $table->foreignId('team_id');
             $table->foreignId('user_id');
             $table->foreignId('resource_id')->nullable();
+            $table->foreignId('transactionable_id')->nullable();
             $table->foreignId('resource_type_id')->nullable();
             $table->integer('number');
             $table->date('date');
 
             // header
+            $table->string('transactionable_type')->nullable();
             $table->string('description', 200);
             $table->enum('direction', ['DEPOSIT','WITHDRAW'])->default('DEPOSIT');
 

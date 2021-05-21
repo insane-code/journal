@@ -83,7 +83,8 @@ class Transaction extends Model
                 "type"=> $this->direction == 'DEPOSIT' ? 1 : -1,
                 "account_id" => $transactionData['account_id'],
                 "category_id" => $transactionData['category_id'],
-                "team_id" => $this->team_id
+                "team_id" => $this->team_id,
+                "user_id" => $this->user_id
             ]);
 
             $this->lines()->create([
@@ -93,7 +94,8 @@ class Transaction extends Model
                 "type"=> $this->direction == 'DEPOSIT' ? -1 : 1,
                 "account_id" => $transactionData['category_id'],
                 "category_id" => $transactionData['account_id'],
-                "team_id" => $this->team_id
+                "team_id" => $this->team_id,
+                "user_id" => $this->user_id
             ]);
 
         } else {
@@ -105,7 +107,8 @@ class Transaction extends Model
                     "type"=> $item['type'],
                     "account_id" => $item['account_id'],
                     "category_id" => $item['category_id'],
-                    "team_id" => $this->team_id
+                    "team_id" => $this->team_id,
+                    "user_id" => $this->user_id
                 ]);
             }
         }

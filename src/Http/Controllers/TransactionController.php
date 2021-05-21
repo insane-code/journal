@@ -37,7 +37,10 @@ class TransactionController
                     'mainLine' => $transaction->mainLine,
                 ];
             }),
-            "categories" => Category::where('depth', 1)->with(['accounts'])->get(),
+            "categories" => Category::where('depth', 1)
+            ->with('accounts', function ($query) use ($request) {
+                $query->where('team_id', '=', $request->user()->current_team_id);
+            })->get(),
         ]);
 
     }

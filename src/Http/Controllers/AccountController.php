@@ -23,7 +23,13 @@ class AccountController
     public function index(Request $request) {
         return Jetstream::inertia()->render($request, config('journal.accounts_inertia_path') . '/Index', [
             "accounts" => Account::orderBy('index')->get(),
-            "categories" => Category::where('depth', 0)->with(['subCategories', 'subcategories.accounts', 'subcategories.accounts.lastTransactionDate'])->get(),
+            "categories" => Category::where('depth', 0)->with([
+                'subCategories',
+                'subcategories.accounts' => function ($query) use ($request) {
+                    $query->where('team_id', '=', $request->user()->current_team_id);
+                } ,
+                'subcategories.accounts.lastTransactionDate'
+            ])->get(),
         ]);
     }
 

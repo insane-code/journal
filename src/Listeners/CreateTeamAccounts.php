@@ -9,16 +9,6 @@ use Laravel\Jetstream\Events\TeamCreated;
 class CreateTeamAccounts
 {
     /**
-     * Create the event listener.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        //
-    }
-
-    /**
      * Handle the event.
      *
      * @param  object  $event
@@ -27,6 +17,30 @@ class CreateTeamAccounts
     public function handle(TeamCreated $event)
     {
         $team = $event->team;
+        $this->setAccountsCharts($team);
+        $this->createJournalSettings($team);
+    }
+
+    /**
+     * Set general chart of accounts categories
+     *
+     * @return void
+     */
+    protected function setAccountsCharts($team)
+    {
+        Account::where('team_id', $team->id)->delete();
+        $accounts = config('journal.accounts_catalog');
+        $generalInfo = [
+            'team_id' => $team->id,
+            'user_id' => $team->user_id,
+        ];
+
+        foreach ($accounts as $index => $account) {
+            Account::create(array_merge($account, $generalInfo, ['index' => $index]));
+        }
+    }
+
+    public function createJournalSettings($team) {
         $settings = [
             [
                 "name" => "journal_invoice_account",
@@ -51,27 +65,6 @@ class CreateTeamAccounts
                 'user_id' => $team->user_id,
                 'team_id' => $team->id
             ]));
-        }
-
-        $this->setAccountsCharts($team);
-    }
-
-    /**
-     * Set general chart of accounts categories
-     *
-     * @return void
-     */
-    protected function setAccountsCharts($team)
-    {
-        Account::where('team_id', $team->id)->delete();
-        $accounts = config('journal.accounts_catalog');
-        $generalInfo = [
-            'team_id' => $team->id,
-            'user_id' => $team->user_id,
-        ];
-
-        foreach ($accounts as $index => $account) {
-            Account::create(array_merge($account, $generalInfo, ['index' => $index]));
         }
     }
 }

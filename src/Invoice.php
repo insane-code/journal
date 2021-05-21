@@ -133,7 +133,7 @@ class Invoice extends Model
                 "user_id" => $this->user_id,
                 "concept" => $item['concept'],
                 "index" => $item['index'],
-                "product_id" => $item['product_id'],
+                "product_id" => $item['product_id'] ?? null,
                 "quantity" => $item['quantity'],
                 "price" => $item['price'],
                 "amount" => $item['amount'],

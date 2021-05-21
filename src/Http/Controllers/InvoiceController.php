@@ -55,9 +55,14 @@ class InvoiceController
             // change this to be dinamyc
             'clients' => Client::all(),
             "categories" => Category::where([
-                'depth' => 0,
-                'team_id' => $request->user()->current_team_id
-            ])->with(['subCategories', 'subcategories.accounts', 'subcategories.accounts.lastTransactionDate'])->get(),
+                'depth' => 0
+            ])->with([
+                'subCategories',
+                'subcategories.accounts' => function ($query) use ($request) {
+                    $query->where('team_id', '=', $request->user()->current_team_id);
+                },
+                'subcategories.accounts.lastTransactionDate'
+            ])->get(),
         ]);
     }
 
