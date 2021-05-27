@@ -8,12 +8,12 @@ use Illuminate\Support\Facades\DB;
 class ReportHelper
 {
 
-  public function revenueReport() {
+  public function revenueReport($teamId) {
     $year = Carbon::now()->format('Y');
     $previousYear = Carbon::now()->subYear(1)->format('Y');
 
-    $results = $this->getPaymentsByYear($year);
-    $previousYearResult = $this->getPaymentsByYear($previousYear);
+    $results = $this->getPaymentsByYear($year, $teamId);
+    $previousYearResult = $this->getPaymentsByYear($previousYear, $teamId);
 
     $results = [
         "currentYear" => [
@@ -30,9 +30,10 @@ class ReportHelper
     return $results;
   }
 
-  public function getPaymentsByYear($year) {
+  public function getPaymentsByYear($year, $teamId) {
     return DB::table('payments')
     ->where(DB::raw('YEAR(payments.payment_date)'), '=', $year)
+    ->where('team_id', '=', $teamId)
     ->selectRaw('sum(COALESCE(amount,0)) as total, YEAR(payments.payment_date) as year, MONTH(payments.payment_date) as months')
     ->groupByRaw('MONTH(payments.payment_date), YEAR(payments.payment_date)')
     ->get();
@@ -85,13 +86,22 @@ class ReportHelper
     $account = Account::where([
         'display_id' => 'cash_on_hand',
         'team_id' => $teamId
-    ])->limit(1)->get()[0];
-    $results = $this->getAccountBalance($account->id, $teamId);
+    ])->limit(1)->get();
+    $account = count($account) ? $account[0] : null;
+    if ($account) {
+        $results = $this->getAccountBalance($account->id, $teamId);
 
-    return [
-        'accountData' => $account->toArray(),
-        'balance' => $results[0]->total
-    ];
+        return [
+            'accountData' => $account->toArray(),
+            'balance' => count($results) ? $results[0]->total : 0
+        ];
+
+    } else {
+        return [
+            'accountData' => [],
+            'balance' => 0
+        ];
+    }
  }
 
 //   async clientsChange({params, response}) {
