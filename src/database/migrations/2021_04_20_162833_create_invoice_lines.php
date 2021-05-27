@@ -24,6 +24,8 @@ class CreateInvoiceLines extends Migration
             $table->text('concept', 200);
             $table->decimal('price', 11, 2)->default(0.00);
             $table->decimal('quantity', 11, 2)->default(0.00);
+            $table->decimal('discount', 11, 2)->default(0.00);
+            $table->decimal('amount', 11, 2)->default(0.00);
             $table->integer('index')->nullable();
             // structure
             $table->timestamps();

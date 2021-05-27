@@ -13,14 +13,14 @@ class InstallCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'treasurer:install ';
+    protected $signature = 'journal:install ';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Install insane components and resources';
+    protected $description = 'Install insane journal components and resources';
 
     /**
      * Execute the console command.

@@ -11,6 +11,10 @@
 composer require insane/journal
 ```
 
+```bash
+journal:set-accounts
+journal:set-chart-accounts
+```
 
 ## Usage
 
