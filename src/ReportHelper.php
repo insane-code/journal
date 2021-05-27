@@ -9,29 +9,90 @@ class ReportHelper
 {
 
   public function revenueReport() {
-    $year = Carbon::now()->year();
-    $previousYear = Carbon::now()->subYear(1)->year();
-    $sql = `SELECT
-        sum(COALESCE(amount,0)) as total,
-        months.number month
-        FROM months
-        LEFT JOIN payment_docs ON months.number = MONTH(payment_date) AND YEAR(payment_date) = '?'
-        GROUP BY months.number, YEAR(payment_docs.payment_date);`;
+    $year = Carbon::now()->format('Y');
+    $previousYear = Carbon::now()->subYear(1)->format('Y');
 
-        $results = DB::raw($sql, $year)->exec();
-        $previousYearResult = DB::raw($sql, $previousYear)->exec();
-        return [
-            "currentYear" => [
-                "year" => $year,
-                "values" => $results[0],
-                "total" =>  array_sum(array_map(function ($item) { return $item->total;}, $results[0]))
-            ],
+    $results = $this->getPaymentsByYear($year);
+    $previousYearResult = $this->getPaymentsByYear($previousYear);
+
+    $results = [
+        "currentYear" => [
+            "year" => $year,
+            "values" => $this->mapInMonths($results->toArray(), $year),
+            "total" =>  $results->sum('total')
+        ],
         "previousYear"=> [
             "year" => $previousYear,
-            "values" => $previousYearResult[0],
-            "total" =>  array_sum(array_map(function ($item) { return $item->total;}, $previousYearResult[0]))
-        ]];
+            "values" => $this->mapInMonths($previousYearResult->toArray(), $previousYear),
+            "total" =>  $previousYearResult->sum('total')
+        ]
+    ];
+    return $results;
   }
+
+  public function getPaymentsByYear($year) {
+    return DB::table('payments')
+    ->where(DB::raw('YEAR(payments.payment_date)'), '=', $year)
+    ->selectRaw('sum(COALESCE(amount,0)) as total, YEAR(payments.payment_date) as year, MONTH(payments.payment_date) as months')
+    ->groupByRaw('MONTH(payments.payment_date), YEAR(payments.payment_date)')
+    ->get();
+  }
+
+  public function getAccountBalance($accountId) {
+    $credit =  DB::table('transaction_lines')
+    ->where([
+        'account_id' => $accountId,
+        'type' => 1
+    ])->select('account_id', DB::raw('sum(amount)  as total'))
+    ->groupBy('account_id');
+
+    $debit = DB::table('transaction_lines')
+    ->where([
+        'account_id' => $accountId,
+        'type' => -1
+    ])->select('account_id', DB::raw('sum(amount)  as total'))
+    ->groupBy('account_id') ;
+
+    return DB::table('accounts')
+    ->where([
+        'id' => $accountId
+    ])
+    ->selectRaw('sum(credits.total - debits.total)  as total, id')
+    ->JoinSub($credit, 'credits', function ($join) {
+        $join->on('accounts.id', '=', 'credits.account_id');
+    })
+    ->JoinSub($debit, 'debits', function ($join) {
+        $join->on('accounts.id', '=', 'debits.account_id');
+    })
+    ->groupBy('id')
+    ->get();
+  }
+
+  public function mapInMonths($data, $year) {
+    $months = [1, 2, 3,4,5,6,7,8,9,10,11, 12];
+    return array_map(function ($month) use ($data, $year) {
+        $index = array_search($month, array_column($data, 'months'));
+
+        return  $index !== false ? $data[$index] : [
+            "year" => $year,
+            "months" => $month,
+            "total" =>  0
+        ];
+    }, $months);
+  }
+
+  public function smallBoxRevenue($teamId) {
+    $account = Account::where([
+        'display_id' => 'cash_on_hand',
+        'team_id' => $teamId
+    ])->limit(1)->get()[0];
+    $results = $this->getAccountBalance($account->id, $teamId);
+
+    return [
+        'accountData' => $account->toArray(),
+        'balance' => $results[0]->total
+    ];
+ }
 
 //   async clientsChange({params, response}) {
 //     const table = params.table

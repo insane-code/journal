@@ -46,7 +46,7 @@ class CreateInvoice extends Migration
             $table->decimal('total', 11, 2)->default(0.00);
             $table->decimal('debt', 11, 2)->default(0.00);
             $table->enum('type', ['INVOICE','EXPENSE'])->default('INVOICE');
-            $table->enum('status', ['draft','unpaid','partial', 'paid', 'canceled'])->default('draft');
+            $table->enum('status', ['draft','unpaid','partial', 'paid', 'canceled', 'overdue'])->default('draft');
             // structure
             $table->timestamps();
         });

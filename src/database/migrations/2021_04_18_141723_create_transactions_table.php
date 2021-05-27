@@ -27,7 +27,7 @@ class CreateTransactionsTable extends Migration
             // header
             $table->string('transactionable_type')->nullable();
             $table->string('description', 200);
-            $table->enum('direction', ['DEPOSIT','WITHDRAW'])->default('DEPOSIT');
+            $table->enum('direction', ['DEPOSIT','WITHDRAW', 'ENTRY'])->default('DEPOSIT');
 
             // footer
             $table->text('notes')->nullable();
