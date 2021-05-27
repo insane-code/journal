@@ -25,7 +25,7 @@ class TransactionController
         return Jetstream::inertia()->render($request, config('journal.transactions_inertia_path') . '/Index', [
             "transactions" => Transaction::where([
                 'team_id' => $request->user()->current_team_id
-            ])->orderBy('date')->orderByDesc('number')->with(['mainLine', 'lines', 'mainLine.category', 'mainLine.account'])->paginate()->through(function ($transaction) {
+            ])->orderByDesc('date')->orderByDesc('number')->with(['mainLine', 'lines', 'mainLine.category', 'mainLine.account'])->paginate()->through(function ($transaction) {
                 return [
                     'id' => $transaction->id,
                     'date' => $transaction->date,

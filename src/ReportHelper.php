@@ -40,32 +40,11 @@ class ReportHelper
   }
 
   public function getAccountBalance($accountId) {
-    $credit =  DB::table('transaction_lines')
+    return DB::table('transaction_lines')
     ->where([
-        'account_id' => $accountId,
-        'type' => 1
-    ])->select('account_id', DB::raw('sum(amount)  as total'))
-    ->groupBy('account_id');
-
-    $debit = DB::table('transaction_lines')
-    ->where([
-        'account_id' => $accountId,
-        'type' => -1
-    ])->select('account_id', DB::raw('sum(amount)  as total'))
-    ->groupBy('account_id') ;
-
-    return DB::table('accounts')
-    ->where([
-        'id' => $accountId
+        'account_id' => $accountId
     ])
-    ->selectRaw('sum(credits.total - debits.total)  as total, id')
-    ->JoinSub($credit, 'credits', function ($join) {
-        $join->on('accounts.id', '=', 'credits.account_id');
-    })
-    ->JoinSub($debit, 'debits', function ($join) {
-        $join->on('accounts.id', '=', 'debits.account_id');
-    })
-    ->groupBy('id')
+    ->selectRaw('sum(amount * type)  as total')
     ->get();
   }
 
@@ -82,9 +61,9 @@ class ReportHelper
     }, $months);
   }
 
-  public function smallBoxRevenue($teamId) {
+  public function smallBoxRevenue($accountName = 'cash_on_hand', $teamId) {
     $account = Account::where([
-        'display_id' => 'cash_on_hand',
+        'display_id' => $accountName,
         'team_id' => $teamId
     ])->limit(1)->get();
     $account = count($account) ? $account[0] : null;
@@ -153,20 +132,17 @@ class ReportHelper
 //     return response.json(results[0]);
 //   }
 
-//   async nextInvoices({ response }) {
-//     const sql = `SELECT
-//       invoices.*,
-//       cl.display_name contact,
-//       cl.id contact_id
-//       FROM invoices
-//       INNER JOIN clients cl ON cl.id = invoices.client_id
-//       WHERE invoices.status = 'unpaid' AND invoices.due_date >= NOW() AND resource_type_id='INVOICE'
-//     `
-
-//     // return response.send(sql);
-//     const results = await Database.raw(sql);
-//     return response.json(results[0]);
-//   }
+  public function nextInvoices($teamId) {
+   return DB::table('invoices')
+    ->selectRaw('clients.names contact, clients.id contact_id, invoices.debt, invoices.due_date, invoices.id id, invoices.concept')
+    ->where('invoices.team_id', '=', $teamId)
+    ->where('invoices.status', '=', 'unpaid')
+    ->whereRaw('invoices.due_date >= NOW()')
+    ->where('type', '=', 'INVOICE')
+    ->join('clients', 'clients.id', '=', 'invoices.client_id')
+    ->take(5)
+    ->get();
+  }
 
 //   async debtors({ response }) {
 //     const sql = `SELECT
