@@ -144,22 +144,16 @@ class ReportHelper
     ->get();
   }
 
-//   async debtors({ response }) {
-//     const sql = `SELECT
-// 		GROUP_CONCAT(invoices.id) ids,
-// 		count(invoices.id) total_debts,
-//       sum(invoices.debt) debt,
-//       cl.display_name contact,
-//       cl.id contact_id
-//       FROM invoices
-//       INNER JOIN clients cl ON cl.id = invoices.client_id
-// 		WHERE invoices.status = 'unpaid' AND invoices.due_date <= NOW() AND resource_type_id='INVOICE'
-// 		GROUP BY invoices.client_id
-//     `
-
-//     // return response.send(sql);
-//     const results = await Database.raw(sql);
-//     return response.json(results[0]);
-//   }
-// }
+  public function debtors($teamId) {
+      return DB::table('invoices')
+      ->selectRaw('count(invoices.id) total_debts, sum(invoices.debt) debt, clients.names contact,clients.id contact_id')
+      ->where('invoices.team_id', '=', $teamId)
+      ->where('invoices.status', '=', 'unpaid')
+      ->whereRaw('invoices.due_date <= NOW()')
+      ->where('type', '=', 'INVOICE')
+      ->join('clients', 'clients.id', '=', 'invoices.client_id')
+      ->take(5)
+      ->groupBy('invoices.client_id')
+      ->get();
+    }
 }

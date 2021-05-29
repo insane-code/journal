@@ -2,6 +2,7 @@
 
 return [
     "accounts_inertia_path" => "Journal/Accounts",
+    "statements_inertia_path" => "Journal/Statements",
     "transactions_inertia_path" => "Journal/Transactions",
     "products_inertia_path" => "Journal/Catalog/Products",
     "categories_inertia_path" => "Journal/Catalog/Categories",

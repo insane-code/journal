@@ -32,5 +32,4 @@ class Account extends Model
     public function lastTransactionDate() {
         return $this->hasOneThrough(Transaction::class, TransactionLine::class, 'account_id', 'id')->orderByDesc('date')->limit(1);
     }
-
 }

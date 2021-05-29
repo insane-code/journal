@@ -12,6 +12,7 @@ Route::middleware(config('jetstream.middleware', ['web']))->group(function() {
 
     Route::group(['middleware' => ['auth', 'verified']], function () {
         Route::resource('/accounts', AccountController::class);
+        Route::get('/statements/{category}', [AccountController::class, 'statements'])->name('statements.index');
         Route::resource('/transactions', TransactionController::class);
         Route::resource('/products', ProductController::class);
         Route::resource('/invoices', InvoiceController::class);
