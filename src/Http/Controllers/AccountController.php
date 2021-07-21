@@ -6,6 +6,7 @@ namespace Insane\Journal\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 use Insane\Journal\Account;
 use Insane\Journal\Category;
 use Laravel\Jetstream\Jetstream;
@@ -40,7 +41,10 @@ class AccountController
         $postData['team_id'] = $request->user()->current_team_id;
         $account = new Account();
         $account = $account::create($postData);
-        return $response->sendContent($account);
+        if ($request->query('json')) {
+            return $response->sendContent($account);
+        }
+        return Redirect()->back();
     }
 
     public function show(Request $request) {

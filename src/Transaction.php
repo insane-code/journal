@@ -4,7 +4,6 @@ namespace Insane\Journal;
 
 use Illuminate\Database\Eloquent\Model;
 
-
 class Transaction extends Model
 {
     protected $fillable = ['team_id','user_id', 'transactionable_id', 'transactionable_type' , 'date','number', 'description', 'direction', 'notes', 'total'];
@@ -38,6 +37,10 @@ class Transaction extends Model
 
     public function mainLine() {
         return $this->hasOne('Insane\Journal\TransactionLine', 'transaction_id')->where('anchor', true);
+    }
+
+    public function category() {
+        return $this->hasOne('Insane\Journal\TransactionLine', 'transaction_id')->where('anchor', false);
     }
 
     public function lines() {
@@ -112,5 +115,33 @@ class Transaction extends Model
                 ]);
             }
         }
+    }
+
+    public function scopeGetByMonth($query, $startDate, $endDate = null) {
+        $query
+        ->when($startDate && !$endDate, function ($query) use ($startDate) {
+            $query->where("date", '=',  $startDate);
+        })
+        ->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
+            $query->where("date", '>=',  $startDate);
+            $query->where("date", '<=', $endDate);
+        })
+        ->orderByDesc('date')->orderByDesc('number')
+        ->with(['mainLine', 'lines', 'category', 'mainLine.account', 'category.account']);
+    }
+
+    public static function parser($transaction) {
+        return [
+            'id' => $transaction->id,
+            'date' => $transaction->date,
+            'number' => $transaction->number,
+            'description' => $transaction->description,
+            'direction' => $transaction->direction,
+            'account' => $transaction->mainLine ? $transaction->mainLine->account: null,
+            'category' => $transaction->mainLine ? $transaction->category->account : null,
+            'total' => $transaction->total,
+            'lines' => $transaction->lines,
+            'mainLine' => $transaction->mainLine,
+        ];
     }
 }

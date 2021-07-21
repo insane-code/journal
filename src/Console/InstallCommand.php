@@ -20,7 +20,7 @@ class InstallCommand extends Command
      *
      * @var string
      */
-    protected $description = 'Install insane components and resources';
+    protected $description = 'Install insane journal components and resources';
 
     /**
      * Execute the console command.

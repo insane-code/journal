@@ -5,6 +5,7 @@ namespace Insane\Journal\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Redirect;
 use Insane\Journal\Account;
 use Insane\Journal\Category;
 use Insane\Journal\Transaction;
@@ -22,27 +23,26 @@ class TransactionController
     }
 
     public function index(Request $request) {
+        $transactions = Transaction::where([
+            'team_id' => $request->user()->current_team_id
+        ])->getByDate()
+        ->paginate()
+        ->through(function ($transaction) {
+            return Transaction::parser($transaction);
+        });
+
+        if ($request->query('json')) {
+            return $response->sendContent($transaction);
+        }
+
+        $categories = Category::where('depth', 1)
+        ->with('accounts', function ($query) use ($request) {
+            $query->where('team_id', '=', $request->user()->current_team_id);
+        })->get();
+
         return Jetstream::inertia()->render($request, config('journal.transactions_inertia_path') . '/Index', [
-            "transactions" => Transaction::where([
-                'team_id' => $request->user()->current_team_id
-            ])->orderByDesc('date')->orderByDesc('number')->with(['mainLine', 'lines', 'mainLine.category', 'mainLine.account'])->paginate()->through(function ($transaction) {
-                return [
-                    'id' => $transaction->id,
-                    'date' => $transaction->date,
-                    'number' => $transaction->number,
-                    'description' => $transaction->description,
-                    'direction' => $transaction->direction,
-                    'account' => $transaction->mainLine ? $transaction->mainLine->account: null,
-                    'category' => $transaction->mainLine ? $transaction->mainLine->category : null,
-                    'total' => $transaction->total,
-                    'lines' => $transaction->lines,
-                    'mainLine' => $transaction->mainLine,
-                ];
-            }),
-            "categories" => Category::where('depth', 1)
-            ->with('accounts', function ($query) use ($request) {
-                $query->where('team_id', '=', $request->user()->current_team_id);
-            })->get(),
+            "transactions" => $transactions,
+            "categories" => $categories,
         ]);
 
     }
@@ -53,6 +53,9 @@ class TransactionController
         $postData['team_id'] = $request->user()->current_team_id;
         $transaction = Transaction::create($postData);
         $transaction->createLines($postData, $postData['items'] ?? []);
-        return $response->sendContent($transaction);
+        if ($request->query('json')) {
+            return $response->sendContent($transaction);
+        }
+        return Redirect()->back();
     }
 }

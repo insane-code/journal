@@ -5,9 +5,7 @@ namespace Insane\Journal;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
-class ReportHelper
-{
-
+class ReportHelper {
   public function revenueReport($teamId) {
     $year = Carbon::now()->format('Y');
     $previousYear = Carbon::now()->subYear(1)->format('Y');
