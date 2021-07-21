@@ -13,7 +13,7 @@ class CreateInvoiceLines extends Migration
      */
     public function up()
     {
-        Schema::create('invoices_lines', function (Blueprint $table) {
+        Schema::create('invoice_lines', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id');
             $table->foreignId('team_id');

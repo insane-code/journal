@@ -2,6 +2,7 @@
 
 return [
     "accounts_inertia_path" => "Journal/Accounts",
+    "statements_inertia_path" => "Journal/Statements",
     "transactions_inertia_path" => "Journal/Transactions",
     "products_inertia_path" => "Journal/Catalog/Products",
     "categories_inertia_path" => "Journal/Catalog/Categories",
@@ -48,6 +49,7 @@ return [
         [
             "resource" => "categories",
             "name" => "Liabilities & Credit Cards",
+            "display_id" => "liabilities",
             "Description" => "",
             "depth" => 0,
             "childs" => [
@@ -97,6 +99,7 @@ return [
                 ],
                 [
                     "resource" => "categories",
+                    "display_id" => "customer_prepayments",
                     "name" => "Customer Prepayments and Customer Credits",
                     "Description" => "",
                     "depth" => 1,
@@ -106,6 +109,7 @@ return [
         [
             "resource" => "categories",
             "name" => "Incomes",
+            "display_id" => "incomes",
             "Description" => "",
             "depth" => 0,
             "childs" => [
@@ -118,8 +122,23 @@ return [
                 ],
                 [
                     "resource" => "categories",
+                    "display_id" => "discount",
                     "name" => "Discounts",
                     "Description" => "",
+                    "depth" => 1,
+                ],
+                [
+                    "resource" => "categories",
+                    "display_id" => "other_income",
+                    "name" => "Other Income",
+                    "Description" => "Use this to track all other income that is outside of your regular business operations of selling to your customers. For example, if your main business is as a photographer, but you rented your camera to a friend as a one-off shoot, that could be other income.",
+                    "depth" => 1,
+                ],
+                [
+                    "resource" => "categories",
+                    "display_id" => "uncategorized_incomes",
+                    "name" => "Uncategorized Income",
+                    "Description" => "This account is used as the default category for new deposit transactions.",
                     "depth" => 1,
                 ],
             ]
@@ -127,54 +146,86 @@ return [
         [
             "resource" => "categories",
             "name" => "Expense",
+            "display_id" => "expenses",
             "Description" => "",
             "depth" => 0,
             "childs" => [
                 [
                     "resource" => "categories",
+                    "display_id" => "operating_expense",
                     "name" => "Operating Expense",
                     "Description" => "",
                     "depth" => 1,
                 ],
                 [
                     "resource" => "categories",
+                    "display_id" => "cost_goods_sold",
                     "name" => "Cost of Goods Sold",
                     "Description" => "",
                     "depth" => 1,
                 ],
                 [
                     "resource" => "categories",
+                    "display_id" => "payment_processing_fee",
                     "name" => "Payment Processing Fee",
                     "Description" => "",
                     "depth" => 1,
                 ],
                 [
                     "resource" => "categories",
+                    "display_id" => "payroll_expense",
                     "name" => "Payroll Expense",
                     "Description" => "",
                     "depth" => 1,
                 ],
                 [
                     "resource" => "categories",
+                    "display_id" => "uncategorized_expense",
                     "name" => "Uncategorized Expense",
                     "Description" => "",
                     "depth" => 1,
                 ],
                 [
                     "resource" => "categories",
-                    "name" => "Loss on Foreign Echange",
+                    "display_id" => "loss_foreign_exchange",
+                    "name" => "Loss on Foreign Exchange",
                     "Description" => "",
                     "depth" => 1,
                 ],
             ]
+        ],
+        [
+            "resource" => "categories",
+            "name" => "Equity",
+            "display_id" => "equity",
+            "description" => "",
+            "depth" => 0,
+            "childs" => [
+                [
+                    "resource" => "categories",
+                    "display_id" => "business_owner_contribution",
+                    "name" => "Business Owner Contribution and Drawing",
+                    "Description" => "Use this to track money you or others have invested into the business. For example, when you first start a business you usually invest start-up money into it",
+                    "depth" => 1
+                ],
+                [
+                    "resource" => "categories",
+                    "display_id" => "retained_earnings",
+                    "name" => "Retained Earnings: Profit",
+                    "Description" => "Use this to track money that you have taken out of the business.",
+                    "depth" => 1
+                ]
+            ]
         ]
     ],
     "accounts_catalog" => [
+        // Assets Accounts
         [
             "category_id" => "cash_and_bank",
             "display_id" => "cash_on_hand",
             "name" => "Cash on Hand",
             "index" => 0,
+            "type" => 1,
             "balance_type" => "DEBIT"
         ],
         [
@@ -186,11 +237,21 @@ return [
         ],
         [
             "category_id" => "expected_payments_customers",
-            "display_id" => "accounts_receibable",
-            "name" => "Accounts Recievable",
+            "display_id" => "accounts_receivable",
+            "name" => "Accounts Receivable",
             "index" => 1,
             "balance_type" => "CREDIT"
         ],
+        // Liabilities & Credit Cards
+        [
+            "category_id" => "expected_payments_vendors",
+            "display_id" => "accounts_payable",
+            "name" => "Accounts Payable",
+            "index" => 1,
+            "balance_type" => "CREDIT"
+        ],
+
+        //
         [
             "category_id" => "inventory",
             "display_id" => "products",
@@ -199,11 +260,137 @@ return [
             "balance_type" => "DEBIT"
         ],
         [
-            "category_id" => "equimpment",
+            "category_id" => "equipment",
             "display_id" => "machines",
             "name" => "Machines",
             "index" => 1,
             "balance_type" => "DEBIT"
+        ],
+        // Income Accounts
+        [
+            "category_id" => "income",
+            "display_id" => "consulting_income",
+            "name" => "Consulting Income",
+            "index" => 1,
+            "balance_type" => "DEBIT"
+        ],
+        [
+            "category_id" => "income",
+            "display_id" => "product_sales",
+            "name" => "Product Sales",
+            "index" => 2,
+            "balance_type" => "DEBIT"
+        ],
+        [
+            "category_id" => "income",
+            "display_id" => "sales",
+            "name" => "Sales",
+            "index" => 3,
+            "balance_type" => "DEBIT"
+        ],
+        [
+            "category_id" => "uncategorized_incomes",
+            "display_id" => "uncategorized_income",
+            "name" => "Uncategorized Income",
+            "index" => 3,
+            "balance_type" => "DEBIT"
+        ],
+
+        // Expense Accounts
+        [
+            "category_id" => "operating_expense",
+            "display_id" => "accounting_fees",
+            "name" => "Accounting Fees",
+            "index" => 1,
+            "balance_type" => "CREDIT"
+        ],
+        [
+            "category_id" => "operating_expense",
+            "display_id" => "advertising",
+            "name" => "Advertising & Promotion",
+            "index" => 2,
+            "balance_type" => "CREDIT"
+        ],
+        [
+            "category_id" => "operating_expense",
+            "display_id" => "bank_services_charges",
+            "name" => "Bank Service Charges",
+            "index" => 3,
+            "balance_type" => "CREDIT"
+        ],
+        [
+            "category_id" => "operating_expense",
+            "display_id" => "computer_hardware",
+            "name" => "Computer – Hardware",
+            "index" => 4,
+            "balance_type" => "CREDIT"
+        ],
+        [
+            "category_id" => "operating_expense",
+            "display_id" => "computer_hosting",
+            "name" => "Computer – Hosting",
+            "index" => 5,
+            "balance_type" => "CREDIT"
+        ],
+        [
+            "category_id" => "operating_expense",
+            "display_id" => "computer_internet",
+            "name" => "Computer – Internet",
+            "index" => 6,
+            "balance_type" => "CREDIT"
+        ],
+        [
+            "category_id" => "operating_expense",
+            "display_id" => "computer_hosting",
+            "name" => "Computer – Software",
+            "index" => 7,
+            "balance_type" => "CREDIT"
+        ],
+        [
+            "category_id" => "operating_expense",
+            "display_id" => "dues_subscriptions",
+            "name" => "Dues & Subscriptions",
+            "index" => 8,
+            "balance_type" => "CREDIT"
+        ],
+        [
+            "category_id" => "operating_expense",
+            "display_id" => "office_supplies",
+            "name" => "Office Supplies",
+            "index" => 9,
+            "balance_type" => "CREDIT"
+        ],
+        [
+            "category_id" => "operating_expense",
+            "display_id" => "professional_fees",
+            "name" => "Professional Fees",
+            "index" => 10,
+            "balance_type" => "CREDIT"
+        ],
+        [
+            "category_id" => "operating_expense",
+            "display_id" => "rent_expense",
+            "name" => "Rent Expense",
+            "index" => 11,
+            "balance_type" => "CREDIT"
+        ],
+
+        // Capital accounts
+        [
+            "category_id" => "business_owner_contribution",
+            "display_id" => "owner_investment",
+            "name" => "Owner Investment / Drawings",
+            "index" => 1,
+            "balance_type" => "CREDIT",
+            "type" => -1
+        ],
+        [
+            "category_id" => "retained_earnings",
+            "display_id" => "owner_equity",
+            "name" => "Owner's Equity",
+            "index" => 1,
+            "balance_type" => "DEBIT",
+            "type" => 1
         ],
     ]
 ];

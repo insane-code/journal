@@ -23,7 +23,10 @@ class CreateChartAccounts
         ];
 
         foreach ($accounts as $index => $account) {
-            Account::create(array_merge($account, $generalInfo, ['index' => $index]));
+            Account::create(array_merge($account, $generalInfo, [
+                'index' => $index,
+                'type' => $account['balance_type'] == 'DEBIT' ? 1 : -1
+            ]));
         }
     }
 }

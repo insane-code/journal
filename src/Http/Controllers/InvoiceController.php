@@ -47,17 +47,23 @@ class InvoiceController
     */
     public function create(Request $request)
     {
+        $teamId = $request->user()->current_team_id;
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Edit', [
             'invoice' => null,
             'products' => Product::where([
-                'team_id' => $request->user()->current_team_id
+                'team_id' => $teamId
             ])->with(['price'])->get(),
             // change this to be dinamyc
-            'clients' => Client::all(),
+            'clients' => Client::where('team_id', $teamId)->get(),
             "categories" => Category::where([
-                'depth' => 0,
-                'team_id' => $request->user()->current_team_id
-            ])->with(['subCategories', 'subcategories.accounts', 'subcategories.accounts.lastTransactionDate'])->get(),
+                'depth' => 0
+            ])->with([
+                'subCategories',
+                'subcategories.accounts' => function ($query) use ($teamId) {
+                    $query->where('team_id', '=', $teamId);
+                },
+                'subcategories.accounts.lastTransactionDate'
+            ])->get(),
         ]);
     }
 
@@ -77,11 +83,43 @@ class InvoiceController
     *
     * @return \Illuminate\Http\Response
     */
+    public function show(Request $request, $id)
+    {
+        $invoice = Invoice::find($id);
+        $teamId = $request->user()->current_team_id;
+
+        if ($invoice->team_id != $teamId) {
+            Response::redirect('/invoices');
+        }
+        $invoiceData = $invoice->toArray();
+        $invoiceData['client'] = $invoice->client;
+        $invoiceData['lines'] = $invoice->lines->toArray();
+        $invoiceData['payments'] = $invoice->payments()->with(['transaction'])->get()->toArray();
+
+        return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Show', [
+            'invoice' => $invoiceData,
+            'products' => Product::where([
+                'team_id' => $teamId
+            ])->with(['price'])->get(),
+            "categories" => Category::where([
+                'depth' => 1,
+                'team_id' => $teamId
+            ])->with(['accounts'])->get(),
+            // change this to be dinamyc
+            'clients' => Client::where('team_id', $teamId)->get()
+        ]);
+    }
+    /**
+    * Show the form for editing a resource.
+    *
+    * @return \Illuminate\Http\Response
+    */
     public function edit(Request $request, $id)
     {
         $invoice = Invoice::find($id);
+        $teamId = $request->user()->current_team_id;
 
-        if ($invoice->team_id != $request->user()->current_team_id) {
+        if ($invoice->team_id != $teamId) {
             Response::redirect('/invoices');
         }
         $invoiceData = $invoice->toArray();
@@ -92,14 +130,14 @@ class InvoiceController
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Edit', [
             'invoice' => $invoiceData,
             'products' => Product::where([
-                'team_id' => $request->user()->current_team_id
+                'team_id' => $teamId
             ])->with(['price'])->get(),
             "categories" => Category::where([
                 'depth' => 1,
-                'team_id' => $request->user()->current_team_id
+                'team_id' => $teamId
             ])->with(['accounts'])->get(),
             // change this to be dinamyc
-            'clients' => Client::all()
+            'clients' => Client::where('team_id', $teamId)->get()
         ]);
     }
 

@@ -24,12 +24,11 @@ class CreatePaymentsTable extends Migration
 
             $table->foreignId('payment_method_id')->nullable();
             $table->foreignId('account_id');
-      
+
             $table->date('payment_date');
             $table->decimal('amount', 11, 2);
             $table->string('concept', 50);
             $table->text('notes')->nullable();
-            
             $table->boolean('checked')->default(false);
             $table->timestamps();
         });

@@ -26,6 +26,7 @@ class Invoice extends Model
             Invoice::calculateTotal($invoice);
             Invoice::checkPayments($invoice);
             $invoice->account_id = Invoice::createClientAccount($invoice);
+            $invoice->invoice_account_id = Invoice::createInvoiceAccount($invoice);
         });
 
         static::saved(function (Invoice $invoice) {
@@ -133,7 +134,7 @@ class Invoice extends Model
                 "user_id" => $this->user_id,
                 "concept" => $item['concept'],
                 "index" => $item['index'],
-                "product_id" => $item['product_id'],
+                "product_id" => $item['product_id'] ?? null,
                 "quantity" => $item['quantity'],
                 "price" => $item['price'],
                 "amount" => $item['amount'],
@@ -150,13 +151,38 @@ class Invoice extends Model
         if (count($accounts)) {
            return $accounts[0]->id;
         } else {
+           $category = Category::where('display_id', 'expected_payments_customers')->first();
            $account = Account::create([
                 "team_id" => $invoice->team_id,
                 "client_id" => $invoice->client_id,
                 "user_id" => $invoice->user_id,
-                "category_id" => 18,
-                "display_id" => "client_{$invoice->user_id}_{$invoice->user->names}",
-                "name" => "Payment from {$invoice->client->names}",
+                "category_id" => $category->id,
+                "display_id" => "client_{$invoice->client_id}_{$invoice->client->names}",
+                "name" => "{$invoice->client->names} Account",
+                "currency_code" => "DOP"
+            ]);
+            return $account->id;
+        }
+
+    }
+
+    public static function createInvoiceAccount($invoice)
+    {
+        $accounts = Account::where([
+                'display_id' =>  'sales',
+                'team_id' => $invoice->team_id
+        ])->limit(1)->get();
+        if (count($accounts)) {
+           return $accounts[0]->id;
+        } else {
+           $category = Category::where('display_id', 'income')->first();
+           $account = Account::create([
+                "team_id" => $invoice->team_id,
+                "client_id" => 0,
+                "user_id" => $invoice->user_id,
+                "category_id" => $category->id,
+                "display_id" => "sales",
+                "name" => "Sales",
                 "currency_code" => "DOP"
             ]);
             return $account->id;
@@ -216,8 +242,8 @@ class Invoice extends Model
             "description" => $this->concept,
             "direction" => "DEPOSIT",
             "total" => $this->total,
-            "account_id" => $this->account_id,
-            "category_id" => 10
+            "account_id" => $this->invoice_account_id,
+            "category_id" => $this->account_id
         ];
         if (!$this->transaction) {
             $transaction = $this->transaction()->create($transactionData);

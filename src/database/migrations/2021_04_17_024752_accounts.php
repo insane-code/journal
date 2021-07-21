@@ -31,6 +31,7 @@ class Accounts extends Migration
             // direction
             $table->boolean('archivable')->default(0);
             $table->boolean('archived')->default(1);
+            $table->integer('type')->default(1);
             $table->enum('balance_type', ['DEBIT','CREDIT'])->default('DEBIT');
             $table->enum('status', ['disabled','active'])->default('active');
 
