@@ -40,6 +40,19 @@ class InstallCommand extends Command
      */
     protected function installAccounting()
     {
+         // Models...
+        copy(__DIR__.'/../../stubs/app/Models/Account.php', app_path('Models/Account.php'));
+        copy(__DIR__.'/../../stubs/app/Models/Category.php', app_path('Models/Category.php'));
+        copy(__DIR__.'/../../stubs/app/Models/Image.php', app_path('Models/Image.php'));
+        copy(__DIR__.'/../../stubs/app/Models/Invoice.php', app_path('Models/Invoice.php'));
+        copy(__DIR__.'/../../stubs/app/Models/InvoiceLine.php', app_path('Models/InvoiceLine.php'));
+        copy(__DIR__.'/../../stubs/app/Models/Payment.php', app_path('Models/Payment.php'));
+        copy(__DIR__.'/../../stubs/app/Models/Product.php', app_path('Models/Product.php'));
+        copy(__DIR__.'/../../stubs/app/Models/ProductsOption.php', app_path('Models/ProductsOption.php'));
+        copy(__DIR__.'/../../stubs/app/Models/ProductsVariant.php', app_path('Models/ProductsVariant.php'));
+        copy(__DIR__.'/../../stubs/app/Models/Stock.php', app_path('Models/Stock.php'));
+        copy(__DIR__.'/../../stubs/app/Models/Transaction.php', app_path('Models/Transaction.php'));
+        copy(__DIR__.'/../../stubs/app/Models/TransactionLine.php', app_path('Models/TransactionLine.php'));
         $this->info('Inertia scaffolding installed successfully.');
         $this->comment('Please execute the "npm install && npm run dev" command to build your assets.');
     }
