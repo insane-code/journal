@@ -20,15 +20,16 @@ class CreateProductsPricesTable extends Migration
             $table->foreignId('product_id')->nullable();
             $table->foreignId('products_variant_id')->nullable();
 
-
             // content
             $table->decimal('value', 11, 2)->default(0);
-            $table->string('name')->default('DOP');
+            $table->string('name')->default('Default');
+            $table->string('currency')->default('DOP');
             $table->decimal('retail_price', 11, 2)->nullable();
             $table->decimal('sale_price', 11, 2)->nullable();
             $table->decimal('list_price', 11, 2)->nullable();
             $table->decimal('extended_sale_price', 11, 2)->nullable();
             $table->decimal('extended_list_price', 11, 2)->nullable();
+            $table->boolean('is_main')->default(false);
 
             // structure
             $table->timestamps();

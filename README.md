@@ -6,7 +6,6 @@
 
 
 ## Install
-
 ```bash
 composer require insane/journal
 ```
