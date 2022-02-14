@@ -137,6 +137,7 @@ class ReportHelper {
     ->where('invoices.status', '=', 'unpaid')
     ->whereRaw('invoices.due_date >= NOW()')
     ->where('invoices.type', '=', 'INVOICE')
+
     ->join('clients', 'clients.id', '=', 'invoices.client_id')
     ->take(5)
     ->get();
