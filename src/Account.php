@@ -5,6 +5,7 @@ namespace Insane\Journal;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Account extends Model
 {
@@ -31,5 +32,25 @@ class Account extends Model
 
     public function lastTransactionDate() {
         return $this->hasOneThrough(Transaction::class, TransactionLine::class, 'account_id', 'id')->orderByDesc('date')->limit(1);
+    }
+
+    public static function guessAccount($session, $labels, $type = "DEBIT") {
+
+        $accountSlug = Str::slug($labels[0], "_");
+        $account = Account::where(['user_id' => $session->user_id, 'display_id' => $accountSlug])->limit(1)->get();
+        if (count($account)) {
+            return $account[0]->id;
+        } else {
+            $account = Account::create([
+                'user_id' => $session->user_id,
+                'team_id' => $session->team_id,
+                'display_id' => $accountSlug,
+                'name' => $labels[0],
+                'description' => $labels[0],
+                'currency_code' => "DOP",
+            ]);
+
+            return $account->id;
+        }
     }
 }

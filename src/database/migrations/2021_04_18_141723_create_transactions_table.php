@@ -33,6 +33,7 @@ class CreateTransactionsTable extends Migration
             $table->text('notes')->nullable();
 
             // totals
+            $table->string('currency_code', 3)->default('DOP');
             $table->decimal('total', 11, 2)->default(0.00);
             $table->enum('status', ['draft','verified', 'canceled'])->default('draft');
             $table->timestamps();

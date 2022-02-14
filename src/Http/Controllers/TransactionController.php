@@ -58,4 +58,14 @@ class TransactionController
         }
         return Redirect()->back();
     }
+
+    public function approve(Request $request, Response $response, int $id) {
+        $request->user()->id;
+        $transaction = Transaction::find($id);
+        $transaction->approve();
+        if ($request->query('json')) {
+            return $response->sendContent($transaction);
+        }
+        return Redirect()->back();
+    }
 }

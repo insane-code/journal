@@ -6,7 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model
 {
-    protected $fillable = ['team_id','user_id', 'transactionable_id', 'transactionable_type' , 'date','number', 'description', 'direction', 'notes', 'total', 'status'];
+    const DIRECTION_DEBIT = 'DEPOSIT';
+    const DIRECTION_CREDIT = 'WITHDRAW';
+    const DIRECTION_ENTRY = 'ENTRY';
+    const STATUS_DRAFT = 'draft';
+    const STATUS_VERIFIED = 'verified';
+    const STATUS_CANCELED = 'canceled';
+
+    protected $fillable = ['team_id','user_id', 'transactionable_id', 'transactionable_type' , 'date','number', 'description', 'direction', 'notes', 'total', 'currency_code', 'status'];
 
        /**
      * The "booted" method of the model.
@@ -143,5 +150,10 @@ class Transaction extends Model
             'lines' => $transaction->lines,
             'mainLine' => $transaction->mainLine,
         ];
+    }
+
+    public function approve() {
+        $this->status = self::STATUS_VERIFIED;
+        $this->save();
     }
 }
