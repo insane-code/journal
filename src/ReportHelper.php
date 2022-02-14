@@ -136,7 +136,8 @@ class ReportHelper {
     ->where('invoices.team_id', '=', $teamId)
     ->where('invoices.status', '=', 'unpaid')
     ->whereRaw('invoices.due_date >= NOW()')
-    ->where('invoice.type', '=', 'INVOICE')
+    ->where('invoices.type', '=', 'INVOICE')
+
     ->join('clients', 'clients.id', '=', 'invoices.client_id')
     ->take(5)
     ->get();
@@ -148,7 +149,7 @@ class ReportHelper {
       ->where('invoices.team_id', '=', $teamId)
       ->where('invoices.status', '=', 'unpaid')
       ->whereRaw('invoices.due_date <= NOW()')
-      ->where('invoice.type', '=', 'INVOICE')
+      ->where('invoices.type', '=', 'INVOICE')
       ->join('clients', 'clients.id', '=', 'invoices.client_id')
       ->take(5)
       ->groupBy('invoices.client_id')
