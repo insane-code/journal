@@ -124,6 +124,11 @@ class Transaction extends Model
         }
     }
 
+    public function remove() {
+        TransactionLine::query()->where('transaction_id', $this->id)->delete();
+        $this->delete();
+    }
+
     public function scopeGetByMonth($query, $startDate, $endDate = null) {
         $query
         ->when($startDate && !$endDate, function ($query) use ($startDate) {
