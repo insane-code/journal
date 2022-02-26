@@ -80,6 +80,7 @@ class Transaction extends Model
     static public function createTransaction($transactionData) {
         $transaction = Transaction::create($transactionData);
         $transaction->createLines($transactionData, $transactionData['items'] ?? []);
+        return $transaction;
     }
 
     public function createLines($transactionData, $items = []) {
