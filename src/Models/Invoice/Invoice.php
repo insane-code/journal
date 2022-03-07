@@ -124,9 +124,12 @@ class Invoice extends Model
 
         if ($invoice) {
             $total = InvoiceLine::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(price) as price, sum(discount) as discount, sum(amount) as amount')->get();
+            $totalTax = InvoiceLineTax::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(amount) as amount')->get();
             $result['subtotal'] = $total[0]['price'] ?? 0;
-            $result['discount'] = $total[0]['discount'] ?? 0;
-            $result['total'] =  $total[0]['amount'] ?? 0;
+            $discount = $total[0]['discount'] ?? 0;
+            $taxTotal = $totalTax[0]['amount'] ?? 0;
+            $invoiceTotal =  ($total[0]['amount'] ?? 0);
+            $result['total'] = $invoiceTotal - $discount + $taxTotal;
             Invoice::where(['id' => $invoice->id])->update($result);
         }
     }
@@ -134,7 +137,7 @@ class Invoice extends Model
     public static function createDocument($invoiceData) {
         DB::transaction(function () use ($invoiceData) {
             $invoice = self::create($invoiceData);
-            CreateInvoiceLine::dispatch($invoice, $invoiceData);
+            $invoice = CreateInvoiceLine::dispatch($invoice, $invoiceData);
             return $invoice;
         });
     }

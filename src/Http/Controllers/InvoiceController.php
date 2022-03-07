@@ -73,9 +73,8 @@ class InvoiceController
         $postData = $request->post();
         $postData['user_id'] = $request->user()->id;
         $postData['team_id'] = $request->user()->current_team_id;
-        $invoice = Invoice::createDocument($postData);
-        dd($invoice);
-        return redirect("/invoices/$invoice->id/edit");
+        Invoice::createDocument($postData);
+        return redirect("/invoices/");
     }
 
     /**
