@@ -1,7 +1,8 @@
 <?php
 
-namespace Insane\Journal;
-
+namespace Insane\Journal\Models\Core;
+use App\Models\Team;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
 class TransactionLine extends Model
@@ -15,15 +16,15 @@ class TransactionLine extends Model
 
     public function team()
     {
-        return $this->belongsTo(team::class);
+        return $this->belongsTo(Team::class);
     }
 
 
     public function account() {
-        return $this->belongsTo('Insane\Journal\Account');
+        return $this->belongsTo(Account::class);
     }
 
     public function category() {
-        return $this->belongsTo('Insane\Journal\Account');
+        return $this->belongsTo(Account::class);
     }
 }

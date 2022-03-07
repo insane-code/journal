@@ -1,13 +1,14 @@
 <?php
 
-namespace Insane\Journal;
+namespace Insane\Journal\Models\Core;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class ProductsOption extends Model
+class Image extends Model
 {
     use HasFactory;
+    protected $fillable = ['team_id','user_id', 'name','url'];
 
     public function images()
     {

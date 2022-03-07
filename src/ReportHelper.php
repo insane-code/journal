@@ -4,6 +4,7 @@ namespace Insane\Journal;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Insane\Journal\Models\Core\Account;
 
 class ReportHelper {
   public function revenueReport($teamId) {

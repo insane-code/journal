@@ -1,6 +1,6 @@
 <?php
 
-namespace Insane\Journal;
+namespace Insane\Journal\Models\Core;
 
 use App\Models\Team;
 use App\Models\User;

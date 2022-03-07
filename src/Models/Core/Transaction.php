@@ -1,6 +1,6 @@
 <?php
 
-namespace Insane\Journal;
+namespace Insane\Journal\Models\Core;
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -43,15 +43,15 @@ class Transaction extends Model
     }
 
     public function mainLine() {
-        return $this->hasOne('Insane\Journal\TransactionLine', 'transaction_id')->where('anchor', true);
+        return $this->hasOne(TransactionLine::class)->where('anchor', true);
     }
 
     public function category() {
-        return $this->hasOne('Insane\Journal\TransactionLine', 'transaction_id')->where('anchor', false);
+        return $this->hasOne(TransactionLine::class)->where('anchor', false);
     }
 
     public function lines() {
-        return $this->hasMany('Insane\Journal\TransactionLine', 'transaction_id');
+        return $this->hasMany(TransactionLine::class);
     }
 
     //  Utils

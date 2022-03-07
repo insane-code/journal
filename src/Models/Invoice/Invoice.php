@@ -1,10 +1,16 @@
 <?php
 
-namespace Insane\Journal;
+namespace Insane\Journal\Models\Invoice;
 
 use App\Models\Client;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
+use Insane\Journal\Jobs\Invoice\CreateInvoiceLine;
+use Insane\Journal\Models\Core\Account;
+use Insane\Journal\Models\Core\Category;
+use Insane\Journal\Models\Core\Payment;
+use Insane\Journal\Models\Core\Transaction;
 
 class Invoice extends Model
 {
@@ -125,22 +131,12 @@ class Invoice extends Model
         }
     }
 
-    public function createLines($items)
-    {
-        InvoiceLine::query()->where('invoice_id', $this->id)->delete();
-        foreach ($items as $item) {
-            $this->lines()->create([
-                "team_id" => $this->team_id,
-                "user_id" => $this->user_id,
-                "concept" => $item['concept'],
-                "index" => $item['index'],
-                "product_id" => $item['product_id'] ?? null,
-                "quantity" => $item['quantity'],
-                "price" => $item['price'],
-                "amount" => $item['amount'],
-                "team_id" => $this->team_id
-            ]);
-        }
+    public static function createDocument($invoiceData) {
+        DB::transaction(function () use ($invoiceData) {
+            $invoice = self::create($invoiceData);
+            CreateInvoiceLine::dispatch($invoice, $invoiceData);
+            return $invoice;
+        });
     }
 
     // accounting

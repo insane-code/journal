@@ -5,11 +5,10 @@ namespace Insane\Journal\Http\Controllers;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Response as FacadesResponse;
-use Insane\Journal\Category;
-use Insane\Journal\Invoice;
-use Insane\Journal\Product;
+use Insane\Journal\Models\Core\Category;
+use Insane\Journal\Models\Core\Tax;
+use Insane\Journal\Models\Invoice\Invoice;
+use Insane\Journal\Models\Product\Product;
 use Laravel\Jetstream\Jetstream;
 
 class InvoiceController
@@ -64,6 +63,7 @@ class InvoiceController
                 },
                 'subcategories.accounts.lastTransactionDate'
             ])->get(),
+            'availableTaxes' => Tax::where("team_id", $teamId)->get(),
         ]);
     }
 
@@ -73,9 +73,8 @@ class InvoiceController
         $postData = $request->post();
         $postData['user_id'] = $request->user()->id;
         $postData['team_id'] = $request->user()->current_team_id;
-        $invoice = Invoice::create($postData);
-        $invoice->createLines($postData['items'] ?? []);
-        return Redirect("/invoices/$invoice->id/edit");
+        $invoice = Invoice::createDocument($postData);
+        return redirect("/invoices/$invoice->id/edit");
     }
 
     /**

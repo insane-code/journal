@@ -1,9 +1,10 @@
 <?php
 
-namespace Insane\Journal;
+namespace Insane\Journal\Models\Product;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Insane\Journal\Models\Core\Image;
 
 class Product extends Model
 {

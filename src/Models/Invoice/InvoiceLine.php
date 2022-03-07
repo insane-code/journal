@@ -1,6 +1,6 @@
 <?php
 
-namespace Insane\Journal;
+namespace Insane\Journal\Models\Invoice;
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -11,6 +11,14 @@ class InvoiceLine extends Model
 
     public function product() {
         return $this->belongsTo(Product::class);
+    }
+
+    public function invoice() {
+        return $this->belongsTo(Invoice::class);
+    }
+
+    public function taxes() {
+        return $this->hasMany(InvoiceLineTax::class);
     }
 
     static public function updateStock($lineItem) {

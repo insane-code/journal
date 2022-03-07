@@ -1,10 +1,9 @@
 <?php
 
-namespace Insane\Journal;
+namespace Insane\Journal\Models\Core;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
 
 class Category extends Model
 {
@@ -12,11 +11,11 @@ class Category extends Model
     protected $fillable = ['team_id','user_id', 'client_id','parent_id' , 'display_id', 'name', 'description', 'depth', 'index', 'archivable', 'archived'];
 
     public function subCategories() {
-        return $this->hasMany('Insane\Journal\Category', 'parent_id', 'id')->orderBy('index');
+        return $this->hasMany(Category::class, 'parent_id', 'id')->orderBy('index');
     }
 
     public function accounts() {
-        return $this->hasMany('Insane\Journal\Account', 'category_id', 'id')->orderBy('index');
+        return $this->hasMany(Account::class, 'category_id', 'id')->orderBy('index');
     }
 
     public static function findOrCreateByName(string $name) {
