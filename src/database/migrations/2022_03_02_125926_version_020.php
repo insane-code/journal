@@ -32,6 +32,7 @@ return new class extends Migration
             $table->foreignId('invoice_id');
             $table->foreignId('invoice_line_id');
             $table->foreignId('tax_id');
+            $table->integer('index')->default(0);
             $table->string('name');
             $table->decimal('amount', 11, 4);
             $table->decimal('amount_base', 11, 4);

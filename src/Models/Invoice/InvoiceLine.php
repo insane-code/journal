@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class InvoiceLine extends Model
 {
     protected $fillable = ['team_id','user_id','product_id', 'concept', 'amount', 'index', 'price', 'quantity', 'subtotal', 'discount'];
-
+    protected $with = ['taxes'];
 
     public function product() {
         return $this->belongsTo(Product::class);

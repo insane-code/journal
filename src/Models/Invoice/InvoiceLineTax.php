@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class InvoiceLineTax extends Model
 {
-    protected $fillable = ['team_id','user_id','product_id', 'concept', 'amount', 'index', 'price', 'quantity', 'subtotal', 'discount'];
+    protected $fillable = ['team_id','user_id','invoice_id', 'tax_id', 'amount' , 'amount_base', 'index', 'name', 'quantity', 'subtotal', 'discount'];
 
 
     public function product() {

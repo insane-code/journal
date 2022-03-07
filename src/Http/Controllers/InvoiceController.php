@@ -74,6 +74,7 @@ class InvoiceController
         $postData['user_id'] = $request->user()->id;
         $postData['team_id'] = $request->user()->current_team_id;
         $invoice = Invoice::createDocument($postData);
+        dd($invoice);
         return redirect("/invoices/$invoice->id/edit");
     }
 
@@ -101,9 +102,14 @@ class InvoiceController
                 'team_id' => $teamId
             ])->with(['price'])->get(),
             "categories" => Category::where([
-                'depth' => 1,
-                'team_id' => $teamId
-            ])->with(['accounts'])->get(),
+                'depth' => 0
+            ])->with([
+                'subCategories',
+                'subcategories.accounts' => function ($query) use ($teamId) {
+                    $query->where('team_id', '=', $teamId);
+                },
+                'subcategories.accounts.lastTransactionDate'
+            ])->get(),
             // change this to be dinamyc
             'clients' => Client::where('team_id', $teamId)->get()
         ]);
@@ -132,9 +138,14 @@ class InvoiceController
                 'team_id' => $teamId
             ])->with(['price'])->get(),
             "categories" => Category::where([
-                'depth' => 1,
-                'team_id' => $teamId
-            ])->with(['accounts'])->get(),
+                'depth' => 1
+            ])->with([
+                'subCategories',
+                'accounts' => function ($query) use ($teamId) {
+                    $query->where('team_id', '=', $teamId);
+                },
+                'accounts.lastTransactionDate'
+            ])->get(),
             // change this to be dinamyc
             'clients' => Client::where('team_id', $teamId)->get()
         ]);

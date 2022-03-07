@@ -60,9 +60,12 @@ class CreateInvoiceLine implements ShouldQueue
                     "name" => $tax['name'],
                     "rate" => $tax['rate'],
                     "amount" => $taxLineTotal,
+                    "amount_base" => $line->amount,
                     "index" => $index,
                 ]);
             }
         }
+
+        return $this->invoice;
     }
 }
