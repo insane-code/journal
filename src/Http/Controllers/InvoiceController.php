@@ -2,6 +2,7 @@
 
 namespace Insane\Journal\Http\Controllers;
 
+use Insane\Journal\Events\PaymentReceived;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -113,6 +114,7 @@ class InvoiceController
             'clients' => Client::where('team_id', $teamId)->get()
         ]);
     }
+
     /**
     * Show the form for editing a resource.
     *
@@ -205,6 +207,22 @@ class InvoiceController
         }
 
         return $response->send($payment);
+    }
+
+    public function markAsPaid(Invoice $invoice)
+    {
+        try {
+            event(new PaymentReceived(
+                $invoice,
+                [
+                    "type" => "income",
+                    "mark_as_paid" => "invoice"
+                ],
+        ));
+        } catch (\Exception $e) {
+            flash('error', 'Error marking invoice as paid')->error()->important();
+        }
+        return redirect()->back();
     }
 
 

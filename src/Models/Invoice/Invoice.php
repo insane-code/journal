@@ -73,6 +73,11 @@ class Invoice extends Model
         return $this->belongsTo(Account::class);
     }
 
+    public function account_client()
+    {
+        return Account::where('client_id', $this->client_id)->limit(1)->get()[0];
+    }
+
     public function transaction() {
         return $this->morphOne(Transaction::class, "transactionable");
     }

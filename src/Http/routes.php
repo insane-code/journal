@@ -19,6 +19,7 @@ Route::middleware(config('jetstream.middleware', ['web']))->group(function() {
         Route::resource('/invoices', InvoiceController::class);
         Route::resource('/payments', PaymentsController::class);
         Route::post('/invoices/{id}/payment', [InvoiceController::class, 'addPayment']);
+        Route::post('/invoices/{id}/mark-as-paid', [InvoiceController::class, 'markAsPaid']);
         Route::delete('/invoices/{id}/payment/{paymentId}', [InvoiceController::class, 'deletePayment']);
     });
 });
