@@ -9,6 +9,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Insane\Journal\Models\Invoice\Invoice;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Invoice\InvoiceLine;
 use Insane\Journal\Models\Invoice\InvoiceLineTax;
 
@@ -74,9 +75,9 @@ class CreateInvoiceTransaction implements ShouldQueue
         
         $items[] = [
             "index" => 0,
-            "account_id" => $this->invoice->account_client()->id,
+            "account_id" => $this->invoice->account_id,
             "category_id" => null,
-            "type" => $this->formData['direction'] == "DEPOSIT" ? 1 : -1,
+            "type" => $this->formData['direction'] == "DEPOSIT" ? -1 : 1,
             "concept" => $this->formData['concept'],
             "amount" => $this->formData['total'],
             "anchor" => true,
@@ -84,9 +85,9 @@ class CreateInvoiceTransaction implements ShouldQueue
 
         $items[] = [
             "index" => 1,
-            "account_id" => $this->formData['account_id'],
+            "account_id" => $this->invoice->invoice_account_id,
             "category_id" => null,
-            "type" => $this->formData['direction'] == "DEPOSIT" ? -1 : 1,
+            "type" => $this->formData['direction'] == "DEPOSIT" ? 1 : -1,
             "concept" => $this->formData['concept'],
             "amount" => $this->invoice->subtotal,
             "anchor" => false,
@@ -95,9 +96,9 @@ class CreateInvoiceTransaction implements ShouldQueue
         foreach ($totalTaxes as $index => $tax) {
             $items[] = [
                 "index" => $index + 2,
-                "account_id" => $tax['product_id'] ?? null,
-                "category_id" => $this->formData['account_id'],
-                "type" => $this->formData['direction'] == "DEPOSIT" ? -1 : 1,
+                "account_id" => Account::guessAccount($this->invoice, [$tax['name'], 'sales_taxes'] ),
+                "category_id" => null,
+                "type" => $this->formData['direction'] == "DEPOSIT" ? 1 : -1,
                 "concept" => $tax['name'],
                 "amount" => $tax['amount'],
                 "anchor" => false,
