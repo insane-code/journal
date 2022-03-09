@@ -2,6 +2,7 @@
 
 namespace Insane\Journal\Jobs\Invoice;
 
+use App\Models\Setting;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
@@ -37,7 +38,7 @@ class CreateInvoiceTransaction implements ShouldQueue
     {
         InvoiceLine::query()->where('invoice_id', $this->invoice->id)->get();
         InvoiceLineTax::query()->where('invoice_id', $this->invoice->id)->get();
-        $setting = \App\Model\Setting::where("team_id", $this->invoice->team_id)->get()->toArray();
+        $setting = Setting::where("team_id", $this->invoice->team_id)->get()->toArray();
 
         $this->formData['team_id'] = $this->invoice->team_id;
         $this->formData['user_id'] = $this->invoice->user_id;
@@ -48,23 +49,18 @@ class CreateInvoiceTransaction implements ShouldQueue
         $this->formData["direction"] = isset($this->formData["direction"]) ? $this->formData['direction'] : "DEPOSIT";
         $this->formData["total"] = isset($this->formData["total"]) ? $this->formData["total"] : $this->invoice->total;
         $this->formData["account_id"] = isset($this->formData['account_id']) ? $this->formData['account_id'] : $setting["default.{$this->formData['transactionType']}.account"];
-        $this->formData["category_id"] = isset($this->formData["category_id"]) ? $this->formData["category_id"] : $setting["default.{$this->formData['transactionType']}.category"];
-        
-        $this->formData['items'] = [];
+        $this->formData["category_id"] = null;
+        $this->formData["status"] = "verified";
+    
 
-        $this->formData['items'][] = [
-            "index" => 0,
-            "product_id" => null,
-            "quantity" => 1,
-            "price" => $this->invoice->total,
-            "amount" => $this->invoice->total,
-            "taxes" => [],
-        ];
+        $items = $this->getTransactionItems();
 
-        $this->formData['items'] = $this->getTransactionItems();
-
-
-        $transaction = $this->invoice->transaction()->create($this->formData);
+        if ($this->invoice->transaction) {
+            $transaction = $this->invoice->transaction()->update($this->formData);
+        }else {
+            $transaction = $this->invoice->transaction()->create($this->formData);
+        }
+        $transaction->createLines($items);
         return $transaction;
     }
 
@@ -73,14 +69,14 @@ class CreateInvoiceTransaction implements ShouldQueue
         $items = [];
         $totalTaxes = InvoiceLineTax::where(["invoice_id" =>  $this->invoice->id])
             ->selectRaw('sum(amount) as amount, name')
-            ->groupBy('tax_id')
+            ->groupBy(['tax_id', 'name'])
             ->get();
         
         $items[] = [
             "index" => 0,
-            "account_id" => $this->formData['account_id'],
-            "category_id" => $this->invoice->account_client()->id,
-            "type" => $this->formData['direction'] == "DEPOSIT" ? -1 : 1,
+            "account_id" => $this->invoice->account_client()->id,
+            "category_id" => null,
+            "type" => $this->formData['direction'] == "DEPOSIT" ? 1 : -1,
             "concept" => $this->formData['concept'],
             "amount" => $this->formData['total'],
             "anchor" => true,
@@ -89,8 +85,8 @@ class CreateInvoiceTransaction implements ShouldQueue
         $items[] = [
             "index" => 1,
             "account_id" => $this->formData['account_id'],
-            "category_id" => $this->formData['account_id'],
-            "type" => $this->formData['direction'] == "DEPOSIT" ? 1 : -1,
+            "category_id" => null,
+            "type" => $this->formData['direction'] == "DEPOSIT" ? -1 : 1,
             "concept" => $this->formData['concept'],
             "amount" => $this->invoice->subtotal,
             "anchor" => false,
@@ -101,7 +97,7 @@ class CreateInvoiceTransaction implements ShouldQueue
                 "index" => $index + 2,
                 "account_id" => $tax['product_id'] ?? null,
                 "category_id" => $this->formData['account_id'],
-                "type" => $this->formData['direction'],
+                "type" => $this->formData['direction'] == "DEPOSIT" ? -1 : 1,
                 "concept" => $tax['name'],
                 "amount" => $tax['amount'],
                 "anchor" => false,

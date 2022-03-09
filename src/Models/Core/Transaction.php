@@ -57,14 +57,12 @@ class Transaction extends Model
     //  Utils
     static public function setNumber($transaction) {
         $isInvalidNumber = true;
-
         if ($transaction->number) {
             $isInvalidNumber = Transaction::where([
                 "team_id" => $transaction->team_id,
                 "number" => $transaction->number,
-            ])->whereNot([
-                "id" => $transaction->id
-            ]);
+            ])
+            ->get();
 
             $isInvalidNumber = count($isInvalidNumber);
         }
@@ -83,7 +81,7 @@ class Transaction extends Model
         return $transaction;
     }
 
-    public function createLines($transactionData, $items = []) {
+    public function createLines($items = []) {
         TransactionLine::query()->where('transaction_id', $this->id)->delete();
         if (!count($items)) {
             $this->lines()->create([
@@ -92,7 +90,7 @@ class Transaction extends Model
                 "index" => 0,
                 "anchor" => 1,
                 "type"=> $this->direction == 'DEPOSIT' ? 1 : -1,
-                "account_id" => $transactionData['account_id'],
+                "account_id" => $this->account_id,
                 "category_id" => 0,
                 "team_id" => $this->team_id,
                 "user_id" => $this->user_id
@@ -103,7 +101,7 @@ class Transaction extends Model
                 "concept" => $this->description,
                 "index" => 1,
                 "type"=> $this->direction == 'DEPOSIT' ? -1 : 1,
-                "account_id" => $transactionData['category_id'],
+                "account_id" => $this->category_id,
                 "category_id" => 0,
                 "team_id" => $this->team_id,
                 "user_id" => $this->user_id
@@ -111,7 +109,7 @@ class Transaction extends Model
 
         } else {
             foreach ($items as $item) {
-                $this->lines->create([
+                $this->lines()->create([
                     "amount" => $item['amount'],
                     "concept" => $item['concept'],
                     "index" => $item['index'],
