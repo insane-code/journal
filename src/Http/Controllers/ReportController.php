@@ -12,48 +12,10 @@ use Insane\Journal\Models\Core\Category;
 use Laravel\Jetstream\Jetstream;
 
 
-class AccountController
+class ReportController
 {
 
-    public function __construct()
-    {
-        $this->model = new Account();
-        $this->searchable = ['name'];
-        $this->validationRules = [];
-    }
-
-    public function index(Request $request) {
-        return Jetstream::inertia()->render($request, config('journal.accounts_inertia_path') . '/Index', [
-            "accounts" => Account::orderBy('index')->get(),
-            "categories" => Category::where('depth', 0)->with([
-                'subCategories',
-                'subcategories.accounts' => function ($query) use ($request) {
-                    $query->where('team_id', '=', $request->user()->current_team_id);
-                } ,
-                'subcategories.accounts.lastTransactionDate'
-            ])->get(),
-        ]);
-    }
-
-    public function store(Request $request, Response $response) {
-        $postData = $request->post();
-        $postData['user_id'] = $request->user()->id;
-        $postData['team_id'] = $request->user()->current_team_id;
-        $account = new Account();
-        $account = $account::create($postData);
-        if ($request->query('json')) {
-            return $response->sendContent($account);
-        }
-        return Redirect()->back();
-    }
-
-    public function show(Request $request) {
-        return Jetstream::inertia()->render($request, 'Journal/Accounts/Show', [
-            "accounts" => Account::orderBy('index')->get(),
-        ]);
-    }
-
-    public function statementsIndex(Request $request, string $category = "income") {
+    public function index(Request $request, string $category = "income") {
         $categories = [
             "financial" => [
                 "label" => "Financial Statements",
@@ -83,7 +45,7 @@ class AccountController
                     "tax-return" => [
                         "label" => "Tax Return",
                         "description" => "This statement shows the income and expenses of your business. It includes all of your accounts and their balances.",
-                        "url" => "/reports/tax",
+                        "url" => "/accounts/statements/tax-return",
                     ],
                 ],
             ],
@@ -147,6 +109,69 @@ class AccountController
         ]);
     }
 
+    public function category(Request $request, string $category = "income") {
+        $startDate = $request->query("startDate");
+        $endDate = $request->query("endDate");
+        $reportType = $request->query("reportType");
+        
+        $categories = [
+            "tax" => "sales_taxes",
+        ];
+
+        $categoryData = Category::where('display_id', $categories[$category])->with('accounts')->first();
+        $isTopLevel = $categoryData->parent_id == null;
+        if ($isTopLevel) {
+            $accounts = DB::table('categories')
+            ->where('parent_id', $categoryData->id)
+            ->selectRaw('group_concat(accounts.id) as account_ids, group_concat(accounts.name) as account_names')
+            ->joinSub(DB::table('accounts')->where('team_id', $request->user()->current_team_id), 'accounts','category_id', '=', 'categories.id')
+            ->get();
+
+          
+        } else {
+            $accountIds =  $categoryData->accounts()->pluck('accounts.id')->toArray();
+        }
+
+        $balance = DB::table('transaction_lines')
+        ->whereIn('transaction_lines.account_id', $accountIds)
+        ->selectRaw('sum(amount * transaction_lines.type * accounts.type)  as total, transaction_lines.account_id, accounts.id, accounts.name, accounts.display_id')
+        ->join('accounts', 'accounts.id', '=', 'transaction_lines.account_id')
+        ->groupBy('transaction_lines.account_id')
+        ->get()->toArray();
+        
+    
+        $identifier = $isTopLevel ? 'parent_id' : 'id';
+        $categoryAccounts = Category::where([
+                'depth' => 1,
+                "$identifier" => $categoryData->id,
+            ])->with([
+            'accounts' => function ($query) use ($request) {
+                $query->where('team_id', '=', $request->user()->current_team_id);
+            }
+        ])->get()->toArray();
+
+
+        $categoryAccounts = array_map(function ($subCategory) use($balance) {
+            $total = [];
+            if (isset($subCategory['accounts'])) {
+                foreach ($subCategory['accounts'] as $accountIndex => $account) {
+                    $index = array_search($account['id'], array_column($balance, 'id'));
+                    if ($index !== false ) {
+                        $subCategory['accounts'][$accountIndex]['balance'] = $balance[$index]->total;
+                        $total[] = $balance[$index]->total;
+                    }
+                }
+            }
+            $subCategory['total'] = array_sum($total);
+            return $subCategory;
+        }, $categoryAccounts);
+
+        return Jetstream::inertia()->render($request, config('journal.statements_inertia_path') . '/Category', [
+            "categories" => $categoryAccounts,
+            'categoryType' => $category
+        ]);
+    }
+
     public function statements(Request $request, string $category = "income") {
         $categories = [
             "income" => "incomes",
@@ -161,6 +186,8 @@ class AccountController
         ->selectRaw('group_concat(accounts.id) as account_ids, group_concat(accounts.name) as account_names')
         ->joinSub(DB::table('accounts')->where('team_id', $request->user()->current_team_id), 'accounts','category_id', '=', 'categories.id')
         ->get();
+
+        // dd($categoryData);
 
         $balance = DB::table('transaction_lines')
         ->whereIn('transaction_lines.account_id', explode(',', $accounts[0]->account_ids))

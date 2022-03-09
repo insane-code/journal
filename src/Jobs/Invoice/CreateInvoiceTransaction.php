@@ -106,4 +106,30 @@ class CreateInvoiceTransaction implements ShouldQueue
         }
         return $items;
     }
+
+    protected function getPaymentItems() {
+        $items = [];
+        
+        $items[] = [
+            "index" => 0,
+            "account_id" => $this->invoice->account_id,
+            "category_id" => null,
+            "type" => $this->formData['direction'] == "DEPOSIT" ? 1 : -1,
+            "concept" => $this->formData['concept'],
+            "amount" => $this->formData['total'],
+            "anchor" => true,
+        ];
+
+        $items[] = [
+            "index" => 1,
+            "account_id" => $this->invoice->invoice_account_id,
+            "category_id" => null,
+            "type" => $this->formData['direction'] == "DEPOSIT" ? 1 : -1,
+            "concept" => $this->formData['concept'],
+            "amount" => $this->invoice->subtotal,
+            "anchor" => false,
+        ];
+
+        return $items;
+    }
 }
