@@ -3,7 +3,7 @@
 namespace Insane\Journal\Console;
 
 use Illuminate\Console\Command;
-use Insane\Journal\Category;
+use Insane\Journal\Models\Core\Category;
 
 class SetAccountsCommand extends Command
 {

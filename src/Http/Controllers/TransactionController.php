@@ -6,9 +6,9 @@ namespace Insane\Journal\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Redirect;
-use Insane\Journal\Account;
-use Insane\Journal\Category;
-use Insane\Journal\Transaction;
+use Insane\Journal\Models\Core\Account;
+use Insane\Journal\Models\Core\Category;
+use Insane\Journal\Models\Core\Transaction;
 use Laravel\Jetstream\Jetstream;
 
 
@@ -25,7 +25,7 @@ class TransactionController
     public function index(Request $request) {
         $transactions = Transaction::where([
             'team_id' => $request->user()->current_team_id
-        ])->getByDate()
+        ])
         ->paginate()
         ->through(function ($transaction) {
             return Transaction::parser($transaction);

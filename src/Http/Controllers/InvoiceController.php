@@ -2,6 +2,7 @@
 
 namespace Insane\Journal\Http\Controllers;
 
+use Insane\Journal\Events\PaymentReceived;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -73,9 +74,8 @@ class InvoiceController
         $postData = $request->post();
         $postData['user_id'] = $request->user()->id;
         $postData['team_id'] = $request->user()->current_team_id;
-        $invoice = Invoice::createDocument($postData);
-        dd($invoice);
-        return redirect("/invoices/$invoice->id/edit");
+        Invoice::createDocument($postData);
+        return redirect("/invoices/");
     }
 
     /**
@@ -114,6 +114,7 @@ class InvoiceController
             'clients' => Client::where('team_id', $teamId)->get()
         ]);
     }
+
     /**
     * Show the form for editing a resource.
     *
@@ -200,12 +201,15 @@ class InvoiceController
 
         $payment = $invoice->createPayment($postData);
         $invoice->save();
-        if ($invoice->invoiceable_type == 'CONTRACT') {
-            // const contract = await Contract.find(resource.resource_id);
-            // contractActions.checkInvoicesStatus(contract)
-        }
 
         return $response->send($payment);
+    }
+
+    public function markAsPaid(Request $request, $id)
+    {
+        $invoice = Invoice::find($id);
+        $invoice->markAsPaid();
+        return redirect()->back();
     }
 
 

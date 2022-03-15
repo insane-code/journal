@@ -4,13 +4,16 @@ namespace Insane\Journal\Models\Invoice;
 
 use App\Models\Client;
 use App\Models\User;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
 use Insane\Journal\Jobs\Invoice\CreateInvoiceLine;
+use Insane\Journal\Jobs\Invoice\CreateInvoiceTransaction;
 use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\Category;
 use Insane\Journal\Models\Core\Payment;
 use Insane\Journal\Models\Core\Transaction;
+use Illuminate\Support\Facades\Bus;
 
 class Invoice extends Model
 {
@@ -33,10 +36,6 @@ class Invoice extends Model
             Invoice::checkPayments($invoice);
             $invoice->account_id = Invoice::createClientAccount($invoice);
             $invoice->invoice_account_id = Invoice::createInvoiceAccount($invoice);
-        });
-
-        static::saved(function (Invoice $invoice) {
-            $invoice->createTransaction();
         });
 
         static::deleting(function ($invoice) {
@@ -73,6 +72,11 @@ class Invoice extends Model
         return $this->belongsTo(Account::class);
     }
 
+    public function account_client()
+    {
+        return Account::where('client_id', $this->client_id)->limit(1)->get()[0];
+    }
+
     public function transaction() {
         return $this->morphOne(Transaction::class, "transactionable");
     }
@@ -100,7 +104,7 @@ class Invoice extends Model
                 "number" => $invoice->number,
             ])->whereNot([
                 "id" => $invoice->id
-            ]);
+            ])->get();
 
             $isInvalidNumber = count($isInvalidNumber);
         }
@@ -124,9 +128,12 @@ class Invoice extends Model
 
         if ($invoice) {
             $total = InvoiceLine::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(price) as price, sum(discount) as discount, sum(amount) as amount')->get();
+            $totalTax = InvoiceLineTax::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(amount) as amount')->get();
             $result['subtotal'] = $total[0]['price'] ?? 0;
-            $result['discount'] = $total[0]['discount'] ?? 0;
-            $result['total'] =  $total[0]['amount'] ?? 0;
+            $discount = $total[0]['discount'] ?? 0;
+            $taxTotal = $totalTax[0]['amount'] ?? 0;
+            $invoiceTotal =  ($total[0]['amount'] ?? 0);
+            $result['total'] = $invoiceTotal - $discount + $taxTotal;
             Invoice::where(['id' => $invoice->id])->update($result);
         }
     }
@@ -134,7 +141,20 @@ class Invoice extends Model
     public static function createDocument($invoiceData) {
         DB::transaction(function () use ($invoiceData) {
             $invoice = self::create($invoiceData);
-            CreateInvoiceLine::dispatch($invoice, $invoiceData);
+            Bus::chain([
+                new CreateInvoiceLine($invoice, $invoiceData),
+                new CreateInvoiceTransaction($invoice, array_merge(
+                    $invoice->toArray(),
+                    [
+                        'transactionType' => 'invoice',
+                        'direction' => 'DEPOSIT',
+                        'account_id' => $invoice->account_id,
+                        'date' => $invoice->date,
+                        'description' => $invoice->concept,
+                        'total' => $invoice->total,
+                    ]
+                )),
+            ])->dispatch();
             return $invoice;
         });
     }
@@ -225,28 +245,33 @@ class Invoice extends Model
         ));
     }
 
+    public function markAsPaid() 
+    {
+        if ($this->debt <= 0) {
+            throw new Exception("This invoice is already paid");
+        }
+
+        $formData = [
+            "amount" => $this->debt,
+            "payment_date" => date("Y-m-d"),
+            "concept" => "Payment for invoice #{$this->number}",
+            "account_id" => Account::guessAccount($this, ['cash_on_hand']),
+            "category_id" => $this->account_id,
+            'user_id' => $this->user_id,
+            'team_id' => $this->team_id,
+            'client_id' => $this->client_id,
+            'currency_code' => $this->currency_code,
+            'currency_rate' => $this->currency_rate,
+            'status' => 'verified'
+        ];
+
+        $this->payments()->create($formData);
+        $this->save();
+
+    }
+
     public function deletePayment($id)
     {
         Payment::find($id)->delete();
-    }
-
-    public function createTransaction() {
-        $transactionData = [
-            "team_id" => $this->team_id,
-            "user_id" => $this->user_id,
-            "date" => $this->date,
-            "description" => $this->concept,
-            "direction" => "DEPOSIT",
-            "total" => $this->total,
-            "account_id" => $this->invoice_account_id,
-            "category_id" => $this->account_id
-        ];
-        if (!$this->transaction) {
-            $transaction = $this->transaction()->create($transactionData);
-        } else {
-            $this->transaction->update($transactionData);
-            $transaction = $this->transaction;
-        }
-        $transaction->createLines($transactionData, []);
     }
 }

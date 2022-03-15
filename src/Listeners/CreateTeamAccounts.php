@@ -3,7 +3,7 @@
 namespace Insane\Journal\Listeners;
 
 use App\Models\Setting;
-use Insane\Journal\Account;
+use Insane\Journal\Models\Core\Account;
 use Laravel\Jetstream\Events\TeamCreated;
 
 class CreateTeamAccounts

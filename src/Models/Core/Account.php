@@ -41,6 +41,10 @@ class Account extends Model
         if (count($account)) {
             return $account[0]->id;
         } else {
+            $categoryId = null;
+            if (isset($labels[1])) {
+                $categoryId = Category::findOrCreateByName($labels[1]);
+            }
             $account = Account::create([
                 'user_id' => $session->user_id,
                 'team_id' => $session->team_id,
@@ -48,6 +52,7 @@ class Account extends Model
                 'name' => $labels[0],
                 'description' => $labels[0],
                 'currency_code' => "DOP",
+                'category_id' => $categoryId,
             ]);
 
             return $account->id;
