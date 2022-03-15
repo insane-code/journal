@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Bus;
 
 class Invoice extends Model
 {
-    protected $fillable = ['team_id', 'user_id','client_id', 'date','due_date','series','concept','number', 'description', 'direction', 'notes', 'total', 'subtotal', 'discount'];
+    protected $fillable = ['team_id', 'user_id','client_id', 'invoiceable_type', 'invoiceable_id', 'date','due_date','series','concept','number', 'description', 'direction', 'notes', 'total', 'subtotal', 'discount'];
 
     /**
      * The "booted" method of the model.
@@ -159,6 +159,11 @@ class Invoice extends Model
         });
     }
 
+    public function updateDocument($postData) {
+        $this->update($postData);
+        CreateInvoiceLine::dispatch($this, $postData)->afterCommit();
+    }
+
     // accounting
 
     public static function createClientAccount($invoice)
@@ -188,7 +193,7 @@ class Invoice extends Model
             'display_id' =>  'sales',
             'team_id' => $invoice->team_id
         ])->limit(1)->get();
-        
+
         if (count($accounts)) {
            return $accounts[0]->id;
         } else {
@@ -246,7 +251,7 @@ class Invoice extends Model
         ));
     }
 
-    public function markAsPaid() 
+    public function markAsPaid()
     {
         if ($this->debt <= 0) {
             throw new Exception("This invoice is already paid");

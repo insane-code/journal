@@ -163,8 +163,7 @@ class InvoiceController
     {
         $invoice = Invoice::find($id);
         $postData = $request->post();
-        $invoice->update($postData);
-        $invoice->createLines($postData['items']);
+        $invoice->updateDocument($postData);
         return Redirect("/invoices/$id/edit");
     }
 

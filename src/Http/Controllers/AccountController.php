@@ -124,9 +124,9 @@ class AccountController
                 "description" => "Get a clear picture of how your business is doing. Use these core statements to better understand your financial health.",
                 "reports" => [
                     "balances" => [
-                        "label" => "Detailed Income",
+                        "label" => "Account Balances",
                         "description" => "This statement shows the income and expenses of your business. It includes all of your accounts and their balances.",
-                        "url" => "/accounts/statements/detailed-income",
+                        "url" => "/statements/account-balance",
                     ],
                     "trial_balance" => [
                         "label" => "Detailed Expenses",
@@ -153,6 +153,7 @@ class AccountController
             "expense" => ["expenses"],
             "tax" => ["liabilities"],
             "balance-sheet" => ["assets", "liabilities", "equity"],
+            "account-balance" => ["assets", "liabilities", "incomes", "expenses", "equity"],
         ];
 
         $categoryData = Category::whereIn('display_id', $categories[$category] )->get();
@@ -165,12 +166,15 @@ class AccountController
         ->joinSub(DB::table('accounts')->where('team_id', $request->user()->current_team_id), 'accounts','category_id', '=', 'categories.id')
         ->get()->pluck('account_ids')->toArray();
 
+    
+        $accountIds = explode(",", $accountIds[0]);
         $balance = DB::table('transaction_lines')
         ->whereIn('transaction_lines.account_id', $accountIds)
         ->selectRaw('sum(amount * transaction_lines.type * accounts.type)  as total, transaction_lines.account_id, accounts.id, accounts.name, accounts.display_id')
         ->join('accounts', 'accounts.id', '=', 'transaction_lines.account_id')
         ->groupBy('transaction_lines.account_id')
         ->get()->toArray();
+
 
         $categoryAccounts = Category::where([
             'depth' => 1,
@@ -189,7 +193,7 @@ class AccountController
                 foreach ($subCategory['accounts'] as $accountIndex => $account) {
                     $index = array_search($account['id'], array_column($balance, 'id'));
                     if ($index !== false ) {
-                        $subCategory['accounts'][$accountIndex]['balance'] = $balance[$index];
+                        $subCategory['accounts'][$accountIndex]['balance'] = $balance[$index]->total;
                         $total[] = $balance[$index]->total;
                     }
                 }

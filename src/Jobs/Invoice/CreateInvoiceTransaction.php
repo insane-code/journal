@@ -10,7 +10,6 @@ use Insane\Journal\Models\Invoice\Invoice;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Insane\Journal\Models\Core\Account;
-use Insane\Journal\Models\Invoice\InvoiceLine;
 use Insane\Journal\Models\Invoice\InvoiceLineTax;
 
 class CreateInvoiceTransaction implements ShouldQueue
@@ -50,7 +49,7 @@ class CreateInvoiceTransaction implements ShouldQueue
         $this->formData["account_id"] = isset($this->formData['account_id']) ? $this->formData['account_id'] : $setting["default.{$this->formData['transactionType']}.account"];
         $this->formData["category_id"] = null;
         $this->formData["status"] = "verified";
-    
+
 
         $items = $this->getTransactionItems();
 
@@ -70,7 +69,7 @@ class CreateInvoiceTransaction implements ShouldQueue
             ->selectRaw('sum(amount) as amount, name')
             ->groupBy(['tax_id', 'name'])
             ->get();
-        
+
         $items[] = [
             "index" => 0,
             "account_id" => $this->invoice->account_id,
@@ -107,7 +106,7 @@ class CreateInvoiceTransaction implements ShouldQueue
 
     protected function getPaymentItems() {
         $items = [];
-        
+
         $items[] = [
             "index" => 0,
             "account_id" => $this->invoice->account_id,

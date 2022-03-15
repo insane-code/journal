@@ -50,9 +50,9 @@ class CreateInvoiceLine implements ShouldQueue
             ]);
 
             isset($item['taxes']) ? $this->createItemTaxes($item['taxes'], $line) : null;
-    
-            
         }
+
+        $this->invoice->save();
 
         return $this->invoice;
     }
