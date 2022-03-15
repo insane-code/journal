@@ -50,6 +50,6 @@ class Payment extends Model
         ];
 
         $transaction = $this->transaction()->create($transactionData);
-        $transaction->createLines($transactionData, []);
+        $transaction->createLines([]);
     }
 }

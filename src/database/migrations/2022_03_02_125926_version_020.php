@@ -48,6 +48,12 @@ return new class extends Migration
             $table->boolean('notify');
             $table->timestamps();
         });
+
+        Schema::table('transactions', function (Blueprint $table) {
+            $table->foreignId('account_id',)->after('resource_id');
+            $table->foreignId('category_id')->nullable()->after('account_id');
+            $table->decimal('currency_rate', 11, 4)->default(1)->after('currency_code');
+        });
     }
 
     /**
@@ -71,5 +77,8 @@ return new class extends Migration
 
         Schema::dropIfExists('invoice_line_taxes');
         Schema::dropIfExists('invoice_logs');
+        Schema::table('transactions', function (Blueprint $table) {
+            $table->dropColumn('currency_rate');
+        });
     }
 };

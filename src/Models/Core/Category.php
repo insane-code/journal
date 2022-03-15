@@ -18,7 +18,7 @@ class Category extends Model
         return $this->hasMany(Account::class, 'category_id', 'id')->orderBy('index');
     }
 
-    public static function findOrCreateByName(string $name): int {
+    public static function findOrCreateByName(string $name) {
         $category = Category::where(['display_id' => $name])->limit(1)->get();
         return count($category) ? $category[0]->id : null;
     }

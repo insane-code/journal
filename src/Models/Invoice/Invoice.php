@@ -4,6 +4,7 @@ namespace Insane\Journal\Models\Invoice;
 
 use App\Models\Client;
 use App\Models\User;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
 use Insane\Journal\Jobs\Invoice\CreateInvoiceLine;
@@ -242,6 +243,31 @@ class Invoice extends Model
                 'client_id' => $this->client_id
             ]
         ));
+    }
+
+    public function markAsPaid() 
+    {
+        if ($this->debt <= 0) {
+            throw new Exception("This invoice is already paid");
+        }
+
+        $formData = [
+            "amount" => $this->debt,
+            "payment_date" => date("Y-m-d"),
+            "concept" => "Payment for invoice #{$this->number}",
+            "account_id" => Account::guessAccount($this, ['cash_on_hand']),
+            "category_id" => $this->account_id,
+            'user_id' => $this->user_id,
+            'team_id' => $this->team_id,
+            'client_id' => $this->client_id,
+            'currency_code' => $this->currency_code,
+            'currency_rate' => $this->currency_rate,
+            'status' => 'verified'
+        ];
+
+        $this->payments()->create($formData);
+        $this->save();
+
     }
 
     public function deletePayment($id)

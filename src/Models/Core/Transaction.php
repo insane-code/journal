@@ -13,7 +13,7 @@ class Transaction extends Model
     const STATUS_VERIFIED = 'verified';
     const STATUS_CANCELED = 'canceled';
 
-    protected $fillable = ['team_id','user_id', 'transactionable_id', 'transactionable_type' , 'date','number', 'description', 'direction', 'notes', 'total', 'currency_code', 'status'];
+    protected $fillable = ['team_id','user_id', 'transactionable_id', 'transactionable_type' , 'date','number', 'description', 'direction', 'notes', 'total', 'currency_code', 'status', 'category_id', 'account_id'];
 
        /**
      * The "booted" method of the model.

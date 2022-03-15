@@ -37,8 +37,6 @@ class CreateInvoiceTransaction implements ShouldQueue
      */
     public function handle()
     {
-        InvoiceLine::query()->where('invoice_id', $this->invoice->id)->get();
-        InvoiceLineTax::query()->where('invoice_id', $this->invoice->id)->get();
         $setting = Setting::where("team_id", $this->invoice->team_id)->get()->toArray();
 
         $this->formData['team_id'] = $this->invoice->team_id;
@@ -58,7 +56,7 @@ class CreateInvoiceTransaction implements ShouldQueue
 
         if ($this->invoice->transaction) {
             $transaction = $this->invoice->transaction()->update($this->formData);
-        }else {
+        } else {
             $transaction = $this->invoice->transaction()->create($this->formData);
         }
         $transaction->createLines($items);

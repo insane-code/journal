@@ -201,27 +201,14 @@ class InvoiceController
 
         $payment = $invoice->createPayment($postData);
         $invoice->save();
-        if ($invoice->invoiceable_type == 'CONTRACT') {
-            // const contract = await Contract.find(resource.resource_id);
-            // contractActions.checkInvoicesStatus(contract)
-        }
 
         return $response->send($payment);
     }
 
-    public function markAsPaid(Invoice $invoice)
+    public function markAsPaid(Request $request, $id)
     {
-        try {
-            event(new PaymentReceived(
-                $invoice,
-                [
-                    "type" => "income",
-                    "mark_as_paid" => "invoice"
-                ],
-        ));
-        } catch (\Exception $e) {
-            flash('error', 'Error marking invoice as paid')->error()->important();
-        }
+        $invoice = Invoice::find($id);
+        $invoice->markAsPaid();
         return redirect()->back();
     }
 
