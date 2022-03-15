@@ -14,6 +14,10 @@ class Category extends Model
         return $this->hasMany(Category::class, 'parent_id', 'id')->orderBy('index');
     }
 
+    public function category() {
+        return $this->belongsTo(Category::class, 'parent_id', 'id');
+    }
+
     public function accounts() {
         return $this->hasMany(Account::class, 'category_id', 'id')->orderBy('index');
     }

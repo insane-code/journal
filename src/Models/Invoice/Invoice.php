@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Bus;
 
 class Invoice extends Model
 {
-    protected $fillable = ['team_id','user_id','client_id', 'date','due_date','series','concept','number', 'description', 'direction', 'notes', 'total', 'subtotal', 'discount'];
+    protected $fillable = ['team_id', 'user_id','client_id', 'date','due_date','series','concept','number', 'description', 'direction', 'notes', 'total', 'subtotal', 'discount'];
 
     /**
      * The "booted" method of the model.
@@ -185,9 +185,10 @@ class Invoice extends Model
     public static function createInvoiceAccount($invoice)
     {
         $accounts = Account::where([
-                'display_id' =>  'sales',
-                'team_id' => $invoice->team_id
+            'display_id' =>  'sales',
+            'team_id' => $invoice->team_id
         ])->limit(1)->get();
+        
         if (count($accounts)) {
            return $accounts[0]->id;
         } else {
