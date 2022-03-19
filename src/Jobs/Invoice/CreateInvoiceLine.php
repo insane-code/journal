@@ -59,19 +59,21 @@ class CreateInvoiceLine implements ShouldQueue
 
     private function createItemTaxes($taxes, $line) {
         foreach ($taxes as $index => $tax) {
-            $taxLineTotal = (double) $tax['rate'] * $line->amount / 100;
-            $line->taxes()->create([
-                "team_id" => $this->invoice->team_id,
-                "user_id" => $this->invoice->user_id,
-                "invoice_id" => $this->invoice->id,
-                "invoice_line_id" => $line->id,
-                "tax_id" => $tax['id'],
-                "name" => $tax['name'],
-                "rate" => $tax['rate'],
-                "amount" => $taxLineTotal,
-                "amount_base" => $line->amount,
-                "index" => $index,
-            ]);
+            if (isset($tax['name'])) {
+                $taxLineTotal = (double) $tax['rate'] * $line->amount / 100;
+                $line->taxes()->create([
+                    "team_id" => $this->invoice->team_id,
+                    "user_id" => $this->invoice->user_id,
+                    "invoice_id" => $this->invoice->id,
+                    "invoice_line_id" => $line->id,
+                    "tax_id" => $tax['id'],
+                    "name" => $tax['name'],
+                    "rate" => $tax['rate'],
+                    "amount" => $taxLineTotal,
+                    "amount_base" => $line->amount,
+                    "index" => $index,
+                ]);
+            }
         }
     }
 }

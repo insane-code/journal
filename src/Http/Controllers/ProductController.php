@@ -54,7 +54,7 @@ class ProductController
     */
     public function show(Request $request, $id)
     {
-        $product = Product::with(['images', 'price', 'images', 'priceList'])->find($id);
+        $product = Product::with(['images', 'price', 'images', 'priceList', 'taxes'])->find($id);
         $teamId = $request->user()->current_team_id;
 
         if ($product->team_id != $teamId) {

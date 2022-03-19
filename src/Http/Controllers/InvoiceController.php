@@ -52,7 +52,7 @@ class InvoiceController
             'invoice' => null,
             'products' => Product::where([
                 'team_id' => $teamId
-            ])->with(['price'])->get(),
+            ])->with(['price', 'taxes'])->get(),
             // change this to be dinamyc
             'clients' => Client::where('team_id', $teamId)->get(),
             "categories" => Category::where([
