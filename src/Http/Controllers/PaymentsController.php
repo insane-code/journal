@@ -7,9 +7,9 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Response as FacadesResponse;
-use Insane\Journal\Category;
-use Insane\Journal\Payment;
-use Insane\Journal\Product;
+use Insane\Journal\Models\Core\Category;
+use Insane\Journal\Models\Core\Payment;
+use Insane\Journal\Models\Product\Product;
 use Laravel\Jetstream\Jetstream;
 
 class PaymentsController
@@ -72,27 +72,15 @@ class PaymentsController
     */
     public function edit(Request $request, $id)
     {
-        $invoice = Invoice::find($id);
+        $payment = Payment::find($id);
 
-        if ($invoice->team_id != $request->user()->current_team_id) {
-            Response::redirect('/invoices');
+        if ($payment->team_id != $request->user()->current_team_id) {
+            Response::redirect('/payments');
         }
-        $invoiceData = $invoice->toArray();
-        $invoiceData['client'] = $invoice->client;
-        $invoiceData['lines'] = $invoice->lines->toArray();
-        $invoiceData['payments'] = $invoice->payments()->with(['transaction'])->get()->toArray();
+        $paymentData = $payment->toArray();
 
-        return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Edit', [
-            'invoice' => $invoiceData,
-            'products' => Product::where([
-                'team_id' => $request->user()->current_team_id
-            ])->with(['price'])->get(),
-            "categories" => Category::where([
-                'depth' => 1,
-                'team_id' => $request->user()->current_team_id
-            ])->with(['accounts'])->get(),
-            // change this to be dinamyc
-            'clients' => Client::all()
+        return Jetstream::inertia()->render($request, config('journal.payments_inertia_path') . '/Edit', [
+            'payment' => $paymentData
         ]);
     }
 

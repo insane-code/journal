@@ -25,6 +25,8 @@ class TransactionController
         $transactions = Transaction::where([
             'team_id' => $request->user()->current_team_id
         ])
+        ->orderBy('date', 'desc')
+        ->orderBy('created_at', 'desc')
         ->paginate()
         ->through(function ($transaction) {
             return Transaction::parser($transaction);
