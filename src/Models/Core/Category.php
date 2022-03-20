@@ -27,4 +27,16 @@ class Category extends Model
         return count($category) ? $category[0]->id : null;
     }
 
+    public static function getChart($teamId) {
+        return self::where([
+            'depth' => 0
+        ])->with([
+            'subCategories',
+            'subcategories.accounts' => function ($query) use ($teamId) {
+                $query->where('team_id', '=', $teamId);
+            },
+            'subcategories.accounts.lastTransactionDate'
+        ])->orderBy('index')->get();
+    }
+
 }

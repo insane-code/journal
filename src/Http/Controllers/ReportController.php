@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
+use Insane\Journal\Helpers\CategoryHelper;
 use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\Category;
 use Laravel\Jetstream\Jetstream;
@@ -113,7 +114,8 @@ class ReportController
         $startDate = $request->query("startDate");
         $endDate = $request->query("endDate");
         $reportType = $request->query("reportType");
-        
+        $teamId = $request->user()->currentTeam->id;
+
         $categories = [
             "tax" => "sales_taxes",
         ];
@@ -127,7 +129,7 @@ class ReportController
             ->joinSub(DB::table('accounts')->where('team_id', $request->user()->current_team_id), 'accounts','category_id', '=', 'categories.id')
             ->get();
 
-          
+
         } else {
             $accountIds =  $categoryData->accounts()->pluck('accounts.id')->toArray();
         }
@@ -138,8 +140,8 @@ class ReportController
         ->join('accounts', 'accounts.id', '=', 'transaction_lines.account_id')
         ->groupBy('transaction_lines.account_id')
         ->get()->toArray();
-        
-    
+
+
         $identifier = $isTopLevel ? 'parent_id' : 'id';
         $categoryAccounts = Category::where([
                 'depth' => 1,
@@ -168,7 +170,7 @@ class ReportController
 
         return Jetstream::inertia()->render($request, config('journal.statements_inertia_path') . '/Category', [
             "categories" => $categoryAccounts,
-            'categoryType' => $category
+            "accounts" => CategoryHelper::getAccounts($teamId, ['cash_and_bank']),
         ]);
     }
 
