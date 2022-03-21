@@ -8,6 +8,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Redirect;
 use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\Category;
+use Insane\Journal\Models\Core\Tax;
 use Insane\Journal\Models\Invoice\Invoice;
 use Insane\Journal\Models\Product\Product;
 use Laravel\Jetstream\Jetstream;
@@ -38,8 +39,10 @@ class ProductController
      */
     public function create(Request $request)
     {
+        $teamId = $request->user()->current_team_id;
         return Jetstream::inertia()->render($request, config('journal.products_inertia_path') . '/Edit', [
-            'product' => null
+            'product' => null,
+            'availableTaxes' => Tax::where("team_id", $teamId)->get(),
         ]);
     }
 
@@ -51,7 +54,7 @@ class ProductController
     */
     public function show(Request $request, $id)
     {
-        $product = Product::with(['images', 'price', 'images', 'priceList'])->find($id);
+        $product = Product::with(['images', 'price', 'images', 'priceList', 'taxes'])->find($id);
         $teamId = $request->user()->current_team_id;
 
         if ($product->team_id != $teamId) {
@@ -60,37 +63,7 @@ class ProductController
 
         return Jetstream::inertia()->render($request, config('journal.products_inertia_path') . '/Show', [
             'product' => $product,
-        ]);
-    }
-    /**
-    * Show the form for editing a resource.
-    *
-    * @return \Illuminate\Http\Response
-    */
-    public function edit(Request $request, $id)
-    {
-        $invoice = Invoice::find($id);
-        $teamId = $request->user()->current_team_id;
-
-        if ($invoice->team_id != $teamId) {
-            Response::redirect('/invoices');
-        }
-        $invoiceData = $invoice->toArray();
-        $invoiceData['client'] = $invoice->client;
-        $invoiceData['lines'] = $invoice->lines->toArray();
-        $invoiceData['payments'] = $invoice->payments()->with(['transaction'])->get()->toArray();
-
-        return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Edit', [
-            'invoice' => $invoiceData,
-            'products' => Product::where([
-                'team_id' => $teamId
-            ])->with(['price'])->get(),
-            "categories" => Category::where([
-                'depth' => 1,
-                'team_id' => $teamId
-            ])->with(['accounts'])->get(),
-            // change this to be dinamyc
-            'clients' => Client::where('team_id', $teamId)->get()
+            'availableTaxes' => Tax::where("team_id", $teamId)->get(),
         ]);
     }
 

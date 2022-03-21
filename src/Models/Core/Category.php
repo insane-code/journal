@@ -14,6 +14,10 @@ class Category extends Model
         return $this->hasMany(Category::class, 'parent_id', 'id')->orderBy('index');
     }
 
+    public function category() {
+        return $this->belongsTo(Category::class, 'parent_id', 'id');
+    }
+
     public function accounts() {
         return $this->hasMany(Account::class, 'category_id', 'id')->orderBy('index');
     }
@@ -21,6 +25,18 @@ class Category extends Model
     public static function findOrCreateByName(string $name) {
         $category = Category::where(['display_id' => $name])->limit(1)->get();
         return count($category) ? $category[0]->id : null;
+    }
+
+    public static function getChart($teamId) {
+        return self::where([
+            'depth' => 0
+        ])->with([
+            'subCategories',
+            'subcategories.accounts' => function ($query) use ($teamId) {
+                $query->where('team_id', '=', $teamId);
+            },
+            'subcategories.accounts.lastTransactionDate'
+        ])->orderBy('index')->get();
     }
 
 }

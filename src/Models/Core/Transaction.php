@@ -77,7 +77,8 @@ class Transaction extends Model
 
     static public function createTransaction($transactionData) {
         $transaction = Transaction::create($transactionData);
-        $transaction->createLines($transactionData, $transactionData['items'] ?? []);
+        $items = isset($transactionData['items']) ? $transactionData['items'] : [];
+        $transaction->createLines($items);
         return $transaction;
     }
 

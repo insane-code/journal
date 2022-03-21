@@ -5,7 +5,6 @@ namespace Insane\Journal\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Redirect;
 use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\Category;
 use Insane\Journal\Models\Core\Transaction;
@@ -22,10 +21,12 @@ class TransactionController
         $this->validationRules = [];
     }
 
-    public function index(Request $request) {
+    public function index(Request $request, Response $response) {
         $transactions = Transaction::where([
             'team_id' => $request->user()->current_team_id
         ])
+        ->orderBy('date', 'desc')
+        ->orderBy('created_at', 'desc')
         ->paginate()
         ->through(function ($transaction) {
             return Transaction::parser($transaction);
@@ -51,8 +52,7 @@ class TransactionController
         $postData = $request->post();
         $postData['user_id'] = $request->user()->id;
         $postData['team_id'] = $request->user()->current_team_id;
-        $transaction = Transaction::create($postData);
-        $transaction->createLines($postData, $postData['items'] ?? []);
+        $transaction = Transaction::createTransaction($postData);
         if ($request->query('json')) {
             return $response->sendContent($transaction);
         }

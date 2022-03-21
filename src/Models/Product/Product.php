@@ -5,6 +5,7 @@ namespace Insane\Journal\Models\Product;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Insane\Journal\Models\Core\Image;
+use Insane\Journal\Models\Core\Tax;
 
 class Product extends Model
 {
@@ -28,6 +29,15 @@ class Product extends Model
         return $this->hasMany(ProductsPrice::class)->whereNull('is_main');
     }
 
+    public function productTaxes() {
+        return $this->hasMany(ProductTaxes::class);
+    }
+
+
+    public function taxes() {
+        return $this->hasManyThrough(Tax::class, ProductTaxes::class, 'tax_id', 'id', 'id', 'product_id');
+    }
+
     public function options() {
         return $this->hasMany(ProductsOption::class);
     }
@@ -38,6 +48,7 @@ class Product extends Model
             'value' => 0,
         ];
         $priceList = $data['price_list'] ?? [];
+        $taxes = $data['taxes'] ?? [];
 
         $product->price()->create(array_merge($price, [
             'user_id' => $product->user_id,
@@ -56,6 +67,14 @@ class Product extends Model
             );
         }
 
+        foreach ($taxes as $tax) {
+            $product->taxes()->create([
+                'tax_id' => $tax,
+                'user_id' => $product->user_id,
+                'team_id' => $product->team_id
+            ]);
+        }
+
         if (isset($data['options'])) {
             $product->options()->create(array_merge($data['options'], ['user_id' => $product->user_id, 'team_id' => $product->team_id]));
         }
@@ -71,6 +90,7 @@ class Product extends Model
         ];
 
         $priceList = $data['price_list'] ?? [];
+        $taxes = $data['taxes'] ?? [];
         $prices = array_merge([$price], $priceList);
         foreach ($prices as $priceItem) {
             if (isset($priceItem['id'])) {
@@ -86,6 +106,14 @@ class Product extends Model
                     )
                 );
             }
+        }
+
+        foreach ($taxes as $tax) {
+            $product->productTaxes()->create([
+                'tax_id' => $tax,
+                'user_id' => $product->user_id,
+                'team_id' => $product->team_id
+            ]);
         }
         if (isset($data['options'])) {
             $product->options()->create(array_merge($data['options'], ['user_id' => $product->user_id, 'team_id' => $product->team_id]));

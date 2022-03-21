@@ -17,7 +17,29 @@ use Illuminate\Support\Facades\Bus;
 
 class Invoice extends Model
 {
-    protected $fillable = ['team_id','user_id','client_id', 'date','due_date','series','concept','number', 'description', 'direction', 'notes', 'total', 'subtotal', 'discount'];
+    protected $fillable = [
+        'team_id',
+        'user_id',
+        'client_id',
+        'invoiceable_type',
+        'invoiceable_id',
+        'date',
+        'due_date',
+        'series',
+        'concept',
+        'number',
+        'order_number',
+        'type',
+        'description',
+        'direction',
+        'notes',
+        'total',
+        'subtotal',
+        'discount'
+    ];
+
+    const DOCUMENT_TYPE_INVOICE = 'INVOICE';
+    const DOCUMENT_TYPE_BILL = 'BILL';
 
     /**
      * The "booted" method of the model.
@@ -34,7 +56,7 @@ class Invoice extends Model
         static::saving(function ($invoice) {
             Invoice::calculateTotal($invoice);
             Invoice::checkPayments($invoice);
-            $invoice->account_id = Invoice::createClientAccount($invoice);
+            $invoice->account_id = Invoice::createContactAccount($invoice);
             $invoice->invoice_account_id = Invoice::createInvoiceAccount($invoice);
         });
 
@@ -159,15 +181,29 @@ class Invoice extends Model
         });
     }
 
+    public function updateDocument($postData) {
+        $this->update($postData);
+        CreateInvoiceLine::dispatch($this, $postData)->afterCommit();
+    }
+
     // accounting
 
-    public static function createClientAccount($invoice)
+    public static function createContactAccount($invoice)
     {
-        $accounts = Account::where('client_id', $invoice->client_id)->limit(1)->get();
-        if (count($accounts)) {
-           return $accounts[0]->id;
+        $categoryNames = [
+            self::DOCUMENT_TYPE_INVOICE => 'expected_payments_customers',
+            self::DOCUMENT_TYPE_BILL => 'expected_payments_vendors',
+        ];
+        $categoryName = $categoryNames[$invoice->type];
+        $category = Category::where('display_id', $categoryName)->first();
+        
+        $account = Account::where([
+                'client_id' => $invoice->client_id,
+                'category_id' => $category->id
+            ])->first();
+        if ($account) {
+           return $account->id;
         } else {
-           $category = Category::where('display_id', 'expected_payments_customers')->first();
            $account = Account::create([
                 "team_id" => $invoice->team_id,
                 "client_id" => $invoice->client_id,
@@ -185,9 +221,10 @@ class Invoice extends Model
     public static function createInvoiceAccount($invoice)
     {
         $accounts = Account::where([
-                'display_id' =>  'sales',
-                'team_id' => $invoice->team_id
+            'display_id' =>  'sales',
+            'team_id' => $invoice->team_id
         ])->limit(1)->get();
+
         if (count($accounts)) {
            return $accounts[0]->id;
         } else {
@@ -245,7 +282,7 @@ class Invoice extends Model
         ));
     }
 
-    public function markAsPaid() 
+    public function markAsPaid()
     {
         if ($this->debt <= 0) {
             throw new Exception("This invoice is already paid");

@@ -1,6 +1,6 @@
 <?php
 
-namespace Insane\Journal;
+namespace Insane\Journal\Helpers;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;

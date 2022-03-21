@@ -62,17 +62,17 @@ class AccountController
                     "balance-sheet" => [
                         "label" => "Balance Sheet",
                         "description" => "This statement shows the current balance of your accounts. It includes all of your accounts and their balances.",
-                        "url" => "/accounts/statements/balance-sheet",
+                        "url" => "/statements/balance-sheet",
                     ],
                     "income-statement" => [
                         "label" => "Income Statement",
                         "description" => "This statement shows the income and expenses of your business. It includes all of your accounts and their balances.",
-                        "url" => "/accounts/statements/income-statement",
+                        "url" => "/statements/income-statement",
                     ],
                     "cash-flow" => [
                         "label" => "Cash Flow",
                         "description" => "This statement shows the cash flow of your business. It includes all of your accounts and their balances.",
-                        "url" => "/accounts/statements/cash-flow",
+                        "url" => "/statements/cash-flow",
                     ],
                 ],
             ],
@@ -124,9 +124,9 @@ class AccountController
                 "description" => "Get a clear picture of how your business is doing. Use these core statements to better understand your financial health.",
                 "reports" => [
                     "balances" => [
-                        "label" => "Detailed Income",
+                        "label" => "Account Balances",
                         "description" => "This statement shows the income and expenses of your business. It includes all of your accounts and their balances.",
-                        "url" => "/accounts/statements/detailed-income",
+                        "url" => "/statements/account-balance",
                     ],
                     "trial_balance" => [
                         "label" => "Detailed Expenses",
@@ -149,34 +149,43 @@ class AccountController
 
     public function statements(Request $request, string $category = "income") {
         $categories = [
-            "income" => "incomes",
-            "expense" => "expenses",
-            "tax" => "liabilities"
+            "income" => ["incomes"],
+            "expense" => ["expenses"],
+            "tax" => ["liabilities"],
+            "balance-sheet" => ["assets", "liabilities", "equity"],
+            "account-balance" => ["assets", "liabilities", "incomes", "expenses", "equity"],
         ];
 
-        $categoryData = Category::where('display_id', $categories[$category] )->first();
+        $categoryData = Category::whereIn('display_id', $categories[$category] )->get();
 
-        $accounts = DB::table('categories')
-        ->where('parent_id', $categoryData->id)
+        $categoryIds = $categoryData->pluck('id')->toArray();
+        
+        $accountIds = DB::table('categories')
+        ->whereIn('parent_id', $categoryIds)
         ->selectRaw('group_concat(accounts.id) as account_ids, group_concat(accounts.name) as account_names')
         ->joinSub(DB::table('accounts')->where('team_id', $request->user()->current_team_id), 'accounts','category_id', '=', 'categories.id')
-        ->get();
+        ->get()->pluck('account_ids')->toArray();
 
+    
+        $accountIds = explode(",", $accountIds[0]);
         $balance = DB::table('transaction_lines')
-        ->whereIn('transaction_lines.account_id', explode(',', $accounts[0]->account_ids))
+        ->whereIn('transaction_lines.account_id', $accountIds)
         ->selectRaw('sum(amount * transaction_lines.type * accounts.type)  as total, transaction_lines.account_id, accounts.id, accounts.name, accounts.display_id')
         ->join('accounts', 'accounts.id', '=', 'transaction_lines.account_id')
         ->groupBy('transaction_lines.account_id')
         ->get()->toArray();
 
+
         $categoryAccounts = Category::where([
-                'depth' => 1,
-                "parent_id" => $categoryData->id,
-            ])->with([
+            'depth' => 1,
+            ])
+            ->whereIn('parent_id', $categoryIds)
+            ->with([
             'accounts' => function ($query) use ($request) {
                 $query->where('team_id', '=', $request->user()->current_team_id);
-            }
-        ])->get()->toArray();
+            },
+            'category'
+            ])->get()->toArray();
 
         $categoryAccounts = array_map(function ($subCategory) use($balance) {
             $total = [];
@@ -184,7 +193,7 @@ class AccountController
                 foreach ($subCategory['accounts'] as $accountIndex => $account) {
                     $index = array_search($account['id'], array_column($balance, 'id'));
                     if ($index !== false ) {
-                        $subCategory['accounts'][$accountIndex]['balance'] = $balance[$index];
+                        $subCategory['accounts'][$accountIndex]['balance'] = $balance[$index]->total;
                         $total[] = $balance[$index]->total;
                     }
                 }
