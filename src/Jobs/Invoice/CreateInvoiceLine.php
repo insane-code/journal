@@ -8,6 +8,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Insane\Journal\Models\Invoice\Invoice;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Insane\Journal\Models\Core\Tax;
 use Insane\Journal\Models\Invoice\InvoiceLine;
 use Insane\Journal\Models\Invoice\InvoiceLineTax;
 
@@ -60,19 +61,26 @@ class CreateInvoiceLine implements ShouldQueue
     private function createItemTaxes($taxes, $line) {
         foreach ($taxes as $index => $tax) {
             if (isset($tax['name'])) {
-                $taxLineTotal = (double) $tax['rate'] * $line->amount / 100;
-                $line->taxes()->create([
-                    "team_id" => $this->invoice->team_id,
-                    "user_id" => $this->invoice->user_id,
-                    "invoice_id" => $this->invoice->id,
-                    "invoice_line_id" => $line->id,
-                    "tax_id" => $tax['id'],
-                    "name" => $tax['name'],
-                    "rate" => $tax['rate'],
-                    "amount" => $taxLineTotal,
-                    "amount_base" => $line->amount,
-                    "index" => $index,
-                ]);
+                    $taxRate = 0;
+                    if (isset($tax['tax_id'])) {
+                        dd($tax);
+                        $taxRate = Tax::find($tax['tax_id'])->rate;
+                    } else {
+                        $taxRate = (double) $tax['rate'];
+                    }
+                    $taxLineTotal = (double) $taxRate * $line->amount / 100;
+                    $line->taxes()->create([
+                        "team_id" => $this->invoice->team_id,
+                        "user_id" => $this->invoice->user_id,
+                        "invoice_id" => $this->invoice->id,
+                        "invoice_line_id" => $line->id,
+                        "tax_id" => $tax['id'],
+                        "name" => $tax['name'],
+                        "rate" => $taxRate,
+                        "amount" => $taxLineTotal,
+                        "amount_base" => $line->amount,
+                        "index" => $index,
+                    ]);
             }
         }
     }

@@ -20,6 +20,7 @@ Route::middleware(config('jetstream.middleware', ['web']))->group(function() {
         Route::post('/transactions/{id}/approve', [TransactionController::class, 'approve'])->name('transactions.approve');
         Route::resource('/products', ProductController::class);
         Route::resource('/invoices', InvoiceController::class);
+        Route::resource('/bills', InvoiceController::class);
         Route::resource('/payments', PaymentsController::class);
         Route::post('/invoices/{id}/payment', [InvoiceController::class, 'addPayment']);
         Route::post('/invoices/{id}/mark-as-paid', [InvoiceController::class, 'markAsPaid']);

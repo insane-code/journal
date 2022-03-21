@@ -23,8 +23,10 @@ class InvoiceController
 
     public function index(Request $request)
     {
+        $isBill = str_contains( 'bills', $request->uri);
+        $type = $isBill ? 'BILL' : 'INVOICE';
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Index', [
-            "invoices" => Invoice::orderByDesc('date')->orderByDesc('number')->paginate()->through(function ($invoice) {
+            "invoices" => Invoice::where('type', $type)->orderByDesc('date')->orderByDesc('number')->paginate()->through(function ($invoice) {
                 return [
                     "id" => $invoice->id,
                     "concept" => $invoice->concept,
@@ -37,6 +39,7 @@ class InvoiceController
                     "debt" => $invoice->debt
                 ];
             }),
+            "type" => $type
         ]);
     }
 
@@ -48,8 +51,11 @@ class InvoiceController
     public function create(Request $request)
     {
         $teamId = $request->user()->current_team_id;
+        $isBill = str_contains( 'bills', $request->uri);
+        $type = $isBill ? 'BILL' : 'INVOICE';
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Edit', [
             'invoice' => null,
+            'type' => $type,
             'products' => Product::where([
                 'team_id' => $teamId
             ])->with(['price', 'taxes'])->get(),
@@ -95,6 +101,8 @@ class InvoiceController
         $invoiceData['client'] = $invoice->client;
         $invoiceData['lines'] = $invoice->lines->toArray();
         $invoiceData['payments'] = $invoice->payments()->with(['transaction'])->get()->toArray();
+        $isBill = str_contains( 'bills', $request->uri);
+        $type = $isBill ? 'BILL' : 'INVOICE';
 
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Show', [
             'invoice' => $invoiceData,
@@ -110,6 +118,7 @@ class InvoiceController
                 },
                 'subcategories.accounts.lastTransactionDate'
             ])->get(),
+            'type' => $type,
             // change this to be dinamyc
             'clients' => Client::where('team_id', $teamId)->get()
         ]);
@@ -132,6 +141,8 @@ class InvoiceController
         $invoiceData['client'] = $invoice->client;
         $invoiceData['lines'] = $invoice->lines->toArray();
         $invoiceData['payments'] = $invoice->payments()->with(['transaction'])->get()->toArray();
+        $isBill = str_contains( 'bills', $request->uri);
+        $type = $isBill ? 'BILL' : 'INVOICE';
 
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Edit', [
             'invoice' => $invoiceData,
@@ -147,6 +158,7 @@ class InvoiceController
                 },
                 'accounts.lastTransactionDate'
             ])->get(),
+            'type' => $type,
             // change this to be dinamyc
             'clients' => Client::where('team_id', $teamId)->get()
         ]);
