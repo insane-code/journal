@@ -6,11 +6,12 @@ use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class Account extends Model
 {
     protected $fillable = ['team_id','user_id','category_id', 'client_id', 'display_id', 'name', 'description', 'currency_code', 'index', 'archivable', 'archived'];
-
+    
     protected static function booted()
     {
         static::creating(function ($account) {
@@ -32,6 +33,10 @@ class Account extends Model
 
     public function lastTransactionDate() {
         return $this->hasOneThrough(Transaction::class, TransactionLine::class, 'account_id', 'id')->orderByDesc('date')->limit(1);
+    }
+
+    public function balance() {
+        return TransactionLine::where('account_id', $this->id)->select(DB::raw('sum(amount * type) as balance'))->first()->balance;
     }
 
     public static function guessAccount($session, $labels, $type = "DEBIT") {

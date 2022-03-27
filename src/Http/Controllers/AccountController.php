@@ -23,8 +23,20 @@ class AccountController
     }
 
     public function index(Request $request) {
+        $category = $request->query('category');
+        if ($category) {
+            $category = Category::where('display_id', $category)->get()->first();
+            $accounts = $category->getAllAccounts();
+        } else {
+            $accounts =  Account::orderBy('index')->get();
+        }
         return Jetstream::inertia()->render($request, config('journal.accounts_inertia_path') . '/Index', [
-            "accounts" => Account::orderBy('index')->get(),
+            "accounts" => $accounts->map(function ($account) {
+                return array_merge(
+                    $account->toArray(), [
+                   'balance' => $account->balance()
+                ]);
+            }),
             "categories" => Category::where('depth', 0)->with([
                 'subCategories',
                 'subcategories.accounts' => function ($query) use ($request) {
@@ -170,7 +182,7 @@ class AccountController
         $accountIds = explode(",", $accountIds[0]);
         $balance = DB::table('transaction_lines')
         ->whereIn('transaction_lines.account_id', $accountIds)
-        ->selectRaw('sum(amount * transaction_lines.type * accounts.type)  as total, transaction_lines.account_id, accounts.id, accounts.name, accounts.display_id')
+        ->selectRaw('sum(amount * transaction_lines.type)  as total, transaction_lines.account_id, accounts.id, accounts.name, accounts.display_id')
         ->join('accounts', 'accounts.id', '=', 'transaction_lines.account_id')
         ->groupBy('transaction_lines.account_id')
         ->get()->toArray();

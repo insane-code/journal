@@ -39,4 +39,12 @@ class Category extends Model
         ])->orderBy('index')->get();
     }
 
+    public function getAllAccounts() {
+        if (!$this->parent_id) {
+            $accountIds = $this->subCategories->pluck('accounts')->flatten()->pluck('id')->toArray();
+            return Account::whereIn('id', $accountIds)->get();
+        } else {
+            $this->accounts()->pluck('accounts.id')->toArray();
+        }
+    }
 }
