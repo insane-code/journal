@@ -20,6 +20,7 @@ Route::middleware(config('jetstream.middleware', ['web']))->group(function() {
         Route::resource('/transactions', TransactionController::class);
         Route::post('/transactions/{id}/approve', [TransactionController::class, 'approve'])->name('transactions.approve');
         Route::post('/transactions/remove-all-drafts', [TransactionController::class, 'removeDrafts'])->name('transactions.removeDrafts');
+        Route::post('/transactions/approve-all-drafts', [TransactionController::class, 'approveDrafts'])->name('transactions.approveDrafts');
         
         // Products
         Route::resource('/products', ProductController::class);

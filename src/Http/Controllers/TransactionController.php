@@ -84,6 +84,21 @@ class TransactionController
         return Redirect()->back();
     }
 
+    public function approveDrafts(Request $request, Response $response) {
+        $request->user()->id;
+        $transactions = Transaction::where([
+            'user_id'=> $request->user()->id,
+            'status' => 'draft'
+        ])->get();
+        foreach ($transactions as $transaction) {
+            $transaction->approve();
+        }
+        if ($request->query('json')) {
+            return $response->sendContent($transaction);
+        }
+        return Redirect()->back();
+    }
+
     public function removeDrafts(Request $request, Response $response) {
         $request->user()->id;
         $transactions = Transaction::where([
