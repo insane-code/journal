@@ -2,7 +2,7 @@
 
 namespace Insane\Journal\Actions;
 
-use Insane\Journal\Account;
+use Insane\Journal\Models\Core\Account;
 
 class CreateChartAccounts
 {
