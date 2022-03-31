@@ -35,7 +35,8 @@ class Invoice extends Model
         'notes',
         'total',
         'subtotal',
-        'discount'
+        'discount',
+        'taxes_included'
     ];
 
     const DOCUMENT_TYPE_INVOICE = 'INVOICE';

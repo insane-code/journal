@@ -61,13 +61,7 @@ class CreateInvoiceLine implements ShouldQueue
     private function createItemTaxes($taxes, $line) {
         foreach ($taxes as $index => $tax) {
             if (isset($tax['name'])) {
-                    $taxRate = 0;
-                    if (isset($tax['tax_id'])) {
-                        dd($tax);
-                        $taxRate = Tax::find($tax['tax_id'])->rate;
-                    } else {
-                        $taxRate = (double) $tax['rate'];
-                    }
+                    $taxRate = (double) $tax['rate'];
                     $taxLineTotal = (double) $taxRate * $line->amount / 100;
                     $line->taxes()->create([
                         "team_id" => $this->invoice->team_id,

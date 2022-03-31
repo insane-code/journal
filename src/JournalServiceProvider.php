@@ -75,11 +75,11 @@ class JournalServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__ . '/../config/Journal.php' => config_path('Journal.php'),
-            ], 'config');
+            ], 'journal:config');
 
             $this->publishes([
             __DIR__ . '/database/seeders/accounting.php' => database_path('seeds/accounting.php'),
-            ], 'accounting-seeds');
+            ], 'journal:accounting-seeds');
 
         }
     }

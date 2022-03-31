@@ -26,7 +26,10 @@ class InvoiceController
         $isBill = str_contains( 'bills', $request->uri);
         $type = $isBill ? 'BILL' : 'INVOICE';
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Index', [
-            "invoices" => Invoice::where('type', $type)->orderByDesc('date')->orderByDesc('number')->paginate()->through(function ($invoice) {
+            "invoices" => Invoice::where([
+                'type'=> $type,
+                'team_id' => $request->user()->currentTeam->id    
+            ])->orderByDesc('date')->orderByDesc('number')->paginate()->through(function ($invoice) {
                 return [
                     "id" => $invoice->id,
                     "concept" => $invoice->concept,
@@ -59,7 +62,6 @@ class InvoiceController
             'products' => Product::where([
                 'team_id' => $teamId
             ])->with(['price', 'taxes'])->get(),
-            // change this to be dinamyc
             'clients' => Client::where('team_id', $teamId)->get(),
             "categories" => Category::where([
                 'depth' => 0
