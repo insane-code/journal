@@ -129,7 +129,7 @@ class Transaction extends Model
         $this->delete();
     }
 
-    public function scopeGetByMonth($query, $startDate, $endDate = null, $orderByDate = true) {
+    public function scopeGetByMonth($query, $startDate = null, $endDate = null, $orderByDate = true) {
         $query
         ->when($startDate && !$endDate, function ($query) use ($startDate) {
             $query->where("date", '=',  $startDate);
