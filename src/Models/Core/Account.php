@@ -10,6 +10,13 @@ use Illuminate\Support\Facades\DB;
 
 class Account extends Model
 {
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = ['balance'];
+
     protected $fillable = ['team_id','user_id','category_id', 'client_id', 'display_id', 'name', 'description', 'currency_code', 'index', 'archivable', 'archived'];
     
     protected static function booted()
@@ -31,12 +38,37 @@ class Account extends Model
         return $this->belongsTo(Team::class);
     }
 
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
+    public function transactionLines()
+    {
+        return $this->hasMany(TransactionLine::class);
+    }
+
+    public function expense_transactions()
+    {
+        return $this->transactions()->where('type', Transaction::DIRECTION_CREDIT);
+    }
+
+    public function income_transactions()
+    {
+        return $this->transactions()->whereIn('type', Transaction::DIRECTION_DEBIT);
+    }
+
     public function lastTransactionDate() {
         return $this->hasOneThrough(Transaction::class, TransactionLine::class, 'account_id', 'id')->orderByDesc('date')->limit(1);
     }
 
-    public function balance() {
-        return TransactionLine::where('account_id', $this->id)->select(DB::raw('sum(amount * type) as balance'))->first()->balance;
+    /**
+     * Get the current balance.
+     *
+     * @return string
+     */
+    public function getBalanceAttribute()
+    {
+        return $this->transactionLines()->sum(DB::raw('amount * type'));
     }
 
     public static function guessAccount($session, $labels, $type = "DEBIT") {

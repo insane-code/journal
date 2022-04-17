@@ -31,19 +31,14 @@ class AccountController
             $accounts =  Account::orderBy('index')->get();
         }
         return Jetstream::inertia()->render($request, config('journal.accounts_inertia_path') . '/Index', [
-            "accounts" => $accounts->map(function ($account) {
-                return array_merge(
-                    $account->toArray(), [
-                   'balance' => $account->balance()
-                ]);
-            }),
+            "accounts" => $accounts->toArray(),
             "categories" => Category::where('depth', 0)->with([
                 'subCategories',
                 'subcategories.accounts' => function ($query) use ($request) {
                     $query->where('team_id', '=', $request->user()->current_team_id);
                 } ,
-                'subcategories.accounts.lastTransactionDate'
-            ])->get(),
+                'subcategories.accounts.lastTransactionDate',
+            ])->get()->toArray(),
         ]);
     }
 

@@ -29,6 +29,8 @@ class Accounting extends Seeder
                     "name" => 'Expense',
                     "resourceType" => 'ACCOUNT'
                 ]]
-                );
+            );
+
+        
     }
 }
