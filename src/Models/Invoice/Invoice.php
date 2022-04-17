@@ -23,6 +23,7 @@ class Invoice extends Model
         'client_id',
         'invoiceable_type',
         'invoiceable_id',
+        'account_id',
         'date',
         'due_date',
         'series',
@@ -57,7 +58,7 @@ class Invoice extends Model
         static::saving(function ($invoice) {
             Invoice::calculateTotal($invoice);
             Invoice::checkPayments($invoice);
-            $invoice->account_id = Invoice::createContactAccount($invoice);
+            $invoice->account_id = $invoice->account_id ?? Invoice::createContactAccount($invoice);
             $invoice->invoice_account_id = Invoice::createInvoiceAccount($invoice);
         });
 

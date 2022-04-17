@@ -6,6 +6,7 @@ use Insane\Journal\Events\PaymentReceived;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Insane\Journal\Helpers\CategoryHelper;
 use Insane\Journal\Models\Core\Category;
 use Insane\Journal\Models\Core\Tax;
 use Insane\Journal\Models\Invoice\Invoice;
@@ -20,11 +21,14 @@ class InvoiceController
         $this->searchable = ['name'];
         $this->validationRules = [];
     }
+    
+    public function isBill(Request $request) {
+        return  $isBill = str_contains($request->url(), 'bills');
+    }
 
     public function index(Request $request)
     {
-        $isBill = str_contains( 'bills', $request->uri);
-        $type = $isBill ? 'BILL' : 'INVOICE';
+        $type = $this->isBill($request) ? 'BILL' : 'INVOICE';
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Index', [
             "invoices" => Invoice::where([
                 'type'=> $type,
@@ -54,8 +58,9 @@ class InvoiceController
     public function create(Request $request)
     {
         $teamId = $request->user()->current_team_id;
-        $isBill = str_contains( 'bills', $request->uri);
+        $isBill = $this->isBill($request);
         $type = $isBill ? 'BILL' : 'INVOICE';
+        $accountCategories =  $isBill ? ['expected_payments_vendors', 'credit_card'] : ['cash_and_bank', 'expected_payments_customers'];
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Edit', [
             'invoice' => null,
             'type' => $type,
@@ -70,8 +75,8 @@ class InvoiceController
                 'subcategories.accounts' => function ($query) use ($teamId) {
                     $query->where('team_id', '=', $teamId);
                 },
-                'subcategories.accounts.lastTransactionDate'
             ])->get(),
+            "accounts" => $teamId ? CategoryHelper::getAccounts($teamId, $accountCategories) : null,
             'availableTaxes' => Tax::where("team_id", $teamId)->get(),
         ]);
     }
@@ -103,7 +108,7 @@ class InvoiceController
         $invoiceData['client'] = $invoice->client;
         $invoiceData['lines'] = $invoice->lines->toArray();
         $invoiceData['payments'] = $invoice->payments()->with(['transaction'])->get()->toArray();
-        $isBill = str_contains( 'bills', $request->uri);
+        $isBill = $this->isBill($request);
         $type = $isBill ? 'BILL' : 'INVOICE';
 
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Show', [
@@ -143,7 +148,7 @@ class InvoiceController
         $invoiceData['client'] = $invoice->client;
         $invoiceData['lines'] = $invoice->lines->toArray();
         $invoiceData['payments'] = $invoice->payments()->with(['transaction'])->get()->toArray();
-        $isBill = str_contains( 'bills', $request->uri);
+        $isBill = $this->isBill($request);
         $type = $isBill ? 'BILL' : 'INVOICE';
 
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Edit', [
