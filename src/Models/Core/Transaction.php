@@ -82,6 +82,13 @@ class Transaction extends Model
         return $transaction;
     }
 
+    public function updateTransaction($transactionData) {
+        $this->update($transactionData);
+        $items = isset($transactionData['items']) ? $transactionData['items'] : [];
+        $this->createLines($items);
+        return $this;
+    }
+
     public function createLines($items = []) {
         TransactionLine::query()->where('transaction_id', $this->id)->delete();
         if (!count($items)) {

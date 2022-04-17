@@ -59,6 +59,16 @@ class TransactionController
         return Redirect()->back();
     }
 
+    public function update(Request $request, Response $response, $id) {
+        $transaction = Transaction::find($id);
+        $postData = $request->post();
+        $transaction->updateTransaction($postData);
+        if ($request->query('json')) {
+            return $response->sendContent($transaction);
+        }
+        return Redirect()->back();
+    }
+
     public function destroy(Request $request, Response $response, $id) {
         $postData = $request->post();
         $postData['user_id'] = $request->user()->id;
