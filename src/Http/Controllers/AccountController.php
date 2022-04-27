@@ -6,8 +6,8 @@ namespace Insane\Journal\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redirect;
 use Insane\Journal\Models\Core\Account;
+use Insane\Journal\Models\Core\AccountDetailType;
 use Insane\Journal\Models\Core\Category;
 use Laravel\Jetstream\Jetstream;
 
@@ -39,6 +39,7 @@ class AccountController
                 } ,
                 'subcategories.accounts.lastTransactionDate',
             ])->get()->toArray(),
+            'accountDetailTypes' => AccountDetailType::all(),
         ]);
     }
 
@@ -168,7 +169,7 @@ class AccountController
         $categoryIds = $categoryData->pluck('id')->toArray();
         
         $accountIds = DB::table('categories')
-        ->whereIn('parent_id', $categoryIds)
+        ->whereIn('categories.parent_id', $categoryIds)
         ->selectRaw('group_concat(accounts.id) as account_ids, group_concat(accounts.name) as account_names')
         ->joinSub(DB::table('accounts')->where('team_id', $request->user()->current_team_id), 'accounts','category_id', '=', 'categories.id')
         ->get()->pluck('account_ids')->toArray();
