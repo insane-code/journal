@@ -47,16 +47,6 @@ class SetAccountsCommand extends Command
             'depth' => 0
         ];
 
-        $this->saveAccount($categories, $generalInfo);
-    }
-
-
-    public function saveAccount($categories, $extraData) {
-        foreach ($categories as $index => $category) {
-            $parentCategory = Category::create(array_merge($category, $extraData, ['index' => $index]));
-            if (isset($category['childs'])) {
-                $this->saveAccount($category['childs'], array_merge($extraData, ['depth' => $extraData['depth'] + 1, 'parent_id' => $parentCategory->id]));
-            }
-         }
+        Category::saveBulk($categories, $generalInfo);
     }
 }
