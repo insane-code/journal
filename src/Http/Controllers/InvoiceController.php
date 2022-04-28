@@ -4,6 +4,7 @@ namespace Insane\Journal\Http\Controllers;
 
 use Insane\Journal\Events\PaymentReceived;
 use App\Models\Client;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Insane\Journal\Helpers\CategoryHelper;
@@ -113,21 +114,8 @@ class InvoiceController
 
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Show', [
             'invoice' => $invoiceData,
-            'products' => Product::where([
-                'team_id' => $teamId
-            ])->with(['price'])->get(),
-            "categories" => Category::where([
-                'depth' => 0
-            ])->with([
-                'subCategories',
-                'subcategories.accounts' => function ($query) use ($teamId) {
-                    $query->where('team_id', '=', $teamId);
-                },
-                'subcategories.accounts.lastTransactionDate'
-            ])->get(),
+            'businessData' => Setting::getByTeam($teamId),
             'type' => $type,
-            // change this to be dinamyc
-            'clients' => Client::where('team_id', $teamId)->get()
         ]);
     }
 
