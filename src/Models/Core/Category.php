@@ -47,4 +47,13 @@ class Category extends Model
             $this->accounts()->pluck('accounts.id')->toArray();
         }
     }
+
+    public static function saveBulk($categories, $extraData) {
+        foreach ($categories as $index => $category) {
+            $parentCategory = Category::create(array_merge($category, $extraData, ['index' => $index]));
+            if (isset($category['childs'])) {
+                Category::saveBulk($category['childs'], array_merge($extraData, ['depth' => $extraData['depth'] + 1, 'parent_id' => $parentCategory->id]));
+            }
+        }
+    }
 }
