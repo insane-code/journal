@@ -18,12 +18,13 @@ class CreateTransactionCategories
         $generalInfo = [
             'team_id' => $team->id,
             'user_id' => $team->user_id,
+            "depth" => 0
         ];
 
 
         Category::where([
             'team_id' => $team->id,
-            'resource' => 'transactions'
+            'resource_type' => 'transactions'
         ])->delete();
         $categories = config('journal.categories');
 

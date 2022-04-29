@@ -392,5 +392,277 @@ return [
             "balance_type" => "DEBIT",
             "type" => 1
         ],
-    ]
+    ],
+    "categories" => [
+        [
+            "resource_type" => "transactions",
+            "display_id" => "food_and_drinks",
+            "name" => "Food & Drinks",
+            "Description" => "Food and drinks",
+            "depth" => 0,
+            "childs" => [
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "food_general",
+                    "name" => "General - Food & Drinks",
+                    "Description" => "General food and drinks",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "bar_cafe",
+                    "name" => "Bar, Cafe",
+                    "Description" => "General food and drinks",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "groceries",
+                    "name" => "Groceries",
+                    "Description" => "Groceries",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "restaurant",
+                    "name" => "Restaurant, Fast Food",
+                    "Description" => "Food out",
+                    "depth" => 1,
+                ],
+            ]
+        ],
+        [
+            "resource_type" => "transactions",
+            "display_id" => "shopping",
+            "name" => "Shopping",
+            "Description" => "Shopping",
+            "depth" => 0,
+            "childs" => [
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "shopping_general",
+                    "name" => "General - Shopping",
+                    "Description" => "General shopping",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "clothing",
+                    "name" => "Clothing & shoes",
+                    "Description" => "Clothing",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "home_appliances",
+                    "name" => "Home Appliances",
+                    "Description" => "Home appliances",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "electronics",
+                    "name" => "Electronics",
+                    "Description" => "Electronics",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "health_beauty",
+                    "name" => "Health & Beauty",
+                    "Description" => "Health and beauty",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "home_decor",
+                    "name" => "Home Decor",
+                    "Description" => "Home decor",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "sports_outdoors",
+                    "name" => "Sports & Outdoors",
+                    "Description" => "Sports and outdoors",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "free_time",
+                    "name" => "free_time",
+                    "Description" => "Free time, joy",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "others",
+                    "name" => "Others",
+                    "Description" => "Others",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "kids",
+                    "name" => "Kids",
+                    "Description" => "Kids",
+                    "depth" => 1,
+                ],
+            ]
+        ],
+        [
+            "resource_type" => "transactions",
+            "display_id" => "housing",
+            "name" => "Housing",
+            "Description" => "Housing",
+            "depth" => 0,
+            "childs" => [
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "housing_general",
+                    "name" => "General - Housing",
+                    "Description" => "General housing",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "mortgage",
+                    "name" => "Mortgage",
+                    "Description" => "Mortgage",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "rent",
+                    "name" => "Rent",
+                    "Description" => "Rent",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "utilities",
+                    "name" => "Utilities",
+                    "Description" => "Utilities",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "home_services",
+                    "name" => "Home Services",
+                    "Description" => "Home services",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "home_insurance",
+                    "name" => "Home Insurance",
+                    "Description" => "Home insurance",
+                    "depth" => 1,
+                ]
+            ]
+        ],
+        [
+            "resource_type" => "transactions",
+            "display_id" => "transportation",
+            "name" => "Transportation",
+            "Description" => "Transportation",
+            "depth" => 0,
+        ],
+        [
+            "resource_type" => "transactions",
+            "display_id" => "vehicle",
+            "name" => "Vehicle",
+            "Description" => "Vehicle",
+            "depth" => 0,
+        ],
+        [
+            "resource_type" => "transactions",
+            "display_id" => "entertainment",
+            "name" => "Entertainment",
+            "Description" => "Entertainment",
+            "depth" => 0,
+        ],
+        [
+            "resource_type" => "transactions",
+            "display_id" => "communication",
+            "name" => "Communication & PC",
+            "Description" => "Communication and PC",
+            "depth" => 0,
+        ],
+        [
+            "resource_type" => "transactions",
+            "display_id" => "financial_expenses",
+            "name" => "Financial expenses",
+            "Description" => "Financial expenses",
+            "depth" => 0,
+            "childs" => [
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "taxes",
+                    "name" => "Taxes",
+                    "Description" => "Taxes",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "fees",
+                    "name" => "Fees",
+                    "Description" => "Fees",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "loans",
+                    "name" => "Loans",
+                    "Description" => "Loans",
+                    "depth" => 1,
+                ]
+            ]
+
+        ],
+        [
+            "resource_type" => "transactions",
+            "display_id" => "investments",
+            "name" => "Investments",
+            "Description" => "Investments",
+            "depth" => 0,
+            "childs" => [
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "investments_general",
+                    "name" => "General - Investments",
+                    "Description" => "General investments",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "savings",
+                    "name" => "Savings",
+                    "Description" => "Savings",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "financial_investments",
+                    "name" => "Financial Investments",
+                    "Description" => "Financial investments",
+                    "depth" => 1,
+                ],
+                [
+                    "resource_type" => "transactions",
+                    "display_id" => "cryptocurrencies",
+                    "name" => "Cryptocurrencies",
+                    "Description" => "Cryptocurrencies",
+                    "depth" => 1,
+                ]
+            ]
+        ],
+        [
+            "resource_type" => "transactions",
+            "display_id" => "others",
+            "name" => "Others",
+            "Description" => "Others",
+            "depth" => 0,
+        ]
+    ],
 ];
