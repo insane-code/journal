@@ -7,12 +7,15 @@ use Insane\Journal\Models\Core\Category;
 
 class CategoryHelper
 {
-    public static function getSubcategories(string $teamId, array $displayIds, $depth = 0)
+    public static function getSubcategories(string $teamId, array $displayIds = null, $depth = 0, $params = [])
     {
-        $categories = Category::where([
-            'depth' => $depth,
-        ])->whereIn('display_id', $displayIds)
-        ->with([
+        $categoriesQuery = Category::where(array_merge([
+            'depth' => $depth
+        ], $params));
+        if ($displayIds) {
+            $categoriesQuery->whereIn('display_id', $displayIds);
+        }
+        $categories = $categoriesQuery->with([
             'subCategories',
             'subcategories.accounts' => function ($query) use ($teamId) {
                 $query->where('team_id', '=', $teamId);
