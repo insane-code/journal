@@ -24,18 +24,21 @@ class AccountController
 
     public function index(Request $request) {
         $category = $request->query('category');
+        $teamId= $request->user()->current_team_id;
         if ($category) {
             $category = Category::where('display_id', $category)->get()->first();
             $accounts = $category->getAllAccounts();
         } else {
-            $accounts =  Account::orderBy('index')->get();
+            $accounts =  Account::where([
+                    'team_id' => $teamId
+            ])->orderBy('index')->get();
         }
         return Jetstream::inertia()->render($request, config('journal.accounts_inertia_path') . '/Index', [
             "accounts" => $accounts->toArray(),
             "categories" => Category::where('depth', 0)->with([
                 'subCategories',
-                'subcategories.accounts' => function ($query) use ($request) {
-                    $query->where('team_id', '=', $request->user()->current_team_id);
+                'subcategories.accounts' => function ($query) use ($teamId) {
+                    $query->where('team_id', '=', $teamId);
                 } ,
                 'subcategories.accounts.lastTransactionDate',
             ])->get()->toArray(),
@@ -55,10 +58,25 @@ class AccountController
         return Redirect()->back();
     }
 
-    public function show(Request $request) {
+    public function show(Request $request, $id) {
+        $teamId = $request->user()->current_team_id;
+        $account = Account::where('id', $id)->with(['transactions'])->get()->first();
+        if ($account->team_id != $teamId) {
+            Response::redirect('/accounts');
+        }
         return Jetstream::inertia()->render($request, 'Journal/Accounts/Show', [
-            "accounts" => Account::orderBy('index')->get(),
+            "account" => $account,
         ]);
+    }
+
+    public function destroy(Request $request, $id) {
+        $teamId = $request->user()->current_team_id;
+        $account = Account::where('id', $id)->with(['transactions'])->get()->first();
+        if ($account->payee && $account->team_id != $teamId) {
+            $account->payee->delete();
+        }
+        $account->delete();
+        return Redirect()->back();
     }
 
     public function statementsIndex(Request $request, string $category = "income") {

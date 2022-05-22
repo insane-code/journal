@@ -38,5 +38,11 @@ return new class extends Migration
     public function down()
     {
         Schema::dropIfExists('account_detail_types');
+        Schema::table('invoice_line_taxes', function (Blueprint $table) {
+            $table->dropColumn('account_detail_type_id');
+            $table->dropColumn('parent_id');
+            $table->dropColumn('tax_id');
+            $table->dropColumn('opening_balance');
+        });
     }
 };

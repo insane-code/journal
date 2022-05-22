@@ -26,11 +26,20 @@ class Account extends Model
                 $account->category_id = Category::findOrCreateByName($account->category_id);
             }
         });
+
+        static::saved(function ($account) {
+            $account->addPayee();
+        });
     }
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function payee()
+    {
+        return $this->belongsTo(Payee::class);
     }
 
     public function team()
@@ -94,5 +103,14 @@ class Account extends Model
 
             return $account->id;
         }
+    }
+
+    public function addPayee() {
+        return Payee::create([
+            'team_id' => $this->team_id,
+            'user_id' =>  $this->user_id,
+            'name' => "Transfer: $this->name",
+            'account_id' => $this->id
+        ]);
     }
 }

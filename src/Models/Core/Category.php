@@ -11,7 +11,7 @@ class Category extends Model
     protected $fillable = ['team_id','user_id', 'client_id','parent_id' , 'display_id', 'name', 'description', 'depth', 'index', 'archivable', 'archived', 'resource_type'];
 
     public function subCategories() {
-        return $this->hasMany(Category::class, 'parent_id', 'id')->orderBy('index');
+        return $this->hasMany(self::class, 'parent_id', 'id')->orderBy('index');
     }
 
     public function category() {
