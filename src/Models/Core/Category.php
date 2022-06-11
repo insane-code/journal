@@ -4,11 +4,12 @@ namespace Insane\Journal\Models\Core;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Category extends Model
 {
     use HasFactory;
-    protected $fillable = ['team_id','user_id', 'client_id','parent_id' , 'display_id', 'name', 'description', 'depth', 'index', 'archivable', 'archived', 'resource_type'];
+    protected $fillable = ['team_id','user_id', 'client_id','parent_id' , 'display_id', 'name', 'description', 'depth', 'index', 'resource_type'];
 
     public function subCategories() {
         return $this->hasMany(self::class, 'parent_id', 'id')->orderBy('index');
@@ -22,8 +23,27 @@ class Category extends Model
         return $this->hasMany(Account::class, 'category_id', 'id')->orderBy('index');
     }
 
-    public static function findOrCreateByName(string $name) {
-        $category = Category::where(['display_id' => $name])->limit(1)->get();
+    public static function findOrCreateByName($session, string $name, int $parentId = null) {
+        $category = Category::where(
+            [
+                'display_id' => $name
+            ])->limit(1)
+            ->get();
+
+        if (!$category->count()) {
+            Category::create([
+                'display_id' => Str::sLug($name),
+                'name' => $name,
+                'parent_id' => $parentId,
+                'user_id' => $session['user_id'],
+                'team_id' => $session['team_id'],
+                'depth' => $parentId ? 1 : 0,
+                'index' => 0,
+                'archivable' => true,
+                'archived' => false,
+                'resource_type' => 'category'
+            ]);
+        }
         return count($category) ? $category[0]->id : null;
     }
 

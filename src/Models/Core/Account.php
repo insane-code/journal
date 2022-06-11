@@ -18,17 +18,20 @@ class Account extends Model
     protected $appends = ['balance'];
 
     protected $fillable = ['team_id','user_id','category_id', 'client_id', 'display_id', 'name', 'description', 'currency_code', 'index', 'archivable', 'archived'];
-    
+
     protected static function booted()
     {
         static::creating(function ($account) {
             if (is_string($account->category_id)) {
-                $account->category_id = Category::findOrCreateByName($account->category_id);
+                $account->category_id = Category::findOrCreateByName([
+                    'team_id' => $account->team_id,
+                    'user_id' => $account->user_id,
+                ],$account->category_id);
             }
         });
 
         static::saved(function ($account) {
-            $account->addPayee();
+            // $account->addPayee();
         });
     }
 
@@ -83,17 +86,17 @@ class Account extends Model
     public static function guessAccount($session, $labels, $type = "DEBIT") {
 
         $accountSlug = Str::slug($labels[0], "_");
-        $account = Account::where(['user_id' => $session->user_id, 'display_id' => $accountSlug])->limit(1)->get();
+        $account = Account::where(['user_id' => $session['user_id'], 'display_id' => $accountSlug])->limit(1)->get();
         if (count($account)) {
             return $account[0]->id;
         } else {
             $categoryId = null;
             if (isset($labels[1])) {
-                $categoryId = Category::findOrCreateByName($labels[1]);
+                $categoryId = Category::findOrCreateByName($session, $labels[1]);
             }
             $account = Account::create([
-                'user_id' => $session->user_id,
-                'team_id' => $session->team_id,
+                'user_id' => $session['user_id'],
+                'team_id' => $session['team_id'],
                 'display_id' => $accountSlug,
                 'name' => $labels[0],
                 'description' => $labels[0],
