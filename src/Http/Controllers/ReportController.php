@@ -189,7 +189,6 @@ class ReportController
         ->joinSub(DB::table('accounts')->where('team_id', $request->user()->current_team_id), 'accounts','category_id', '=', 'categories.id')
         ->get();
 
-        // dd($categoryData);
 
         $balance = DB::table('transaction_lines')
         ->whereIn('transaction_lines.account_id', explode(',', $accounts[0]->account_ids))

@@ -23,16 +23,18 @@ class Category extends Model
         return $this->hasMany(Account::class, 'category_id', 'id')->orderBy('index');
     }
 
-    public static function findOrCreateByName($session, string $name, int $parentId = null) {
+    public static function findOrCreateByName($session, string $name, int $parentId = null, string $resourceType = 'transactions') {
         $category = Category::where(
             [
-                'display_id' => $name
+                'display_id' => Str::slug($name),
+                'name' => $name,
+                'team_id' => $session['team_id'],
             ])->limit(1)
             ->get();
 
         if (!$category->count()) {
             Category::create([
-                'display_id' => Str::sLug($name),
+                'display_id' => Str::slug($name),
                 'name' => $name,
                 'parent_id' => $parentId,
                 'user_id' => $session['user_id'],
@@ -41,8 +43,12 @@ class Category extends Model
                 'index' => 0,
                 'archivable' => true,
                 'archived' => false,
-                'resource_type' => 'category'
+                'resource_type' => $resourceType
             ]);
+        } else if ($category['0']->parent_id != $parentId) {
+            $category['0']->parent_id = $parentId;
+            $category['0']->depth = $parentId ? 1 : 0;
+            $category['0']->save();
         }
         return count($category) ? $category[0]->id : null;
     }

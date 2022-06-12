@@ -3,6 +3,7 @@
 namespace Insane\Journal\Models\Core;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 
 class Transaction extends Model
 {
@@ -13,7 +14,7 @@ class Transaction extends Model
     const STATUS_VERIFIED = 'verified';
     const STATUS_CANCELED = 'canceled';
 
-    protected $fillable = ['team_id','user_id', 'transactionable_id', 'transactionable_type' , 'date','number', 'description', 'direction', 'notes', 'total', 'currency_code', 'status', 'transaction_category_id','category_id', 'account_id'];
+    protected $fillable = ['team_id','user_id', 'payee_id','transactionable_id', 'transactionable_type' , 'date','number', 'description', 'direction', 'notes', 'total', 'currency_code', 'status', 'transaction_category_id','category_id', 'account_id'];
 
        /**
      * The "booted" method of the model.
@@ -76,9 +77,21 @@ class Transaction extends Model
     }
 
     static public function createTransaction($transactionData) {
-        $transaction = Transaction::create($transactionData);
-        $items = isset($transactionData['items']) ? $transactionData['items'] : [];
-        $transaction->createLines($items);
+        $transaction = Transaction::where([
+            "team_id" => $transactionData['team_id'],
+            'date' => $transactionData['date'],
+            'total' => $transactionData['total'],
+            'currency_code' => $transactionData['currency_code'],
+            'direction' => $transactionData['direction'],
+        ])->get();
+        if ($transaction->count()) {
+            $transaction->first()->updateTransaction($transactionData);
+            $transaction = $transaction->first();
+        } else {
+            $transaction = Transaction::create($transactionData);
+            $items = isset($transactionData['items']) ? $transactionData['items'] : [];
+            $transaction->createLines($items);
+        }
         return $transaction;
     }
 
@@ -149,6 +162,19 @@ class Transaction extends Model
             $query->orderBy('date', 'desc');
         })
         ->with(['mainLine', 'lines', 'category', 'mainLine.account', 'category.account']);
+    }
+
+    public function scopeByCategories($query, array $displayIds, $teamId) {
+            $categories = Category::where([
+                'categories.team_id' => $teamId,
+            ])
+            ->whereIn('categories.display_id', $displayIds)
+            ->join('categories as sub', 'sub.parent_id', '=', 'categories.id')
+            ->pluck('sub.id');
+
+            // dd([$categories, $displayIds]);
+
+            return $query->whereIn('transaction_category_id', $categories);
     }
 
     public static function parser($transaction) {
