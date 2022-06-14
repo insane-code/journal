@@ -4,6 +4,7 @@ namespace Insane\Journal\Models\Core;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Payee extends Model
 {
@@ -31,7 +32,11 @@ class Payee extends Model
                 'team_id' => $session['team_id'],
             ]);
         } else {
-            return $payee->first();
+            $payee = $payee->first();
+            if ($payee->account_id) {
+
+            }
+            return $payee;
         }
     }
 
@@ -46,11 +51,16 @@ class Payee extends Model
         if ($account) {
            return $account->id;
         } else {
+           $accountName = "payments: $payee->name";
+           $clientTrustType = AccountDetailType::where([
+                'name' => 'client_trust_account',
+            ])->first();
            $account = Account::create([
                 "team_id" => $payee->team_id,
                 "user_id" => $payee->user_id,
-                "display_id" => "General",
-                "name" => "payments: $payee->name",
+                "display_id" => Str::slug($accountName),
+                "name" => $accountName,
+                "account_detail_type_id" => $clientTrustType->id,
                 "currency_code" => "DOP"
             ]);
             return $account->id;

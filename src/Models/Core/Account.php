@@ -17,7 +17,7 @@ class Account extends Model
      */
     protected $appends = ['balance'];
 
-    protected $fillable = ['team_id','user_id','category_id', 'client_id', 'display_id', 'name', 'description', 'currency_code', 'index', 'archivable', 'archived'];
+    protected $fillable = ['team_id','user_id','category_id', 'account_detail_type_id', 'client_id', 'display_id', 'name', 'description', 'currency_code', 'index', 'archivable', 'archived'];
 
     protected static function booted()
     {
@@ -43,6 +43,11 @@ class Account extends Model
     public function payee()
     {
         return $this->belongsTo(Payee::class);
+    }
+
+    public function detailTypeId()
+    {
+        return $this->belongsTo(AccountDetailType::class, 'account_detail_type_id');
     }
 
     public function team()
@@ -115,5 +120,12 @@ class Account extends Model
             'name' => "Transfer: $this->name",
             'account_id' => $this->id
         ]);
+    }
+
+    public function scopeByDetailTypes($query, array $detailTypes) {
+        return $query->
+        join('account_detail_types', 'account_detail_types.id', '=', 'accounts.account_detail_type_id')
+        ->whereIn('account_detail_types.name', $detailTypes)
+        ->select('accounts.*');
     }
 }

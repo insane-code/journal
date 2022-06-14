@@ -171,9 +171,6 @@ class Transaction extends Model
             ->whereIn('categories.display_id', $displayIds)
             ->join('categories as sub', 'sub.parent_id', '=', 'categories.id')
             ->pluck('sub.id');
-
-            // dd([$categories, $displayIds]);
-
             return $query->whereIn('transaction_category_id', $categories);
     }
 
