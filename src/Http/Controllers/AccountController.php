@@ -66,6 +66,7 @@ class AccountController
         }
         return Jetstream::inertia()->render($request, 'Journal/Accounts/Show', [
             "account" => $account,
+            "transactions" => $account->transactions,
         ]);
     }
 
@@ -185,14 +186,14 @@ class AccountController
         $categoryData = Category::whereIn('display_id', $categories[$category] )->get();
 
         $categoryIds = $categoryData->pluck('id')->toArray();
-        
+
         $accountIds = DB::table('categories')
         ->whereIn('categories.parent_id', $categoryIds)
         ->selectRaw('group_concat(accounts.id) as account_ids, group_concat(accounts.name) as account_names')
         ->joinSub(DB::table('accounts')->where('team_id', $request->user()->current_team_id), 'accounts','category_id', '=', 'categories.id')
         ->get()->pluck('account_ids')->toArray();
 
-    
+
         $accountIds = explode(",", $accountIds[0]);
         $balance = DB::table('transaction_lines')
         ->whereIn('transaction_lines.account_id', $accountIds)

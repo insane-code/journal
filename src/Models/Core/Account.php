@@ -85,7 +85,10 @@ class Account extends Model
      */
     public function getBalanceAttribute()
     {
-        return $this->transactionLines()->sum(DB::raw('amount * type'));
+        return $this->transactions()->where('status', 'verified')->sum(DB::raw("CASE
+        WHEN transactions.direction = 'WITHDRAW'
+        THEN total * -1
+        ELSE total * 1 END"));
     }
 
     public static function guessAccount($session, $labels, $type = "DEBIT") {

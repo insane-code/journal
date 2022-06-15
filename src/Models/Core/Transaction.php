@@ -81,8 +81,10 @@ class Transaction extends Model
             "team_id" => $transactionData['team_id'],
             'date' => $transactionData['date'],
             'total' => $transactionData['total'],
+            'description' => $transactionData['description'],
             'currency_code' => $transactionData['currency_code'],
             'direction' => $transactionData['direction'],
+            'payee_id' => $transactionData['payee_id'],
         ])->get();
         if ($transaction->count()) {
             $transaction->first()->updateTransaction($transactionData);
