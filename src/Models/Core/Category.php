@@ -41,7 +41,6 @@ class Category extends Model
                 'team_id' => $session['team_id'],
                 'depth' => $parentId ? 1 : 0,
                 'index' => 0,
-                'archivable' => true,
                 'archived' => false,
                 'resource_type' => $resourceType
             ]);
