@@ -51,6 +51,14 @@ class Transaction extends Model
         return $this->hasOne(TransactionLine::class)->where('anchor', false);
     }
 
+    public function transactionCategory() {
+        return $this->belongsTo(Category::class, 'transaction_category_id');
+    }
+
+    public function payee() {
+        return $this->belongsTo(Payee::class);
+    }
+
     public function lines() {
         return $this->hasMany(TransactionLine::class);
     }

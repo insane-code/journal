@@ -33,7 +33,7 @@ class Category extends Model
             ->get();
 
         if (!$category->count()) {
-            Category::create([
+            $category = Category::create([
                 'display_id' => Str::slug($name),
                 'name' => $name,
                 'parent_id' => $parentId,
@@ -43,6 +43,8 @@ class Category extends Model
                 'index' => 0,
                 'resource_type' => $resourceType
             ]);
+
+            return $category->id;
         } else if ($category['0']->parent_id != $parentId) {
             $category['0']->parent_id = $parentId;
             $category['0']->depth = $parentId ? 1 : 0;
