@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class Account extends Model
 {
+    const BALANCE_TYPE_CREDIT = 'credit';
+    const BALANCE_TYPE_DEBIT = 'debit';
     /**
      * The accessors to append to the model's array form.
      *
@@ -23,6 +25,12 @@ class Account extends Model
     {
         static::creating(function ($account) {
             if (is_string($account->category_id)) {
+                if ($account->account_detail_type_id) {
+                    $detailType = AccountDetailType::find($account->account_detail_type_id);
+                    dd($account);
+                    $account->balance_type = $detailType?->config['balance_type'];
+                    $account->category_id = $detailType?->config['category_id'];
+                }
                 $account->category_id = Category::findOrCreateByName([
                     'team_id' => $account->team_id,
                     'user_id' => $account->user_id,
@@ -123,6 +131,11 @@ class Account extends Model
             'name' => "Transfer: $this->name",
             'account_id' => $this->id
         ]);
+    }
+
+    public static function getByDetailTypes($teamId, $detailTypes = AccountDetailType::ALL) {
+        return Account::where('accounts.team_id', $teamId)->byDetailTypes($detailTypes)
+            ->orderBy('index', )->get();
     }
 
     public function scopeByDetailTypes($query, array $detailTypes) {

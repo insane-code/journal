@@ -3,6 +3,7 @@
 namespace Insane\Journal\Console;
 
 use Illuminate\Console\Command;
+use Insane\Journal\Actions\CreateDetailTypes;
 use Insane\Journal\Models\Core\Category;
 
 class SetAccountsCommand extends Command
@@ -29,6 +30,7 @@ class SetAccountsCommand extends Command
     public function handle()
     {
         $this->setAccountsCharts();
+        $this->generateDetailTypes();
     }
 
 
@@ -48,5 +50,10 @@ class SetAccountsCommand extends Command
         ];
 
         Category::saveBulk($categories, $generalInfo);
+
+    }
+
+    protected function generateDetailTypes() {
+        (new CreateDetailTypes())->create();
     }
 }

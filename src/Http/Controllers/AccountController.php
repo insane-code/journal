@@ -6,6 +6,7 @@ namespace Insane\Journal\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Insane\Journal\Events\AccountCreated;
 use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\AccountDetailType;
 use Insane\Journal\Models\Core\Category;
@@ -52,6 +53,7 @@ class AccountController
         $postData['team_id'] = $request->user()->current_team_id;
         $account = new Account();
         $account = $account::create($postData);
+        AccountCreated::dispatch($account, $postData);
         if ($request->query('json')) {
             return $response->sendContent($account);
         }

@@ -1,11 +1,15 @@
 <?php
+
 namespace Insane\Journal\Events;
+
 use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Insane\Journal\Models\Core\Transaction;
+use Insane\Journal\Models\Core\Account;
 
-class TransactionCreated {
+class AccountCreated
+{
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /**
@@ -20,23 +24,25 @@ class TransactionCreated {
      * @var array
      */
     public $transactionData;
-    /**
-     * The transaction instance.
-     *
-     * @var array
-     */
-    public $transactionLines;
 
     /**
      * Create a new event instance.
      *
-     * @param  \Insane\Journal\Models\Core\Transaction  $transaction
      * @return void
      */
-    public function __construct(Transaction $transaction, array $transactionData, array $lines = [])
+    public function __construct(Account $account, $formData = [])
     {
-        $this->transaction = $transaction;
-        $this->transactionData = $transactionData;
-        $this->lines = $lines;
+        $this->account = $account;
+        $this->formData = $formData;
+    }
+
+    /**
+     * Get the channels the event should broadcast on.
+     *
+     * @return \Illuminate\Broadcasting\Channel|array
+     */
+    public function broadcastOn()
+    {
+        return new PrivateChannel('channel-name');
     }
 }
