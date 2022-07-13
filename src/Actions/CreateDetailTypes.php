@@ -67,6 +67,27 @@ class CreateDetailTypes
                     "category_id" => "credit_card",
                 ]
             ],
+            [
+                'name' => AccountDetailType::CLIENT_TRUST,
+                'label' => 'Client trust account',
+                'description' => "Use a Cash on hand account to track cash your company keeps for occasional expenses, also called petty cash.
+                To track cash from sales that have not been deposited yet, use a pre-created account called Undeposited funds, instead.",
+                "config" => [],
+            ],
+            [
+                'name' => AccountDetailType::MONEY_MARKET,
+                'label' => 'Money market',
+                'description' => "Use Money market to track amounts in money market accounts.
+                For investments, see Current Assets, instead.",
+                'config' => []
+            ],
+            [
+                'name' => AccountDetailType::RENT_HELD_IN_TRUST,
+                'label' => 'Rent held in trust',
+                'description' => "Use Rents held in trust to track deposits and rent held on behalf of the property owners.
+                Typically only property managers use this type of account.",
+                'config' => []
+            ],
         ];
 
         AccountDetailType::where('team_id', 0)->delete();
