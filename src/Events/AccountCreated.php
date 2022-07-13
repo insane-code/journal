@@ -15,7 +15,7 @@ class AccountCreated
     /**
      * The transaction instance.
      *
-     * @var \Insane\Journal\Models\Core\Transaction 
+     * @var \Insane\Journal\Models\Core\Transaction
      */
     public $transaction;
     /**
@@ -34,15 +34,5 @@ class AccountCreated
     {
         $this->account = $account;
         $this->formData = $formData;
-    }
-
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return \Illuminate\Broadcasting\Channel|array
-     */
-    public function broadcastOn()
-    {
-        return new PrivateChannel('channel-name');
     }
 }

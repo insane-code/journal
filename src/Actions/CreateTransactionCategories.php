@@ -27,7 +27,8 @@ class CreateTransactionCategories
             'resource_type' => 'transactions'
         ])->delete();
         $categories = config('journal.categories');
-
         Category::saveBulk($categories, $generalInfo);
+       
+
     }
 }

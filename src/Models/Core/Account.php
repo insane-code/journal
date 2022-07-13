@@ -27,7 +27,6 @@ class Account extends Model
             if (is_string($account->category_id)) {
                 if ($account->account_detail_type_id) {
                     $detailType = AccountDetailType::find($account->account_detail_type_id);
-                    dd($account);
                     $account->balance_type = $detailType?->config['balance_type'];
                     $account->category_id = $detailType?->config['category_id'];
                 }

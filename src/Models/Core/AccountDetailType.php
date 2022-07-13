@@ -17,4 +17,8 @@ class AccountDetailType extends Model
     const CREDIT_CARD = 'credit_card';
 
     const ALL = [self::CASH, self::BANK, self::CASH_ON_HAND, self::SAVINGS, self::CREDIT_CARD];
+
+    protected $casts = [
+        'config' => 'array'
+    ];
 }

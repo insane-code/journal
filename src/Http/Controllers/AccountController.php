@@ -31,7 +31,7 @@ class AccountController
             $accounts = $category->getAllAccounts();
         } else {
             $accounts =  Account::where([
-                    'team_id' => $teamId
+                'team_id' => $teamId
             ])->orderBy('index')->get();
         }
         return Jetstream::inertia()->render($request, config('journal.accounts_inertia_path') . '/Index', [

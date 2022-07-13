@@ -74,9 +74,11 @@ class Category extends Model
         }
     }
 
-    public static function saveBulk($categories, $extraData) {
+    public static function saveBulk(mixed $categories, mixed $extraData) {
         foreach ($categories as $index => $category) {
-            $parentCategory = Category::create(array_merge($category, $extraData, ['index' => $index]));
+            $newCategory = array_merge($category, $extraData, ['index' => $index]);
+            unset($newCategory['childs']);
+            $parentCategory = Category::create($newCategory);
             if (isset($category['childs'])) {
                 Category::saveBulk($category['childs'], array_merge($extraData, ['depth' => $extraData['depth'] + 1, 'parent_id' => $parentCategory->id]));
             }
