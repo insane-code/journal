@@ -85,14 +85,22 @@ class Transaction extends Model
     }
 
     static public function createTransaction($transactionData) {
+        $account = Account::find($transactionData['account_id']);
+        $currencyCode = $transactionData['currency_code'] ?? $account->currency_code;
+        $payeeId = $transactionData["payee_id"];
+        if ($transactionData["payee_id"] == 'new') {
+            $payee = Payee::findOrCreateByName($transactionData, $transactionData['payee_label'] ?? 'General Provider');
+            $payeeId = $payee->id;
+            $transactionData["payee_id"] = $payeeId;
+        }
         $transaction = Transaction::where([
             "team_id" => $transactionData['team_id'],
             'date' => $transactionData['date'],
             'total' => $transactionData['total'],
             'description' => $transactionData['description'],
-            'currency_code' => $transactionData['currency_code'],
+            'currency_code' => $currencyCode,
             'direction' => $transactionData['direction'],
-            'payee_id' => $transactionData['payee_id'],
+            'payee_id' => $payeeId,
         ])->get();
         if ($transaction->count()) {
             $transaction->first()->updateTransaction($transactionData);
