@@ -11,6 +11,14 @@ class Category extends Model
     use HasFactory;
     protected $fillable = ['team_id','user_id', 'client_id','parent_id' , 'display_id', 'name', 'description', 'depth', 'index', 'resource_type'];
 
+    public static function booted() {
+        static::creating(function ($category) {
+                if (!$category->display_id) {
+                   $category->display_id = Str::Slug($category->name, "_");
+                }
+        });
+    }
+
     public function subCategories() {
         return $this->hasMany(self::class, 'parent_id', 'id')->orderBy('index');
     }
@@ -26,7 +34,7 @@ class Category extends Model
     public static function findOrCreateByName($session, string $name, int $parentId = null, string $resourceType = 'transactions') {
         $category = Category::where(
             [
-                'display_id' => Str::slug($name),
+                'display_id' => Str::slug($name, "_"),
                 'name' => $name,
                 'team_id' => $session['team_id'],
             ])->limit(1)
@@ -34,7 +42,7 @@ class Category extends Model
 
         if (!$category->count()) {
             $category = Category::create([
-                'display_id' => Str::slug($name),
+                'display_id' => Str::slug($name, "_"),
                 'name' => $name,
                 'parent_id' => $parentId,
                 'user_id' => $session['user_id'],
