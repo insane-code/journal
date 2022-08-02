@@ -98,7 +98,7 @@ class Account extends Model
         ELSE total * 1 END"));
     }
 
-    public static function guessAccount($session, $labels, $type = "DEBIT") {
+    public static function guessAccount($session, $labels, $data = []) {
 
         $accountSlug = Str::slug($labels[0], "_");
         $account = Account::where(['user_id' => $session['user_id'], 'display_id' => $accountSlug])->limit(1)->get();
@@ -115,7 +115,7 @@ class Account extends Model
                 'display_id' => $accountSlug,
                 'name' => $labels[0],
                 'description' => $labels[0],
-                'currency_code' => "DOP",
+                'currency_code' => $data['currency_code'] ?? "DOP",
                 'category_id' => $categoryId,
             ]);
 
