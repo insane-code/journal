@@ -4,6 +4,7 @@ namespace Insane\Journal\Models\Core;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
+use Insane\Journal\Events\TransactionCreated;
 
 class Transaction extends Model
 {
@@ -101,15 +102,16 @@ class Transaction extends Model
             'currency_code' => $currencyCode,
             'direction' => $transactionData['direction'],
             'payee_id' => $payeeId,
-        ])->get();
-        if ($transaction->count()) {
-            $transaction->first()->updateTransaction($transactionData);
-            $transaction = $transaction->first();
+        ])->first();
+        if ($transaction) {
+            $transaction->updateTransaction($transactionData);
         } else {
             $transaction = Transaction::create($transactionData);
             $items = isset($transactionData['items']) ? $transactionData['items'] : [];
             $transaction->createLines($items);
         }
+        
+        TransactionCreated::dispatch($transaction);
         return $transaction;
     }
 

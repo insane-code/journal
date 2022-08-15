@@ -19,7 +19,6 @@ journal:set-chart-accounts
 
 Write a few lines about the usage of this package.
 
-
 ## Testing
 
 Run the tests with:
