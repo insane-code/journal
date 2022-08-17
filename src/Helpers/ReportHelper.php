@@ -5,14 +5,22 @@ namespace Insane\Journal\Helpers;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Insane\Journal\Models\Core\Account;
+use Insane\Journal\Models\Core\Transaction;
 
 class ReportHelper {
-  public function revenueReport($teamId) {
+  public function revenueReport($teamId, $methodName = 'payments') {
     $year = Carbon::now()->format('Y');
     $previousYear = Carbon::now()->subYear(1)->format('Y');
 
-    $results = $this->getPaymentsByYear($year, $teamId);
-    $previousYearResult = $this->getPaymentsByYear($previousYear, $teamId);
+    $types = [
+      'payments' => 'getPaymentsByYear',
+      'expenses' => 'getExpensesByYear',
+    ];
+
+    $method = $types[$methodName];
+
+    $results = self::$method($year, $teamId);
+    $previousYearResult = self::$method($previousYear, $teamId);
 
     $results = [
         "currentYear" => [
@@ -29,12 +37,26 @@ class ReportHelper {
     return $results;
   }
 
-  public function getPaymentsByYear($year, $teamId) {
+  public static function getPaymentsByYear($year, $teamId) {
     return DB::table('payments')
     ->where(DB::raw('YEAR(payments.payment_date)'), '=', $year)
     ->where('team_id', '=', $teamId)
     ->selectRaw('sum(COALESCE(amount,0)) as total, YEAR(payments.payment_date) as year, MONTH(payments.payment_date) as months')
     ->groupByRaw('MONTH(payments.payment_date), YEAR(payments.payment_date)')
+    ->get();
+  }
+
+  public static function getExpensesByYear($year, $teamId) {
+    return DB::table('transactions')
+    ->where(DB::raw('YEAR(transactions.date)'), '=', $year)
+    ->where([
+        'team_id' => $teamId,
+        'direction' => Transaction::DIRECTION_CREDIT,
+        'status' => 'verified'
+    ])
+    ->whereNotNull('transaction_category_id')
+    ->selectRaw('sum(COALESCE(total,0)) as total, YEAR(transactions.date) as year, MONTH(transactions.date) as months')
+    ->groupByRaw('MONTH(transactions.date), YEAR(transactions.date)')
     ->get();
   }
 
