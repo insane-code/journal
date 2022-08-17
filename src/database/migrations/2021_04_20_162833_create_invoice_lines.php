@@ -39,6 +39,6 @@ class CreateInvoiceLines extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('invoices_lines');
+        Schema::dropIfExists('invoice_lines');
     }
 }

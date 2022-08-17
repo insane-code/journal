@@ -37,10 +37,9 @@ class Category extends Model
                 'display_id' => Str::slug($name, "_"),
                 'name' => $name,
                 'team_id' => $session['team_id'],
-            ])->limit(1)
-            ->get();
+            ])->first();
 
-        if (!$category->count()) {
+        if (!$category) {
             $category = Category::create([
                 'display_id' => Str::slug($name, "_"),
                 'name' => $name,
@@ -53,12 +52,12 @@ class Category extends Model
             ]);
 
             return $category->id;
-        } else if ($category['0']->parent_id != $parentId) {
-            $category['0']->parent_id = $parentId;
-            $category['0']->depth = $parentId ? 1 : 0;
-            $category['0']->save();
+        } else if ( $parentId && $category->parent_id != $parentId) {
+            $category->parent_id = $parentId;
+            $category->depth = $parentId ? 1 : 0;
+            $category->save();
         }
-        return count($category) ? $category[0]->id : null;
+        return $category ? $category->id : null;
     }
 
     public static function getChart($teamId) {

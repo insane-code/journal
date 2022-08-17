@@ -19,21 +19,23 @@ class Account extends Model
      */
     protected $appends = ['balance'];
 
-    protected $fillable = ['team_id','user_id','category_id', 'account_detail_type_id', 'client_id', 'display_id', 'name', 'description', 'currency_code', 'index', 'archivable', 'archived'];
+    protected $fillable = ['team_id','user_id','category_id', 'account_detail_type_id', 'client_id', 'display_id', 'name', 'description', 'currency_code', 'opening_balance' , 'index', 'archivable', 'balance_type', 'type', 'archived'];
 
     protected static function booted()
     {
         static::creating(function ($account) {
             if (is_string($account->category_id)) {
-                if ($account->account_detail_type_id) {
-                    $detailType = AccountDetailType::find($account->account_detail_type_id);
-                    $account->balance_type = $detailType?->config['balance_type'];
-                    $account->category_id = $detailType?->config['category_id'];
-                }
                 $account->category_id = Category::findOrCreateByName([
                     'team_id' => $account->team_id,
                     'user_id' => $account->user_id,
                 ],$account->category_id);
+            }
+
+            if ($account->account_detail_type_id) {
+                $detailType = AccountDetailType::find($account->account_detail_type_id);
+                $account->balance_type = $detailType?->config['balance_type'] ?? self::BALANCE_TYPE_DEBIT;
+                $account->category_id = $detailType?->config['category_id'] ?? $account->category_id;
+                $account->type = $account->balance_type == self::BALANCE_TYPE_CREDIT ? -1 : 1;
             }
         });
 
@@ -98,7 +100,7 @@ class Account extends Model
         ELSE total * 1 END"));
     }
 
-    public static function guessAccount($session, $labels, $type = "DEBIT") {
+    public static function guessAccount($session, $labels, $data = []) {
 
         $accountSlug = Str::slug($labels[0], "_");
         $account = Account::where(['user_id' => $session['user_id'], 'display_id' => $accountSlug])->limit(1)->get();
@@ -115,7 +117,7 @@ class Account extends Model
                 'display_id' => $accountSlug,
                 'name' => $labels[0],
                 'description' => $labels[0],
-                'currency_code' => "DOP",
+                'currency_code' => $data['currency_code'] ?? "DOP",
                 'category_id' => $categoryId,
             ]);
 

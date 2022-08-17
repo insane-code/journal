@@ -20,12 +20,6 @@ class TransactionCreated {
      * @var array
      */
     public $transactionData;
-    /**
-     * The transaction instance.
-     *
-     * @var array
-     */
-    public $transactionLines;
 
     /**
      * Create a new event instance.
@@ -33,10 +27,9 @@ class TransactionCreated {
      * @param  \Insane\Journal\Models\Core\Transaction  $transaction
      * @return void
      */
-    public function __construct(Transaction $transaction, array $transactionData, array $lines = [])
+    public function __construct(Transaction $transaction, array $transactionData = [])
     {
         $this->transaction = $transaction;
         $this->transactionData = $transactionData;
-        $this->lines = $lines;
     }
 }
