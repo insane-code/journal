@@ -37,6 +37,22 @@ class ReportHelper {
     return $results;
   }
 
+  public static function generateExpensesByPeriod($teamId, $timeUnit = 'month', $timeUnitDiff = 2 , $type = 'expenses') {
+    $endDate = Carbon::now()->endOfMonth()->format('Y-m-d');
+    $startDate = Carbon::now()->subMonth($timeUnitDiff)->startOfMonth()->format('Y-m-d');
+
+    $results = self::getExpensesByPeriod($teamId, $startDate, $endDate);
+    $resultGroup = $results->groupBy('date');
+
+    return $resultGroup->map(function ($monthItems) {
+      return [
+        'date' => $monthItems->first()->date,
+        'data' => $monthItems->sortByDesc('total')->values()->all(),
+        'total' => $monthItems->sum('total')
+      ];
+    }, $resultGroup);
+  }
+
   public static function getPaymentsByYear($year, $teamId) {
     return DB::table('payments')
     ->where(DB::raw('YEAR(payments.payment_date)'), '=', $year)
@@ -57,6 +73,21 @@ class ReportHelper {
     ->whereNotNull('transaction_category_id')
     ->selectRaw('sum(COALESCE(total,0)) as total, YEAR(transactions.date) as year, MONTH(transactions.date) as months')
     ->groupByRaw('MONTH(transactions.date), YEAR(transactions.date)')
+    ->get();
+  }
+
+  public static function getExpensesByPeriod($teamId, $startDate, $endDate) {
+    return DB::table('transactions')
+    ->whereBetween('transactions.date', [$startDate, $endDate])
+    ->where([
+        'transactions.team_id' => $teamId,
+        'direction' => Transaction::DIRECTION_CREDIT,
+        'transactions.status' => 'verified'
+    ])
+    ->whereNotNull('transaction_category_id')
+    ->selectRaw('sum(COALESCE(total,0)) as total, date_format(transactions.date, "%Y-%m-01") as date, categories.name, categories.id')
+    ->groupByRaw('date_format(transactions.date, "%Y-%m"), categories.id')
+    ->join('categories', 'transactions.transaction_category_id', '=', 'categories.id')
     ->get();
   }
 
