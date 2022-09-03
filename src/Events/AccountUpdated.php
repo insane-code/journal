@@ -7,7 +7,7 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Insane\Journal\Models\Core\Account;
 
-class AccountCreated
+class AccountUpdated
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 

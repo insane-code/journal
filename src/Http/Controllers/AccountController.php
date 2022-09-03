@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Insane\Journal\Events\AccountCreated;
+use Insane\Journal\Events\AccountUpdated;
 use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\AccountDetailType;
 use Insane\Journal\Models\Core\Category;
@@ -58,6 +59,18 @@ class AccountController
             return $response->sendContent($account);
         }
         return Redirect()->back();
+    }
+
+    public function update(Account $account) {
+        $postData = request()->post();
+        $postData['user_id'] = request()->user()->id;
+        $postData['team_id'] = request()->user()->current_team_id;
+        $updatedAccount = $account->update($postData);
+        AccountUpdated::dispatch($account, $postData);
+        if (request()->query('json')) {
+            return response()->sendContent($updatedAccount);
+        }
+        return redirect()->back();
     }
 
     public function show(Request $request, $id) {
