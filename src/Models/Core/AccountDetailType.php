@@ -2,12 +2,10 @@
 
 namespace Insane\Journal\Models\Core;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class AccountDetailType extends Model
 {
-    use HasFactory;
     protected $fillable = ['team_id', 'name', 'description', 'label', 'config'];
 
     const CASH = 'cash';
