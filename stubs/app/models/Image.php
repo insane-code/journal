@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Insane\Journal\Image as JournalImage;
+use Insane\Journal\Models\Core\Image as CoreImage;
 
-class Image extends JournalImage {
+class Image extends CoreImage {
     
 }

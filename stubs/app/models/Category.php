@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Insane\Journal\Category as JournalCategory;
+use Insane\Journal\Models\Core\Category as CoreCategory;
 
-class Category extends JournalCategory {
+class Category extends CoreCategory {
     
 }
