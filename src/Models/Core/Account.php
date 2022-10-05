@@ -94,7 +94,10 @@ class Account extends Model
      */
     public function getBalanceAttribute()
     {
-        return 10;
+        return $this->transactions()->where('status', 'verified')->sum(DB::raw("CASE
+        WHEN transactions.direction = 'WITHDRAW'
+        THEN total * -1
+        ELSE total * 1 END"));
     }
 
     public static function guessAccount($session, $labels, $data = []) {
