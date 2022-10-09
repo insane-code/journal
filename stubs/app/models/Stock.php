@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Insane\Journal\Stock as JournalStock;
+use Insane\Journal\Models\Inventory\Stock as InventoryStock;
 
-class Stock extends JournalStock {
+class Stock extends InventoryStock {
     
 }

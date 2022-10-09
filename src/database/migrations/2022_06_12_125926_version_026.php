@@ -15,7 +15,7 @@ return new class extends Migration
     {
 
         Schema::table('transactions', function (Blueprint $table) {
-            $table->foreignId('transaction_category_id')->nullable();
+            $table->foreignId('category_id')->nullable();
         });
     }
 
@@ -27,7 +27,7 @@ return new class extends Migration
     public function down()
     {
         Schema::table('transactions', function (Blueprint $table) {
-            $table->dropColumn('transaction_category_id');
+            $table->dropColumn('category_id');
         });
     }
 };

@@ -12,10 +12,28 @@ class Transaction extends Model
     const DIRECTION_CREDIT = 'WITHDRAW';
     const DIRECTION_ENTRY = 'ENTRY';
     const STATUS_DRAFT = 'draft';
+    const STATUS_PLANNED = 'planned';
     const STATUS_VERIFIED = 'verified';
     const STATUS_CANCELED = 'canceled';
 
-    protected $fillable = ['team_id','user_id', 'payee_id','transactionable_id', 'transactionable_type' , 'date','number', 'description', 'direction', 'notes', 'total', 'currency_code', 'status', 'transaction_category_id','category_id', 'account_id'];
+    protected $fillable = [
+        'team_id',
+        'user_id',
+        'payee_id',
+        'transactionable_id',
+        'category_id',
+        'counter_account_id',
+        'account_id',
+        'transactionable_type' ,
+        'date',
+        'number',
+        'description',
+        'direction',
+        'notes',
+        'total',
+        'currency_code',
+        'status'
+    ];
 
        /**
      * The "booted" method of the model.
@@ -53,7 +71,7 @@ class Transaction extends Model
     }
 
     public function transactionCategory() {
-        return $this->belongsTo(Category::class, 'transaction_category_id');
+        return $this->belongsTo(Category::class, 'category_id');
     }
 
     public function payee() {
@@ -89,11 +107,17 @@ class Transaction extends Model
         $account = Account::find($transactionData['account_id']);
         $currencyCode = $transactionData['currency_code'] ?? $account->currency_code;
         $payeeId = $transactionData["payee_id"];
+
         if ($transactionData["payee_id"] == 'new') {
             $payee = Payee::findOrCreateByName($transactionData, $transactionData['payee_label'] ?? 'General Provider');
             $payeeId = $payee->id;
             $transactionData["payee_id"] = $payeeId;
+            $transactionData["counter_account_id"] = $payee->account_id;
+        } else if ($transactionData["payee_id"]) {
+            $payee = Payee::find($transactionData['payee_id']);
+            $transactionData["counter_account_id"] = $transactionData["counter_account_id"] ?? $payee->account_id;
         }
+
         $transaction = Transaction::where([
             "team_id" => $transactionData['team_id'],
             'date' => $transactionData['date'],
@@ -103,14 +127,15 @@ class Transaction extends Model
             'direction' => $transactionData['direction'],
             'payee_id' => $payeeId,
         ])->first();
+
         if ($transaction) {
             $transaction->updateTransaction($transactionData);
         } else {
-            $transaction = Transaction::create($transactionData);
             $items = isset($transactionData['items']) ? $transactionData['items'] : [];
+            $transaction = Transaction::create($transactionData);
             $transaction->createLines($items);
         }
-        
+
         TransactionCreated::dispatch($transaction);
         return $transaction;
     }
@@ -127,22 +152,24 @@ class Transaction extends Model
         if (!count($items)) {
             $this->lines()->create([
                 "amount" => $this->total,
+                "date" => $this->date,
                 "concept" => $this->description,
                 "index" => 0,
                 "anchor" => 1,
                 "type"=> $this->direction == 'DEPOSIT' ? 1 : -1,
                 "account_id" => $this->account_id,
-                "category_id" => 0,
+                "category_id" => $this->category_id,
                 "team_id" => $this->team_id,
                 "user_id" => $this->user_id
             ]);
 
             $this->lines()->create([
                 "amount" => $this->total,
+                "date" => $this->date,
                 "concept" => $this->description,
                 "index" => 1,
                 "type"=> $this->direction == 'DEPOSIT' ? -1 : 1,
-                "account_id" => $this->category_id,
+                "account_id" => $this->counter_account_id ?? $this->payee->account_id,
                 "category_id" => 0,
                 "team_id" => $this->team_id,
                 "user_id" => $this->user_id
@@ -191,7 +218,7 @@ class Transaction extends Model
             ->whereIn('categories.display_id', $displayIds)
             ->join('categories as sub', 'sub.parent_id', '=', 'categories.id')
             ->pluck('sub.id');
-            return $query->whereIn('transaction_category_id', $categories);
+            return $query->whereIn('category_id', $categories);
     }
 
     public static function parser($transaction) {

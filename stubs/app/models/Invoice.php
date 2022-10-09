@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Insane\Journal\Invoice as JournalInvoice;
+use Insane\Journal\Models\Invoice\Invoice as InvoiceInvoice;
 
-class Invoice extends JournalInvoice {
+class Invoice extends InvoiceInvoice {
     
 }

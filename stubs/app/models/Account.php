@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Insane\Journal\Account as JournalAccount;
+use Insane\Journal\Models\Core\Account as CoreAccount;
 
-class Account extends JournalAccount {
+class Account extends CoreAccount {
     
 }

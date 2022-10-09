@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Insane\Journal\Payment as JournalPayment;
+use Insane\Journal\Models\Core\Payment as CorePayment;
 
-class Payment extends JournalPayment {
+class Payment extends CorePayment {
     
 }

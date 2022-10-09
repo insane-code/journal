@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Insane\Journal\ProductsOption as JournalProductsOption;
+use Insane\Journal\Models\Product\ProductsOption as ProductProductsOption;
 
-class ProductsOption extends JournalProductsOption {
+class ProductsOption extends ProductProductsOption {
     
 }

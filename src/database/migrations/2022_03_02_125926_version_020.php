@@ -50,8 +50,8 @@ return new class extends Migration
         });
 
         Schema::table('transactions', function (Blueprint $table) {
-            $table->foreignId('account_id',)->after('resource_id');
-            $table->foreignId('category_id')->nullable()->after('account_id');
+            $table->foreignId('account_id')->nullable()->after('resource_id');
+            $table->foreignId('counter_account_id')->nullable()->after('account_id');
             $table->decimal('currency_rate', 11, 4)->default(1)->after('currency_code');
         });
     }
