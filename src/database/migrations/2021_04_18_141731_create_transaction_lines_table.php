@@ -22,6 +22,7 @@ class CreateTransactionLinesTable extends Migration
             // content
             $table->foreignId('account_id')->nullable();
             $table->foreignId('category_id')->nullable();
+            $table->date('date');
             $table->integer('type')->default(1)->comment("1 debit, -1 credit");
             $table->text('concept', 300);
             $table->decimal('amount', 11, 2)->default(0.00);

@@ -88,16 +88,16 @@ class Account extends Model
     }
 
     /**
-     * Get the current balance.
+     * Get account balance.
      *
      * @return string
      */
     public function getBalanceAttribute()
     {
-        return $this->transactions()->where('status', 'verified')->sum(DB::raw("CASE
-        WHEN transactions.direction = 'WITHDRAW'
-        THEN total * -1
-        ELSE total * 1 END"));
+        return $this->transactionLines()
+        ->where('transactions.status', 'verified')
+        ->join('transactions', 'transactions.id', 'transaction_lines.transaction_id')
+        ->sum(DB::raw("amount * type"));
     }
 
     public static function guessAccount($session, $labels, $data = []) {
@@ -135,14 +135,16 @@ class Account extends Model
     }
 
     public static function getByDetailTypes($teamId, $detailTypes = AccountDetailType::ALL) {
-        return Account::where('accounts.team_id', $teamId)->byDetailTypes($detailTypes)
-            ->orderBy('index', )->get();
+        return Account::where('accounts.team_id', $teamId)
+        ->byDetailTypes($detailTypes)
+        ->orderBy('index', )
+        ->get();
     }
 
     public function scopeByDetailTypes($query, array $detailTypes) {
-        return $query->
-        join('account_detail_types', 'account_detail_types.id', '=', 'accounts.account_detail_type_id')
-        ->whereIn('account_detail_types.name', $detailTypes)
-        ->select('accounts.*');
+        return $query->join(
+            'account_detail_types',
+            'account_detail_types.id', '=', 'accounts.account_detail_type_id'
+        )->whereIn('account_detail_types.name', $detailTypes)->select('accounts.*');
     }
 }

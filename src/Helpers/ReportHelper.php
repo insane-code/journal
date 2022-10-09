@@ -70,7 +70,7 @@ class ReportHelper {
         'direction' => Transaction::DIRECTION_CREDIT,
         'status' => 'verified'
     ])
-    ->whereNotNull('transaction_category_id')
+    ->whereNotNull('category_id')
     ->selectRaw('sum(COALESCE(total,0)) as total, YEAR(transactions.date) as year, MONTH(transactions.date) as months')
     ->groupByRaw('MONTH(transactions.date), YEAR(transactions.date)')
     ->get();
@@ -84,10 +84,10 @@ class ReportHelper {
         'direction' => Transaction::DIRECTION_CREDIT,
         'transactions.status' => 'verified'
     ])
-    ->whereNotNull('transaction_category_id')
-    ->selectRaw('sum(COALESCE(total,0)) as total, date_format(transactions.date, "%Y-%m-01") as date, categories.name, categories.id')
+    ->whereNotNull('category_id')
+    ->selectRaw('sum(COALESCE(total, 0)) as total, date_format(transactions.date, "%Y-%m-01") as date, categories.name, categories.id')
     ->groupByRaw('date_format(transactions.date, "%Y-%m"), categories.id')
-    ->join('categories', 'transactions.transaction_category_id', '=', 'categories.id')
+    ->join('categories', 'transactions.category_id', '=', 'categories.id')
     ->get();
   }
 

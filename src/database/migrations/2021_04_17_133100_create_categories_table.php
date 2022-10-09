@@ -21,6 +21,8 @@ class CreateCategoriesTable extends Migration
             $table->foreignId('parent_id')->nullable();
             $table->foreignId('resource_type_id')->nullable();
 
+            $table->string('color')->nullable();
+            $table->text('icon')->nullable();
             $table->string('resource_type', 100)->nullable();
             $table->string('display_id');
             $table->string('name', 100);
@@ -28,6 +30,7 @@ class CreateCategoriesTable extends Migration
             $table->integer('index')->default(0);
             $table->integer('depth')->default(0);
             $table->enum('status', ['disabled','active'])->default('active');
+            $table->json('meta_data')->nullable();
             $table->timestamps();
         });
     }

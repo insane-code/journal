@@ -7,7 +7,18 @@ use Illuminate\Database\Eloquent\Model;
 
 class TransactionLine extends Model
 {
-    protected $fillable = ['team_id','user_id','category_id', 'account_id', 'concept', 'amount', 'index', 'anchor', 'type'];
+    protected $fillable = [
+        'team_id',
+        'user_id',
+        'category_id',
+        'account_id',
+        'date',
+        'concept',
+        'amount',
+        'index',
+        'anchor',
+        'type'
+    ];
 
     public function user()
     {

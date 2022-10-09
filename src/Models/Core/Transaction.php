@@ -11,16 +11,31 @@ class Transaction extends Model
     const DIRECTION_DEBIT = 'DEPOSIT';
     const DIRECTION_CREDIT = 'WITHDRAW';
     const DIRECTION_ENTRY = 'ENTRY';
-
     const STATUS_DRAFT = 'draft';
     const STATUS_PLANNED = 'planned';
     const STATUS_VERIFIED = 'verified';
-    const STATUS_CLEARED = 'cleared';
     const STATUS_CANCELED = 'canceled';
 
-    protected $fillable = ['team_id','user_id', 'payee_id','transactionable_id', 'transactionable_type' , 'date','number', 'description', 'direction', 'notes', 'total', 'currency_code', 'status', 'category_id','category_id', 'account_id'];
+    protected $fillable = [
+        'team_id',
+        'user_id',
+        'payee_id',
+        'transactionable_id',
+        'category_id',
+        'counter_account_id',
+        'account_id',
+        'transactionable_type' ,
+        'date',
+        'number',
+        'description',
+        'direction',
+        'notes',
+        'total',
+        'currency_code',
+        'status'
+    ];
 
-    /**
+       /**
      * The "booted" method of the model.
      *
      * @return void
@@ -97,6 +112,10 @@ class Transaction extends Model
             $payee = Payee::findOrCreateByName($transactionData, $transactionData['payee_label'] ?? 'General Provider');
             $payeeId = $payee->id;
             $transactionData["payee_id"] = $payeeId;
+            $transactionData["counter_account_id"] = $payee->account_id;
+        } else if ($transactionData["payee_id"]) {
+            $payee = Payee::find($transactionData['payee_id']);
+            $transactionData["counter_account_id"] = $transactionData["counter_account_id"] ?? $payee->account_id;
         }
 
         $transaction = Transaction::where([
@@ -112,11 +131,11 @@ class Transaction extends Model
         if ($transaction) {
             $transaction->updateTransaction($transactionData);
         } else {
-            $transaction = Transaction::create($transactionData);
             $items = isset($transactionData['items']) ? $transactionData['items'] : [];
+            $transaction = Transaction::create($transactionData);
             $transaction->createLines($items);
         }
-        
+
         TransactionCreated::dispatch($transaction);
         return $transaction;
     }
@@ -133,22 +152,24 @@ class Transaction extends Model
         if (!count($items)) {
             $this->lines()->create([
                 "amount" => $this->total,
+                "date" => $this->date,
                 "concept" => $this->description,
                 "index" => 0,
                 "anchor" => 1,
                 "type"=> $this->direction == 'DEPOSIT' ? 1 : -1,
                 "account_id" => $this->account_id,
-                "category_id" => 0,
+                "category_id" => $this->category_id,
                 "team_id" => $this->team_id,
                 "user_id" => $this->user_id
             ]);
 
             $this->lines()->create([
                 "amount" => $this->total,
+                "date" => $this->date,
                 "concept" => $this->description,
                 "index" => 1,
                 "type"=> $this->direction == 'DEPOSIT' ? -1 : 1,
-                "account_id" => $this->category_id,
+                "account_id" => $this->counter_account_id ?? $this->payee->account_id,
                 "category_id" => 0,
                 "team_id" => $this->team_id,
                 "user_id" => $this->user_id

@@ -27,7 +27,7 @@ class CreateTransactionsTable extends Migration
             // header
             $table->string('transactionable_type')->nullable();
             $table->string('description', 200);
-            $table->enum('direction', ['DEPOSIT','WITHDRAW', 'ENTRY'])->default('DEPOSIT');
+            $table->enum('direction', ['DEPOSIT','WITHDRAW'])->default('DEPOSIT');
 
             // footer
             $table->text('notes')->nullable();
@@ -35,7 +35,9 @@ class CreateTransactionsTable extends Migration
             // totals
             $table->string('currency_code', 3)->default('DOP');
             $table->decimal('total', 11, 2)->default(0.00);
-            $table->enum('status', ['draft','verified', 'canceled'])->default('draft');
+            $table->enum('status', ['draft','planned', 'verified', 'canceled'])->default('draft');
+            $table->boolean('is_transfer')->default(false);
+            $table->json('meta_data')->nullable();
             $table->timestamps();
         });
     }
