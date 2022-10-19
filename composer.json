@@ -15,7 +15,9 @@
     ],
     "minimum-stability": "dev",
     "prefer-stable":true,
-    "require": {},
+    "require": {
+        "staudenmeir/belongs-to-through": "^2.5"
+    },
     "require-dev": {
         "symfony/thanks": "^1.0",
         "phpunit/phpunit": "^7.4@dev",

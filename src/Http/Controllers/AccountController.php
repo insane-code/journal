@@ -6,6 +6,7 @@ namespace Insane\Journal\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Insane\Journal\Contracts\DeleteAccounts;
 use Insane\Journal\Events\AccountCreated;
 use Insane\Journal\Events\AccountUpdated;
 use Insane\Journal\Models\Core\Account;
@@ -86,12 +87,10 @@ class AccountController
     }
 
     public function destroy(Request $request, $id) {
-        $teamId = $request->user()->current_team_id;
-        $account = Account::where('id', $id)->with(['transactions'])->get()->first();
-        if ($account->payee && $account->team_id != $teamId) {
-            $account->payee->delete();
-        }
-        $account->delete();
+        $account = Account::findOrFail($id);
+        $deleter = app(DeleteAccounts::class);
+        $deleter->validate($request->user(), $account);
+        $deleter->delete($account);
         return Redirect()->back();
     }
 

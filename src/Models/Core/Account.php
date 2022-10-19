@@ -70,7 +70,7 @@ class Account extends Model
     }
     public function transactionLines()
     {
-        return $this->hasMany(TransactionLine::class);
+        return $this->hasMany(TransactionLine::class)->orderByDesc('date');
     }
 
     public function expense_transactions()
