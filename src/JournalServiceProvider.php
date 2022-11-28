@@ -81,6 +81,10 @@ class JournalServiceProvider extends ServiceProvider
             __DIR__ . '/database/seeders/accounting.php' => database_path('seeds/accounting.php'),
             ], 'journal:accounting-seeds');
 
+            $this->publishes([
+            __DIR__ . '/database/migrations/accounting.php' => database_path('seeds/accounting.php'),
+            ], 'journal:migrations');
+
         }
     }
 }
