@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\Payment;
 
-abstract class HasPayments extends Model
+trait HasPayments
 {
     /**
      * The primary key for the model.
@@ -45,14 +45,13 @@ abstract class HasPayments extends Model
 
     public function createPayment($formData)
     {
-        $formData['amount'] = $formData['amount'] > $this->debt ? $this->debt : $formData['amount'];
-
+        // $formData['amount'] = $formData['amount'] > $this->debt ? $this->debt : $formData['amount'];
         return $this->payments()->create(array_merge(
             $formData,
             [
-                'user_id' => $this->user_id,
-                'team_id' => $this->team_id,
-                'client_id' => $this->client_id
+                'user_id' => $formData['user_id'] ?? $this->user_id,
+                'team_id' => $formData['team_id'] ?? $this->team_id,
+                'client_id' => $formData['client_id'] ?? $this->client_id,
             ]
         ));
     }

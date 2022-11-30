@@ -8,7 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class Payment extends Model
 {
     use HasFactory;
-    protected $fillable = ['team_id','user_id', 'client_id', 'payable_id', 'payable_type', 'payment_date','concept', 'notes', 'account_id', 'amount'];
+    protected $fillable = ['team_id','user_id', 'client_id', 'payable_id', 'payable_type', 'payment_date','concept', 'notes', 'account_id', 'amount', 'documents'];
+    protected $casts = [
+        'documents' => 'array'
+    ];
 
     protected static function booted()
     {
@@ -46,8 +49,9 @@ class Payment extends Model
             "direction" => "DEPOSIT",
             "total" => $this->amount,
             "account_id" => $this->account_id,
-            "category_id" => $this->payable->account_id
+            "counter_account_id" => $this->payable->account_id
         ];
+
 
         $transaction = $this->transaction()->create($transactionData);
         $transaction->createLines([]);
