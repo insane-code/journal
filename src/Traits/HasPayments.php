@@ -7,16 +7,10 @@ use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\Payment;
 
 trait HasPayments
-{
-    /**
-     * The primary key for the model.
-     *
-     * @var string
-     */
-    protected $statusField;
-    
-    protected static function booted()
+{  
+    protected static function boot()
     {
+        parent::boot();
         static::saving(function ($payable) {
             self::calculateTotal($payable);
             self::checkPayments($payable);
@@ -38,7 +32,8 @@ trait HasPayments
         if ($payable && $payable->payments) {
             $totalPaid = $payable->payments()->sum('amount');
             $payable->amount_paid = $totalPaid;
-            $statusField = $payable->statusField;
+            $payable->amount_debt = $payable->amount - $totalPaid ;
+            $statusField = $payable->getStatusField();
             $payable->$statusField = self::checkStatus($payable);
         }
     }

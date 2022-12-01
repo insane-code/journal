@@ -12,11 +12,12 @@ abstract class Transactionable extends Model
     protected $creditCategory;
     protected $creditAccount;
 
-    protected static function booted()
+    protected static function boot()
     {
+        parent::boot();
         static::saving(function ($transactionable) {
             $transactionable->client_account_id = $transactionable->client_account_id ?? self::createContactAccount($transactionable);
-            $transactionable->account_id = $transactionable->account_id ??self::createPayableAccount($transactionable);
+            $transactionable->account_id = $transactionable->account_id ?? self::createPayableAccount($transactionable);
         });
 
         static::deleting(function ($transactionable) {

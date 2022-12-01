@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreatePaymentsTable extends Migration
+class CreatePaymentDocumentsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,15 +13,14 @@ class CreatePaymentsTable extends Migration
      */
     public function up()
     {
-        Schema::create('payments', function (Blueprint $table) {
+        Schema::create('payment_documents', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id');
             $table->foreignId('team_id');
             $table->foreignId('client_id');
-            $table->foreignId('payment_document_id')->nullable();
 
-            $table->foreignId('payable_id');
-            $table->string('payable_type');
+            $table->foreignId('resource_id');
+            $table->string('resource_type');
 
             $table->foreignId('payment_method_id')->nullable();
             $table->foreignId('account_id');
