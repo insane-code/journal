@@ -23,7 +23,7 @@ trait HasPaymentDocuments
 
     public static function checkPayments($payable)
     {
-        if ($payable && $payable->payments) {
+        if ($payable && $payable->paymentDocuments) {
             $totalPaid = $payable->paymentDocuments()->sum('amount');
             $statusField = $payable->getStatusField();
             $payable->amount_paid = $totalPaid;
