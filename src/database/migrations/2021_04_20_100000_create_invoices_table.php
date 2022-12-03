@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateInvoice extends Migration
+return new class extends Migration
 {
     /**
      * Run the migrations.
@@ -24,9 +24,9 @@ class CreateInvoice extends Migration
             $table->string('invoiceable_type')->nullable();
 
             // content
-
             $table->string('series', 10);
             $table->integer('number');
+            $table->text('order_number')->nullable();
             $table->date('date');
             $table->date('due_date');
 
@@ -34,8 +34,15 @@ class CreateInvoice extends Migration
             $table->string('concept', 50);
             $table->string('description', 200);
             $table->text('logo')->nullable();
+            // contact information
+            $table->string('contact_name')->nullable();
+            $table->string('contact_email')->nullable();
+            $table->string('contact_tax_number')->nullable();
+            $table->string('contact_phone')->nullable();
+            $table->string('contact_address')->nullable();
 
             // footer
+            $table->boolean('taxes_included')->default(false);
             $table->text('notes')->nullable();
             $table->text('footer')->nullable();
 
@@ -46,9 +53,13 @@ class CreateInvoice extends Migration
             $table->decimal('discount', 11, 2)->default(0.00);
             $table->decimal('total', 11, 2)->default(0.00);
             $table->decimal('debt', 11, 2)->default(0.00);
+            $table->string('currency_code')->default("DOP");
+            $table->decimal('currency_rate', 11, 4)->default(1);
+
             $table->enum('type', ['INVOICE','EXPENSE'])->default('INVOICE');
             $table->enum('status', ['draft','unpaid','partial', 'paid', 'canceled', 'overdue'])->default('draft');
             // structure
+            $table->timestamp('deleted_at')->nullable();
             $table->timestamps();
         });
     }
@@ -62,4 +73,4 @@ class CreateInvoice extends Migration
     {
         Schema::dropIfExists('invoices');
     }
-}
+};

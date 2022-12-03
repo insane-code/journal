@@ -15,18 +15,12 @@ return new class extends Migration
     {
         Schema::create('account_detail_types', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('team_id')->nullable();
             $table->string('name');
             $table->string('label');
             $table->text('description');
             $table->json('config');
             $table->timestamps();
-        });
-
-        Schema::table('accounts', function (Blueprint $table) {
-            $table->foreignId('account_detail_type_id')->default(1);
-            $table->foreignId('parent_id')->nullable();
-            $table->foreignId('tax_id')->nullable();
-            $table->decimal('opening_balance', 11, 2)->default(0);
         });
     }
 
@@ -38,11 +32,5 @@ return new class extends Migration
     public function down()
     {
         Schema::dropIfExists('account_detail_types');
-        Schema::table('accounts', function (Blueprint $table) {
-            $table->dropColumn('account_detail_type_id');
-            $table->dropColumn('parent_id');
-            $table->dropColumn('tax_id');
-            $table->dropColumn('opening_balance');
-        });
     }
 };

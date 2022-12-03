@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateProductsOptionsTable extends Migration
+return new class extends Migration
 {
     /**
      * Run the migrations.
@@ -13,19 +13,18 @@ class CreateProductsOptionsTable extends Migration
      */
     public function up()
     {
-        Schema::create('products_options', function (Blueprint $table) {
+        Schema::create('invoice_line_taxes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id');
             $table->foreignId('team_id');
-            $table->foreignId('product_id')->nullable();
-            $table->foreignId('products_variant_id')->nullable();
-
-            // content
+            $table->foreignId('invoice_id');
+            $table->foreignId('invoice_line_id');
+            $table->foreignId('tax_id');
+            $table->integer('index')->default(0);
             $table->string('name');
-            $table->string('input_type');
-            $table->boolean('is_required')->default(0);
-
-            // structure
+            $table->decimal('amount', 11, 4);
+            $table->decimal('amount_base', 11, 4);
+            $table->decimal('rate', 11, 2)->default(0.00);
             $table->timestamps();
         });
     }
@@ -37,6 +36,6 @@ class CreateProductsOptionsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('products_options');
+        Schema::dropIfExists('invoice_line_taxes');
     }
-}
+};

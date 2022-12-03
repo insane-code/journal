@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class Accounts extends Migration
+class CreateAccountsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -20,6 +20,9 @@ class Accounts extends Migration
             $table->foreignId('user_id');
             $table->foreignId('client_id')->nullable();
             $table->foreignId('category_id')->nullable();
+            $table->foreignId('account_detail_type_id')->default(1);
+            $table->foreignId('parent_id')->nullable();
+            $table->foreignId('tax_id')->nullable();
 
             // Basic
             $table->string('display_id');
@@ -27,6 +30,8 @@ class Accounts extends Migration
             $table->text('description')->nullable();
             $table->string('currency_code', 4)->default("DOP");
             $table->integer('index')->default(0);
+            $table->decimal('opening_balance', 11, 2)->default(0);
+            $table->decimal('current_balance', 11, 2)->default(0);
 
             // direction
             $table->boolean('archivable')->default(0);

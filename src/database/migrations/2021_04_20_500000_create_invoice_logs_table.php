@@ -13,9 +13,14 @@ return new class extends Migration
      */
     public function up()
     {
-
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->foreignId('category_id')->nullable();
+        Schema::create('invoice_logs', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->nullable();
+            $table->foreignId('team_id');
+            $table->foreignId('invoice_id');
+            $table->string('status');
+            $table->boolean('notify');
+            $table->timestamps();
         });
     }
 
@@ -26,8 +31,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->dropColumn('category_id');
-        });
+        Schema::dropIfExists('invoice_logs');
     }
 };

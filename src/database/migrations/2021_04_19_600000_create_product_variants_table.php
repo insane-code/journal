@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateProductsOptionsValuesTable extends Migration
+return new class extends Migration
 {
     /**
      * Run the migrations.
@@ -13,19 +13,23 @@ class CreateProductsOptionsValuesTable extends Migration
      */
     public function up()
     {
-        Schema::create('products_options_values', function (Blueprint $table) {
+        Schema::create('products_variants', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id');
             $table->foreignId('team_id');
-            $table->foreignId('product_id');
-            $table->foreignId('products_option_id');
+            $table->foreignId('product_type_id');
+            $table->foreignId('category_id');
 
             // content
             $table->string('name');
-            $table->json('hexColors');
-            $table->enum('price_modifier_operator', ['plus', 'minus']);
-            $table->enum('price_modifier_type', ['fixed', 'percent']);
-            $table->decimal('price_modifier_amount', 11, 2);
+            $table->string('slug');
+            $table->string('sku');
+            $table->text('description');
+            $table->text('descriptionHTML');
+            $table->integer('weight');
+            $table->boolean('available');
+
+            // structure
             $table->timestamps();
         });
     }
@@ -37,6 +41,6 @@ class CreateProductsOptionsValuesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('products_options_values');
+        Schema::dropIfExists('products_variants');
     }
-}
+};

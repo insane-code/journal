@@ -16,6 +16,10 @@ trait HasPaymentDocuments
         });
     }
 
+    public function getTotalField() {
+        return 'amount';
+    }
+
     public function paymentDocuments()
     {
         return $this->morphMany(PaymentDocument::class, 'resource');
@@ -33,8 +37,9 @@ trait HasPaymentDocuments
 
     public function createPayment($formData)
     {
+        $totalField = $this->getTotalField();
         $balance = $formData['amount'] + $this->amount_paid;
-        if ($balance <= $this->amount) {
+        if ($balance <= $this->$totalField) {
             $document = $this->paymentDocuments()->create(array_merge(
                 $formData,
                 [
@@ -53,6 +58,8 @@ trait HasPaymentDocuments
                     ));
                 $payment->payable->save();
             }
+
+            $this->save();
 
             return $document;
         } 
