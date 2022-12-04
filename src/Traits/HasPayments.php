@@ -32,7 +32,7 @@ trait HasPayments
         if ($payable && $payable->payments) {
             $totalPaid = $payable->payments()->sum('amount');
             $payable->amount_paid = $totalPaid;
-            $payable->amount_debt = $payable->amount - $totalPaid ;
+            $payable->amount_due = $payable->amount - $totalPaid ;
             $statusField = $payable->getStatusField();
             $payable->$statusField = self::checkStatus($payable);
         }

@@ -54,7 +54,7 @@ abstract class Transactionable extends Model
             'display_id' => $accountDisplayId
         ], [
             "user_id" => $payable->user_id,
-            "name" => "{$payable->client->names} Account",
+            "name" => "{$payable->client?->names} Account",
             "currency_code" => "DOP"
         ]);
        
