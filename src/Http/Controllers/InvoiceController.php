@@ -2,7 +2,6 @@
 
 namespace Insane\Journal\Http\Controllers;
 
-use Insane\Journal\Events\PaymentReceived;
 use App\Models\Client;
 use App\Models\Setting;
 use Illuminate\Http\Request;

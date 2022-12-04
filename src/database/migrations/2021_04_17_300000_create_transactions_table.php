@@ -21,6 +21,12 @@ class CreateTransactionsTable extends Migration
             $table->foreignId('resource_id')->nullable();
             $table->foreignId('transactionable_id')->nullable();
             $table->foreignId('resource_type_id')->nullable();
+            $table->foreignId('account_id')->nullable();
+            $table->foreignId('counter_account_id')->nullable();
+            $table->foreignId('category_id')->nullable();
+            $table->foreignId('payee_id')->nullable();
+            $table->string('payeable_type')->nullable();
+
             $table->integer('number');
             $table->date('date');
 
@@ -34,6 +40,7 @@ class CreateTransactionsTable extends Migration
 
             // totals
             $table->string('currency_code', 3)->default('DOP');
+            $table->decimal('currency_rate', 11, 4)->default(1);
             $table->decimal('total', 11, 2)->default(0.00);
             $table->enum('status', ['draft','planned', 'verified', 'canceled'])->default('draft');
             $table->boolean('is_transfer')->default(false);

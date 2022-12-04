@@ -21,11 +21,6 @@ return new class extends Migration
             $table->string('name');
             $table->timestamps();
         });
-
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->foreignId('payee_id')->nullable();
-            $table->string('payeable_type')->nullable();
-        });
     }
 
     /**
@@ -36,9 +31,5 @@ return new class extends Migration
     public function down()
     {
         Schema::dropIfExists('payees');
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->dropColumn('payee_id');
-            $table->dropColumn('payeable_type');
-        });
     }
 };

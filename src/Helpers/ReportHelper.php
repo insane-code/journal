@@ -193,6 +193,7 @@ class ReportHelper {
     ->where('invoices.type', '=', 'INVOICE')
 
     ->join('clients', 'clients.id', '=', 'invoices.client_id')
+    ->groupBy(['clients.names', 'clients.id', 'invoices.debt', 'invoices.due_date', 'invoices.id', 'invoices.concept'])
     ->take(5)
     ->get();
   }
@@ -206,7 +207,7 @@ class ReportHelper {
       ->where('invoices.type', '=', 'INVOICE')
       ->join('clients', 'clients.id', '=', 'invoices.client_id')
       ->take(5)
-      ->groupBy('invoices.client_id')
+      ->groupBy('invoices.client_id', 'clients.names', 'clients.id')
       ->get();
     }
 }

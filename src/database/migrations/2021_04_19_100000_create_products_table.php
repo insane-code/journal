@@ -20,6 +20,10 @@ class CreateProductsTable extends Migration
             $table->foreignId('product_type_id')->nullable();
             $table->foreignId('category_id')->nullable();
 
+            // accounting
+            $table->foreignId('income_account_id')->nullable();
+            $table->foreignId('expense_account_id')->nullable();
+
             // content
             $table->string('name');
             $table->string('slug')->nullable();
@@ -29,6 +33,7 @@ class CreateProductsTable extends Migration
             $table->integer('weight')->nullable();
             $table->boolean('available')->default(1);
             // structure
+            $table->timestamp('deleted_at')->nullable();
             $table->timestamps();
         });
     }

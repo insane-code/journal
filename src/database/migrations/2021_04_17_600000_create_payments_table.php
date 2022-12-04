@@ -18,6 +18,7 @@ class CreatePaymentsTable extends Migration
             $table->foreignId('user_id');
             $table->foreignId('team_id');
             $table->foreignId('client_id');
+            $table->foreignId('payment_document_id')->nullable();
 
             $table->foreignId('payable_id');
             $table->string('payable_type');
@@ -28,8 +29,10 @@ class CreatePaymentsTable extends Migration
             $table->date('payment_date');
             $table->decimal('amount', 11, 2);
             $table->string('concept', 50);
+            $table->string('reference', 200)->nullable();
             $table->text('notes')->nullable();
             $table->boolean('checked')->default(false);
+            $table->json('documents')->default('[]');
             $table->timestamps();
         });
     }

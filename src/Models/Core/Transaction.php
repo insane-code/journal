@@ -169,7 +169,7 @@ class Transaction extends Model
                 "concept" => $this->description,
                 "index" => 1,
                 "type"=> $this->direction == 'DEPOSIT' ? -1 : 1,
-                "account_id" => $this->counter_account_id ?? $this->payee->account_id,
+                "account_id" => $this->counter_account_id ?? $this->payee?->account_id,
                 "category_id" => 0,
                 "team_id" => $this->team_id,
                 "user_id" => $this->user_id

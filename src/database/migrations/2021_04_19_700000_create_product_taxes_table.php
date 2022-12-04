@@ -13,9 +13,13 @@ return new class extends Migration
      */
     public function up()
     {
-
-        Schema::table('account_detail_types', function (Blueprint $table) {
-            $table->foreignId('team_id')->nullable()->after('id');
+        Schema::create('product_taxes', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id');
+            $table->foreignId('team_id');
+            $table->foreignId('product_id');
+            $table->foreignId('tax_id');
+            $table->timestamps();
         });
     }
 
@@ -26,8 +30,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('account_detail_types', function (Blueprint $table) {
-            $table->dropColumn('team_id');
-        });
+        Schema::dropIfExists('product_taxes');
     }
 };

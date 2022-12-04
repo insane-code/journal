@@ -13,9 +13,9 @@ class Category extends Model
 
     public static function booted() {
         static::creating(function ($category) {
-                if (!$category->display_id) {
-                   $category->display_id = Str::Slug($category->name, "_");
-                }
+            if (!$category->display_id) {
+                $category->display_id = Str::Slug($category->name, "_");
+            }
         });
     }
 
@@ -32,12 +32,11 @@ class Category extends Model
     }
 
     public static function findOrCreateByName($session, string $name, int $parentId = null, string $resourceType = 'transactions') {
-        $category = Category::where(
-            [
-                'display_id' => Str::slug($name, "_"),
-                'name' => $name,
-                'team_id' => $session['team_id'],
-            ])->first();
+        $category = Category::where(function($query) use ($name) {
+           return $query->where('display_id', Str::slug($name, "_"))->orWhere('name', $name);
+        })->where(function ($query) use ($session) {
+            return $query->where('team_id', $session['team_id'])->orWhere('team_id', 0);
+        })->first();
 
         if (!$category) {
             $category = Category::create([
