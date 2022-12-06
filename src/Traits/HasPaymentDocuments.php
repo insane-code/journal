@@ -42,7 +42,7 @@ trait HasPaymentDocuments
         $amount = (double) $formData['amount'];
         $balance = (double) $amount + (double) $this->amount_paid;
         $total = (double) $this->$totalField;
-        if (abs($balance - $total) < 0.0001) {
+        if ($balance <= $total || $balance <= $this->$totalField) {
             $document = null;
 
             DB::transaction(function () use($formData, $document) {
