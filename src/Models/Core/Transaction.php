@@ -178,6 +178,7 @@ class Transaction extends Model
         } else {
             foreach ($items as $item) {
                 $this->lines()->create([
+                    "date" => $this->date,
                     "amount" => $item['amount'],
                     "concept" => $item['concept'],
                     "index" => $item['index'],
