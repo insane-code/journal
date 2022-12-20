@@ -3,6 +3,7 @@
 namespace Insane\Journal;
 
 use Insane\Journal\Contracts\DeleteAccounts;
+use Insane\Journal\Contracts\PdfExporter;
 
 class Journal
 {
@@ -40,5 +41,16 @@ class Journal
 
     public static function listClientsOf($teamId) {
       return (new static::$customerModel)->where('team_id', $teamId)->get();
+    }
+
+    /**
+     * Register a class / callback that should be used to print the invoices.
+     *
+     * @param  string  $class
+     * @return void
+     */
+    public static function printInvoiceUsing(string $class)
+    {
+        return app()->singleton(PdfExporter::class, $class);
     }
 }

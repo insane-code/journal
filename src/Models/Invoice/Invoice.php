@@ -88,7 +88,7 @@ class Invoice extends Model
 
     public function client()
     {
-        return $this->belongsTo(Journal::$customerModel);
+        return $this->belongsTo(Journal::$customerModel, 'client_id', 'id');
     }
 
     public function account()

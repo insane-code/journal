@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Insane\Journal\Contracts\PdfExporter;
 use Insane\Journal\Helpers\CategoryHelper;
 use Insane\Journal\Journal;
 use Insane\Journal\Models\Core\Category;
@@ -174,7 +175,14 @@ class InvoiceController
         return Redirect("/invoices/$id/edit");
     }
 
-    /**
+
+    public function print(Invoice $invoice) {
+      $exporter = app(PdfExporter::class);
+      $exporter->process($invoice);
+      return $exporter->previewAs($invoice->concept);
+    }
+
+  /**
    * add payment to invoice.
    * POST invoices/:id/add-payment
    *
