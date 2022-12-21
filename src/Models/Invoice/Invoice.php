@@ -2,7 +2,6 @@
 
 namespace Insane\Journal\Models\Invoice;
 
-use App\Models\Client;
 use App\Models\User;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +13,7 @@ use Insane\Journal\Models\Core\Category;
 use Insane\Journal\Models\Core\Payment;
 use Insane\Journal\Models\Core\Transaction;
 use Illuminate\Support\Facades\Bus;
+use Insane\Journal\Journal;
 
 class Invoice extends Model
 {
@@ -88,7 +88,7 @@ class Invoice extends Model
 
     public function client()
     {
-        return $this->belongsTo(Client::class);
+        return $this->belongsTo(Journal::$customerModel, 'client_id', 'id');
     }
 
     public function account()
@@ -198,7 +198,7 @@ class Invoice extends Model
         ];
         $categoryName = $categoryNames[$invoice->type];
         $category = Category::where('display_id', $categoryName)->first();
-        
+
         $account = Account::where([
                 'client_id' => $invoice->client_id,
                 'category_id' => $category->id

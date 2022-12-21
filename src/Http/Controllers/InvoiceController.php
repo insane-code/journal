@@ -6,7 +6,9 @@ use App\Models\Client;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Insane\Journal\Contracts\PdfExporter;
 use Insane\Journal\Helpers\CategoryHelper;
+use Insane\Journal\Journal;
 use Insane\Journal\Models\Core\Category;
 use Insane\Journal\Models\Core\Tax;
 use Insane\Journal\Models\Invoice\Invoice;
@@ -21,7 +23,7 @@ class InvoiceController
         $this->searchable = ['name'];
         $this->validationRules = [];
     }
-    
+
     public function isBill(Request $request) {
         return  $isBill = str_contains($request->url(), 'bills');
     }
@@ -32,13 +34,13 @@ class InvoiceController
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Index', [
             "invoices" => Invoice::where([
                 'type'=> $type,
-                'team_id' => $request->user()->currentTeam->id    
+                'team_id' => $request->user()->currentTeam->id
             ])->orderByDesc('date')->orderByDesc('number')->paginate()->through(function ($invoice) {
                 return [
                     "id" => $invoice->id,
                     "concept" => $invoice->concept,
                     "date" => $invoice->date,
-                    "client_name" => $invoice->client->names,
+                    "client_name" => $invoice->client?->names,
                     "number" => $invoice->number,
                     "series" => $invoice->series,
                     "status" => $invoice->status,
@@ -154,7 +156,7 @@ class InvoiceController
             ])->get(),
             'type' => $type,
             // change this to be dinamyc
-            'clients' => Client::where('team_id', $teamId)->get()
+            'clients' => Journal::listClientsOf($teamId)
         ]);
     }
 
@@ -173,7 +175,14 @@ class InvoiceController
         return Redirect("/invoices/$id/edit");
     }
 
-    /**
+
+    public function print(Invoice $invoice) {
+      $exporter = app(PdfExporter::class);
+      $exporter->process($invoice);
+      return $exporter->previewAs($invoice->concept);
+    }
+
+  /**
    * add payment to invoice.
    * POST invoices/:id/add-payment
    *

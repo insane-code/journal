@@ -46,11 +46,11 @@ class CreateInvoiceTransaction implements ShouldQueue
         $this->formData['user_id'] = $this->invoice->user_id;
         $this->formData['resource_id'] = $this->invoice->id;
         $this->formData['transactionable_id'] = Invoice::class;
-        $this->formData['date'] = isset($this->formData['date']) ? $this->formData['date'] : date('Y-m-d');
-        $this->formData["description"] = isset($this->formData["description"]) ? $this->formData["description"] : $this->invoice->description;
+        $this->formData['date'] =  $this->formData['date'] ?? $this->invoice->date ?? date('Y-m-d');
+        $this->formData["description"] = $this->formData["description"] ?? $this->invoice->description;
         $this->formData["direction"] = $directions[$this->invoice->type];
-        $this->formData["total"] = isset($this->formData["total"]) ? $this->formData["total"] : $this->invoice->total;
-        $this->formData["account_id"] = isset($this->formData['account_id']) ? $this->formData['account_id'] : $setting["default.{$this->formData['transactionType']}.account"];
+        $this->formData["total"] =  $this->formData["total"] ?? $this->invoice->total;
+        $this->formData["account_id"] = $this->formData['account_id'] ?? $setting["default.{$this->formData['transactionType']}.account"];
         $this->formData["category_id"] = null;
         $this->formData["status"] = "verified";
 
