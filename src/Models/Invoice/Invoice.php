@@ -41,7 +41,7 @@ class Invoice extends Model
     ];
 
     const DOCUMENT_TYPE_INVOICE = 'INVOICE';
-    const DOCUMENT_TYPE_BILL = 'BILL';
+    const DOCUMENT_TYPE_BILL = 'EXPENSE';
 
     /**
      * The "booted" method of the model.
@@ -74,6 +74,17 @@ class Invoice extends Model
             Payment::where('invoice_id', $invoice->id)->delete();
             InvoiceLine::where('invoice_id', $invoice->id)->delete();
         });
+    }
+
+     /**
+     * Scope a query to only include popular users.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeLate($query)
+    {
+        return $query->whereNotIn('status', ['paid', 'draft'])->whereRaw("curdate() > due_date");
     }
 
     public function user()

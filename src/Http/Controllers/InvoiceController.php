@@ -30,7 +30,7 @@ class InvoiceController
 
     public function index(Request $request)
     {
-        $type = $this->isBill($request) ? 'BILL' : 'INVOICE';
+        $type = $this->isBill($request) ? INVOICE::DOCUMENT_TYPE_BILL : INVOICE::DOCUMENT_TYPE_INVOICE;
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Index', [
             "invoices" => Invoice::where([
                 'type'=> $type,
@@ -69,7 +69,7 @@ class InvoiceController
             'products' => Product::where([
                 'team_id' => $teamId
             ])->with(['price', 'taxes'])->get(),
-            'clients' => Client::where('team_id', $teamId)->get(),
+            'clients' => Journal::listClientsOf($teamId),
             "categories" => Category::where([
                 'depth' => 0
             ])->with([
@@ -156,7 +156,8 @@ class InvoiceController
             ])->get(),
             'type' => $type,
             // change this to be dinamyc
-            'clients' => Journal::listClientsOf($teamId)
+            'clients' => Journal::listClientsOf($teamId),
+            'availableTaxes' => Tax::where("team_id", $teamId)->get(),
         ]);
     }
 
