@@ -190,7 +190,7 @@ class AccountController
 
     public function statements(Request $request, string $category = "income") {
         $categories = [
-            "income" => ["incomes"],
+            "income" => ["income"],
             "expense" => ["expenses"],
             "tax" => ["liabilities"],
             "balance-sheet" => ["assets", "liabilities", "equity"],
@@ -218,15 +218,15 @@ class AccountController
 
 
         $categoryAccounts = Category::where([
-            'depth' => 1,
-            ])
-            ->whereIn('parent_id', $categoryIds)
-            ->with([
-            'accounts' => function ($query) use ($request) {
-                $query->where('team_id', '=', $request->user()->current_team_id);
-            },
-            'category'
-            ])->get()->toArray();
+          'depth' => 1,
+          ])
+          ->whereIn('parent_id', $categoryIds)
+          ->with([
+          'accounts' => function ($query) use ($request) {
+              $query->where('team_id', '=', $request->user()->current_team_id);
+          },
+          'category'
+        ])->get()->toArray();
 
         $categoryAccounts = array_map(function ($subCategory) use($balance) {
             $total = [];
@@ -242,6 +242,8 @@ class AccountController
             $subCategory['total'] = array_sum($total);
             return $subCategory;
         }, $categoryAccounts);
+
+        
 
         return Jetstream::inertia()->render($request, config('journal.statements_inertia_path') . '/Category', [
             "categories" => $categoryAccounts,

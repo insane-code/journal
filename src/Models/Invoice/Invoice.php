@@ -24,6 +24,7 @@ class Invoice extends Model
         'invoiceable_type',
         'invoiceable_id',
         'account_id',
+        'invoice_account_id',
         'date',
         'due_date',
         'series',
@@ -59,7 +60,7 @@ class Invoice extends Model
             Invoice::calculateTotal($invoice);
             Invoice::checkPayments($invoice);
             $invoice->account_id = $invoice->account_id ?? Invoice::createContactAccount($invoice);
-            $invoice->invoice_account_id = Invoice::createInvoiceAccount($invoice);
+            $invoice->invoice_account_id = $invoice->invoice_account_id ?? Invoice::createInvoiceAccount($invoice);
         });
 
         static::deleting(function ($invoice) {
@@ -233,6 +234,7 @@ class Invoice extends Model
 
     public static function createInvoiceAccount($invoice)
     {
+       if ($invoice->invoice_account_id) return $invoice->invoice_account_id; 
         $accounts = Account::where([
             'display_id' =>  'sales',
             'team_id' => $invoice->team_id
@@ -253,7 +255,6 @@ class Invoice extends Model
             ]);
             return $account->id;
         }
-
     }
 
     public static function checkPayments($invoice)
