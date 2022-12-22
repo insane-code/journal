@@ -23,9 +23,10 @@ class CreateAccountsTable extends Migration
             $table->foreignId('account_detail_type_id')->default(1);
             $table->foreignId('parent_id')->nullable();
             $table->foreignId('tax_id')->nullable();
-
+            
             // Basic
             $table->string('display_id');
+            $table->integer('number')->nullable();
             $table->string('name');
             $table->text('description')->nullable();
             $table->string('currency_code', 4)->default("DOP");

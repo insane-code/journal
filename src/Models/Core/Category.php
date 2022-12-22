@@ -9,7 +9,19 @@ use Illuminate\Support\Str;
 class Category extends Model
 {
     use HasFactory;
-    protected $fillable = ['team_id','user_id', 'client_id','parent_id' , 'display_id', 'name', 'description', 'depth', 'index', 'resource_type'];
+    protected $fillable = [
+      'team_id',
+      'user_id', 
+      'client_id',
+      'parent_id', 
+      'display_id', 
+      'number', 
+      'name', 
+      'description', 
+      'depth', 
+      'index', 
+      'resource_type'
+    ];
 
     public static function booted() {
         static::creating(function ($category) {

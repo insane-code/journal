@@ -19,7 +19,24 @@ class Account extends Model
      */
     protected $appends = ['balance'];
 
-    protected $fillable = ['team_id','user_id','category_id', 'account_detail_type_id', 'client_id', 'display_id', 'name', 'description', 'currency_code', 'opening_balance' , 'index', 'archivable', 'balance_type', 'type', 'archived'];
+    protected $fillable = [
+      'team_id',
+      'user_id',
+      'category_id', 
+      'account_detail_type_id', 
+      'client_id', 
+      'number',
+      'display_id',
+      'name',
+      'description', 
+      'currency_code', 
+      'opening_balance', 
+      'index', 
+      'archivable',
+      'balance_type', 
+      'type', 
+      'archived'
+    ];
 
     protected static function booted()
     {
