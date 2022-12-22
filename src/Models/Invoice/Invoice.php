@@ -108,6 +108,11 @@ class Invoice extends Model
         return $this->belongsTo(Account::class);
     }
 
+    public function invoiceAccount()
+    {
+        return $this->belongsTo(Account::class, 'invoice_account_id');
+    }
+
     public function account_client()
     {
         return Account::where('client_id', $this->client_id)->limit(1)->get()[0];

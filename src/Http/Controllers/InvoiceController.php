@@ -25,22 +25,31 @@ class InvoiceController
     }
 
     public function isBill(Request $request) {
-        return  $isBill = str_contains($request->url(), 'bills');
+        return str_contains($request->url(), 'bills');
+    }
+
+    public function getFilterType() {
+      $type = $this->isBill(request()) ? [INVOICE::DOCUMENT_TYPE_BILL] : [INVOICE::DOCUMENT_TYPE_INVOICE];
+      $filters = request()->get('filter');
+      return $filters['type'] ? explode('|', $filters['type']) : $type;
     }
 
     public function index(Request $request)
     {
-        $type = $this->isBill($request) ? INVOICE::DOCUMENT_TYPE_BILL : INVOICE::DOCUMENT_TYPE_INVOICE;
+        $type = $this->getFilterType(); 
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Index', [
             "invoices" => Invoice::where([
-                'type'=> $type,
                 'team_id' => $request->user()->currentTeam->id
-            ])->orderByDesc('date')->orderByDesc('number')->paginate()->through(function ($invoice) {
+            ])
+            ->whereIn('type', $type)
+            ->with(['invoiceAccount', 'invoiceAccount.category'])->orderByDesc('date')->orderByDesc('number')->paginate()->through(function ($invoice) {
                 return [
                     "id" => $invoice->id,
                     "concept" => $invoice->concept,
+                    "category" => $invoice->invoiceAccount->category->name,
+                    "account_name" => $invoice->invoiceAccount->name,
                     "date" => $invoice->date,
-                    "client_name" => $invoice->client?->names,
+                    "client_name" => $invoice->client?->display_name,
                     "number" => $invoice->number,
                     "series" => $invoice->series,
                     "status" => $invoice->status,
