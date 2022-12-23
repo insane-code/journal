@@ -22,6 +22,7 @@ return new class extends Migration
             $table->foreignId('invoice_account_id')->nullable();
             $table->foreignId('invoiceable_id')->nullable();
             $table->string('invoiceable_type')->nullable();
+            $table->foreignId('refund_id')->nullable();
 
             // content
             $table->string('series', 10);

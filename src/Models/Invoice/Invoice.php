@@ -88,6 +88,28 @@ class Invoice extends Model
         return $query->whereNotIn('status', ['paid', 'draft'])->whereRaw("curdate() > due_date");
     }
 
+    public function scopePaid($query)
+    {
+        return $query->whereIn('status', ['paid']);
+    }
+
+    public function scopeNoRefunded($query)
+    {
+        return $query->whereNull('refund_id');
+    }
+
+    public function scopeInvoiceAccount($query, $invoiceAccountId)
+    {
+        return $query->where('invoice_account_id', $invoiceAccountId);
+    }
+
+    public function scopeUnpaid($query)
+    {
+        return $query->whereNotIn('status', ['paid', 'draft']);
+    }
+
+    
+
     public function user()
     {
         return $this->belongsTo(User::class);
