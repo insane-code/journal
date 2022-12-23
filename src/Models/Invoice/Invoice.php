@@ -38,7 +38,8 @@ class Invoice extends Model
         'total',
         'subtotal',
         'discount',
-        'taxes_included'
+        'taxes_included',
+        'status'
     ];
 
     const DOCUMENT_TYPE_INVOICE = 'INVOICE';
@@ -108,8 +109,6 @@ class Invoice extends Model
         return $query->whereNotIn('status', ['paid', 'draft']);
     }
 
-    
-
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -133,6 +132,11 @@ class Invoice extends Model
     public function invoiceAccount()
     {
         return $this->belongsTo(Account::class, 'invoice_account_id');
+    }
+
+    public function invoiceable()
+    {
+        return $this->morphTo('invoiceable');
     }
 
     public function account_client()
@@ -300,6 +304,8 @@ class Invoice extends Model
             $status = 'paid';
         } elseif ($invoice->debt > 0 && $invoice->debt < $invoice->total) {
             $status = 'partial';
+        } elseif ($invoice->debt && $invoice->due_date < date('Y-m-d')) {
+            $status = 'overdue';
         } elseif ($invoice->debt) {
             $status = 'unpaid';
         } else {
