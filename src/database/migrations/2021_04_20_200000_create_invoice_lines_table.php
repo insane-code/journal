@@ -20,13 +20,19 @@ return new class extends Migration
             $table->foreignId('invoice_id');
             $table->foreignId('product_id')->nullable();
 
-            // content
+            // accounting
+            $table->foreignId('account_id')->nullable();
+            $table->foreignId('category_id')->nullable();
+            $table->date('date');
+            
+            // context
             $table->text('concept', 200);
             $table->decimal('price', 11, 2)->default(0.00);
             $table->decimal('quantity', 11, 2)->default(0.00);
             $table->decimal('discount', 11, 2)->default(0.00);
             $table->decimal('amount', 11, 2)->default(0.00);
             $table->integer('index')->nullable();
+            
             // structure
             $table->timestamps();
         });

@@ -121,14 +121,14 @@ class CreateInvoiceTransaction implements ShouldQueue
     
     protected function getBillItems()
     {
-        $isSell = $this->formData['direction'] == "DEPOSIT";
+        $isExpense = $this->formData['direction'] == "DEPOSIT";
         $items = [];
         $totalTaxes = InvoiceLineTax::where(["invoice_id" =>  $this->invoice->id])
             ->selectRaw('sum(amount) as amount, name')
             ->groupBy(['tax_id', 'name'])
             ->get();
 
-        $mainAccount = $isSell ? $this->invoice->account_id : Account::where([
+        $mainAccount = $isExpense ? $this->invoice->account_id : Account::where([
             "team_id" => $this->invoice->team_id, 
             "display_id" => "products"])->first()->id;
 

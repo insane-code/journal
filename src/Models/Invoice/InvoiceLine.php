@@ -3,10 +3,25 @@
 namespace Insane\Journal\Models\Invoice;
 
 use Illuminate\Database\Eloquent\Model;
+use Insane\Journal\Models\Product\Product;
 
 class InvoiceLine extends Model
 {
-    protected $fillable = ['team_id','user_id','product_id', 'concept', 'amount', 'index', 'price', 'quantity', 'subtotal', 'discount'];
+    protected $fillable = [
+      'team_id',
+      'user_id',
+      'product_id', 
+      'account_id',
+      'category_id',
+      'date',
+      'concept', 
+      'amount', 
+      'index', 
+      'price', 
+      'quantity', 
+      'subtotal', 
+      'discount'
+    ];
     protected $with = ['taxes'];
 
     public function product() {
