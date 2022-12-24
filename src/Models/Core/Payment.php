@@ -54,17 +54,30 @@ class Payment extends Model
 
 
     public function createTransaction() {
+        $direction = $this->payable->getTransactionDirection() ?? Transaction::DIRECTION_DEBIT;
+        $counterAccountId = $this->payable->getCounterAccountId();
+
+        $accounts = [
+          Transaction::DIRECTION_DEBIT => [
+            "account_id" => $this->account_id,
+            "counter_account_id" => $counterAccountId
+          ],
+          Transaction::DIRECTION_CREDIT => [
+            "account_id" => $counterAccountId,
+            "counter_account_id" => $this->account_id
+          ]
+        ];
+
         $transactionData = [
             "team_id" => $this->team_id,
             "user_id" => $this->user_id,
             "date" => $this->payment_date,
             "description" => $this->concept,
-            "direction" => "DEPOSIT",
+            "direction" => $direction,
             "total" => $this->amount,
-            "account_id" => $this->account_id,
-            "counter_account_id" => $this->payable->account_id
+            "account_id" => $accounts[$direction]['account'],
+            "counter_account_id" => $accounts[$direction]['counter_account']
         ];
-
 
         $transaction = $this->transaction()->create($transactionData);
         $transaction->createLines([]);

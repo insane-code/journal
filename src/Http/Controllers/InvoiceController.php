@@ -113,17 +113,14 @@ class InvoiceController
         $teamId = $request->user()->current_team_id;
 
         if ($invoice->team_id != $teamId) {
-            Response::redirect('/invoices');
+            return Response::redirect('/invoices');
         }
-        $invoiceData = $invoice->toArray();
-        $invoiceData['client'] = $invoice->client;
-        $invoiceData['lines'] = $invoice->lines->toArray();
-        $invoiceData['payments'] = $invoice->payments()->with(['transaction'])->get()->toArray();
+
         $isBill = $this->isBill($request);
         $type = $isBill ? 'BILL' : 'INVOICE';
 
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Show', [
-            'invoice' => $invoiceData,
+            'invoice' => $invoice->getInvoiceData(),
             'businessData' => Setting::getByTeam($teamId),
             'type' => $type,
         ]);
@@ -142,15 +139,12 @@ class InvoiceController
         if ($invoice->team_id != $teamId) {
             Response::redirect('/invoices');
         }
-        $invoiceData = $invoice->toArray();
-        $invoiceData['client'] = $invoice->client;
-        $invoiceData['lines'] = $invoice->lines->toArray();
-        $invoiceData['payments'] = $invoice->payments()->with(['transaction'])->get()->toArray();
+        
         $isBill = $this->isBill($request);
         $type = $isBill ? 'BILL' : 'INVOICE';
 
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Edit', [
-            'invoice' => $invoiceData,
+            'invoice' => $invoice->getInvoiceData(),
             'products' => Product::where([
                 'team_id' => $teamId
             ])->with(['price'])->get(),
@@ -177,12 +171,12 @@ class InvoiceController
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Invoice $invoice, Request $request)
     {
-        $invoice = Invoice::find($id);
+      if ($invoice->team_id != $request->user()->current_team_id) return;
         $postData = $request->post();
         $invoice->updateDocument($postData);
-        return Redirect("/invoices/$id/edit");
+        return Redirect("/invoices/$invoice->id/edit");
     }
 
 
@@ -215,11 +209,11 @@ class InvoiceController
         }
 
         if ($error) {
-            return Response::setStatus(400)->setContent([
-                'status' => [
-                    'message' => $error
-                ]
-            ]);
+            return response([
+              'status' => [
+                  'message' => $error
+              ]
+            ], 400);
         }
 
 

@@ -2,7 +2,6 @@
 namespace Insane\Journal\Traits;
 
 use Exception;
-use Illuminate\Database\Eloquent\Model;
 use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\Payment;
 
@@ -40,7 +39,6 @@ trait HasPayments
 
     public function createPayment($formData)
     {
-        // $formData['amount'] = $formData['amount'] > $this->debt ? $this->debt : $formData['amount'];
         return $this->payments()->create(array_merge(
             $formData,
             [
