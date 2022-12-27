@@ -22,19 +22,19 @@ class Account extends Model
     protected $fillable = [
       'team_id',
       'user_id',
-      'category_id', 
-      'account_detail_type_id', 
-      'client_id', 
+      'category_id',
+      'account_detail_type_id',
+      'client_id',
       'number',
       'display_id',
       'name',
-      'description', 
-      'currency_code', 
-      'opening_balance', 
-      'index', 
+      'description',
+      'currency_code',
+      'opening_balance',
+      'index',
       'archivable',
-      'balance_type', 
-      'type', 
+      'balance_type',
+      'type',
       'archived'
     ];
 
@@ -54,6 +54,8 @@ class Account extends Model
                 $account->category_id = $account->category_id ?? $detailType?->config['category_id'];
                 $account->type = $account->balance_type == self::BALANCE_TYPE_CREDIT ? -1 : 1;
             }
+
+            self::setNumber($account);
         });
     }
 
@@ -165,4 +167,13 @@ class Account extends Model
             'account_detail_types.id', '=', 'accounts.account_detail_type_id'
         )->whereIn('account_detail_types.name', $detailTypes)->select('accounts.*');
     }
+
+      //  Utils
+      public static function setNumber($account)
+      {
+          if ($account->category) {
+              $number = $account->category->lastSubcategoryNumber?->number + 1 ?? $account->category->number;
+              $account->number = $number + 1;
+          }
+      }
 }

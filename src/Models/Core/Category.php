@@ -11,28 +11,33 @@ class Category extends Model
     use HasFactory;
     protected $fillable = [
       'team_id',
-      'user_id', 
+      'user_id',
       'client_id',
-      'parent_id', 
-      'display_id', 
-      'number', 
-      'name', 
-      'description', 
-      'depth', 
-      'index', 
+      'parent_id',
+      'display_id',
+      'number',
+      'name',
+      'description',
+      'depth',
+      'index',
       'resource_type'
     ];
 
     public static function booted() {
         static::creating(function ($category) {
             if (!$category->display_id) {
-                $category->display_id = Str::Slug($category->name, "_");
+               $category->display_id = Str::Slug($category->name, "_");
             }
+            self::setNumber($category);
         });
     }
 
     public function subCategories() {
         return $this->hasMany(self::class, 'parent_id', 'id')->orderBy('index');
+    }
+
+    public function lastSubcategoryNumber() {
+      return $this->hasOne(self::class, 'parent_id', 'id')->latest('number');
     }
 
     public function category() {
@@ -41,6 +46,10 @@ class Category extends Model
 
     public function accounts() {
         return $this->hasMany(Account::class, 'category_id', 'id')->orderBy('index');
+    }
+
+    public function lastAccountNumber() {
+        return $this->hasOne(Account::class, 'category_id', 'id')->latest('number');
     }
 
     public static function findOrCreateByName($session, string $name, int $parentId = null, string $resourceType = 'transactions') {
@@ -100,6 +109,15 @@ class Category extends Model
             if (isset($category['childs'])) {
                 Category::saveBulk($category['childs'], array_merge($extraData, ['depth' => $extraData['depth'] + 1, 'parent_id' => $parentCategory->id]));
             }
+        }
+    }
+
+    //  Utils
+    public static function setNumber($category)
+    {
+        if ($category->depth) {
+            $number = $category->category->lastSubcategoryNumber?->number ?? $category->category->number;
+            $category->number = $number + 100;
         }
     }
 }

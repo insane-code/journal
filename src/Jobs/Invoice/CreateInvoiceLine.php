@@ -45,7 +45,7 @@ class CreateInvoiceLine implements ShouldQueue
                 "concept" => $item['concept'],
                 "category_id" => $item['category_id'] ?? null,
                 "account_id" => $item['account_id'] ?? null,
-                "date" => $item['date'] ?? null,
+                "date" => $item['date'] ?? $this->invoice->date,
                 "index" => $item['index'] ?? $index,
                 "product_id" => $item['product_id'] ?? null,
                 "quantity" => $item['quantity'],
