@@ -8,20 +8,22 @@ use Illuminate\Database\Eloquent\Model;
 class Payment extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'team_id',
-        'user_id', 
+        'user_id',
         'client_id',
-        'payment_document_id', 
-        'payable_id', 
-        'payable_type', 
+        'payment_document_id',
+        'payable_id',
+        'payable_type',
         'payment_date',
-        'concept', 
-        'notes', 
-        'account_id', 
-        'amount', 
+        'concept',
+        'notes',
+        'account_id',
+        'amount',
         'documents'
     ];
+
     protected $casts = [
         'documents' => 'array'
     ];
@@ -75,8 +77,8 @@ class Payment extends Model
             "description" => $this->concept,
             "direction" => $direction,
             "total" => $this->amount,
-            "account_id" => $accounts[$direction]['account'],
-            "counter_account_id" => $accounts[$direction]['counter_account']
+            "account_id" => $accounts[$direction]['account_id'],
+            "counter_account_id" => $accounts[$direction]['counter_account_id']
         ];
 
         $transaction = $this->transaction()->create($transactionData);

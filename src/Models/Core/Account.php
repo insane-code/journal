@@ -74,7 +74,7 @@ class Account extends Model
         return $this->belongsTo(Payee::class);
     }
 
-    public function detailTypeId()
+    public function detailType()
     {
         return $this->belongsTo(AccountDetailType::class, 'account_detail_type_id');
     }
@@ -157,15 +157,15 @@ class Account extends Model
     public static function getByDetailTypes($teamId, $detailTypes = AccountDetailType::ALL) {
         return Account::where('accounts.team_id', $teamId)
         ->byDetailTypes($detailTypes)
-        ->orderBy('index', )
+        ->orderBy('accounts.index')
         ->get();
     }
 
-    public function scopeByDetailTypes($query, array $detailTypes) {
-        return $query->join(
-            'account_detail_types',
-            'account_detail_types.id', '=', 'accounts.account_detail_type_id'
-        )->whereIn('account_detail_types.name', $detailTypes)->select('accounts.*');
+    public function scopeByDetailTypes($query, array $detailTypes = AccountDetailType::ALL) {
+      return $query
+      ->join('account_detail_types', 'account_detail_types.id', '=', 'accounts.account_detail_type_id')
+      ->whereIn('account_detail_types.name', $detailTypes)
+      ->select('accounts.*');
     }
 
       //  Utils
