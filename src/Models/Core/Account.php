@@ -168,12 +168,12 @@ class Account extends Model
       ->select('accounts.*');
     }
 
-      //  Utils
-      public static function setNumber($account)
-      {
-          if ($account->category) {
-              $number = $account->category->lastSubcategoryNumber?->number + 1 ?? $account->category->number;
-              $account->number = $number + 1;
-          }
-      }
+    //  Utils
+    public static function setNumber($account)
+    {
+        if ($account->category) {
+            $number = $account->category->lastSubcategoryNumber?->number + 1 ?? $account->category->number;
+            $account->number = $number + 1;
+        }
+    }
 }
