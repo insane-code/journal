@@ -12,4 +12,8 @@ interface IPayableDocument
     public static function checkStatus($payable);
 
     public function getConceptLine(): string;
+
+    public function getTransactionDirection(): string;
+    
+    public function getCounterAccountId(): int;
 }

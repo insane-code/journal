@@ -46,7 +46,7 @@ class SetAccountsCommand extends Command
         $generalInfo = [
             'team_id' => 0,
             'user_id' => 0,
-            'depth' => 0
+            'depth' => 0,
         ];
 
         Category::saveBulk($categories, $generalInfo);

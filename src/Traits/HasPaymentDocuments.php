@@ -38,10 +38,11 @@ trait HasPaymentDocuments
 
     public function createPayment($formData)
     {
-        $totalField = $this->getTotalField();
+        $totalField = $this->getTotalField($formData);
         $amount = (double) $formData['amount'];
         $balance = (double) $amount + (double) $this->amount_paid;
         $total = (double) $this->$totalField;
+        
         if ($balance <= $total || $balance <= $this->$totalField) {
             $document = null;
 
@@ -72,6 +73,5 @@ trait HasPaymentDocuments
         }
         $equal = $balance == $this->$totalField;
         throw new Exception("Payment of $balance exceeds document debt of {$this->$totalField} {$equal}");
-
     }
 }

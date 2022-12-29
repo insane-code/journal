@@ -19,7 +19,24 @@ class Account extends Model
      */
     protected $appends = ['balance'];
 
-    protected $fillable = ['team_id','user_id','category_id', 'account_detail_type_id', 'client_id', 'display_id', 'name', 'description', 'currency_code', 'opening_balance' , 'index', 'archivable', 'balance_type', 'type', 'archived'];
+    protected $fillable = [
+      'team_id',
+      'user_id',
+      'category_id',
+      'account_detail_type_id',
+      'client_id',
+      'number',
+      'display_id',
+      'name',
+      'description',
+      'currency_code',
+      'opening_balance',
+      'index',
+      'archivable',
+      'balance_type',
+      'type',
+      'archived'
+    ];
 
     protected static function booted()
     {
@@ -37,6 +54,8 @@ class Account extends Model
                 $account->category_id = $account->category_id ?? $detailType?->config['category_id'];
                 $account->type = $account->balance_type == self::BALANCE_TYPE_CREDIT ? -1 : 1;
             }
+
+            self::setNumber($account);
         });
     }
 
@@ -45,12 +64,17 @@ class Account extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
+
     public function payee()
     {
         return $this->belongsTo(Payee::class);
     }
 
-    public function detailTypeId()
+    public function detailType()
     {
         return $this->belongsTo(AccountDetailType::class, 'account_detail_type_id');
     }
@@ -133,14 +157,23 @@ class Account extends Model
     public static function getByDetailTypes($teamId, $detailTypes = AccountDetailType::ALL) {
         return Account::where('accounts.team_id', $teamId)
         ->byDetailTypes($detailTypes)
-        ->orderBy('index', )
+        ->orderBy('accounts.index')
         ->get();
     }
 
-    public function scopeByDetailTypes($query, array $detailTypes) {
-        return $query->join(
-            'account_detail_types',
-            'account_detail_types.id', '=', 'accounts.account_detail_type_id'
-        )->whereIn('account_detail_types.name', $detailTypes)->select('accounts.*');
+    public function scopeByDetailTypes($query, array $detailTypes = AccountDetailType::ALL) {
+      return $query
+      ->join('account_detail_types', 'account_detail_types.id', '=', 'accounts.account_detail_type_id')
+      ->whereIn('account_detail_types.name', $detailTypes)
+      ->select('accounts.*');
+    }
+
+    //  Utils
+    public static function setNumber($account)
+    {
+        if ($account->category) {
+            $number = $account->category->lastSubcategoryNumber?->number + 1 ?? $account->category->number;
+            $account->number = $number + 1;
+        }
     }
 }

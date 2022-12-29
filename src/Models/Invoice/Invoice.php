@@ -14,8 +14,9 @@ use Insane\Journal\Models\Core\Payment;
 use Insane\Journal\Models\Core\Transaction;
 use Illuminate\Support\Facades\Bus;
 use Insane\Journal\Journal;
+use Insane\Journal\Traits\IPayableDocument;
 
-class Invoice extends Model
+class Invoice extends Model implements IPayableDocument
 {
     protected $fillable = [
         'team_id',
@@ -24,6 +25,7 @@ class Invoice extends Model
         'invoiceable_type',
         'invoiceable_id',
         'account_id',
+        'invoice_account_id',
         'date',
         'due_date',
         'series',
@@ -37,11 +39,12 @@ class Invoice extends Model
         'total',
         'subtotal',
         'discount',
-        'taxes_included'
+        'taxes_included',
+        'status'
     ];
 
     const DOCUMENT_TYPE_INVOICE = 'INVOICE';
-    const DOCUMENT_TYPE_BILL = 'BILL';
+    const DOCUMENT_TYPE_BILL = 'EXPENSE';
 
     /**
      * The "booted" method of the model.
@@ -59,7 +62,7 @@ class Invoice extends Model
             Invoice::calculateTotal($invoice);
             Invoice::checkPayments($invoice);
             $invoice->account_id = $invoice->account_id ?? Invoice::createContactAccount($invoice);
-            $invoice->invoice_account_id = Invoice::createInvoiceAccount($invoice);
+            $invoice->invoice_account_id = $invoice->invoice_account_id ?? Invoice::createInvoiceAccount($invoice);
         });
 
         static::deleting(function ($invoice) {
@@ -76,6 +79,38 @@ class Invoice extends Model
         });
     }
 
+     /**
+     * Scope a query to only include popular users.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeLate($query)
+    {
+        return $query->whereNotIn('status', ['paid', 'draft'])->whereRaw("curdate() > due_date");
+    }
+
+    public function scopePaid($query)
+    {
+        return $query->whereIn('invoices.status', ['paid']);
+    }
+
+    public function scopeNoRefunded($query)
+    {
+        return $query->whereNull('refund_id');
+    }
+
+    public function scopeInvoiceAccount($query, $invoiceAccountId)
+    {
+        return $query->where('invoice_account_id', $invoiceAccountId);
+    }
+
+    public function scopeUnpaid($query)
+    {
+        return $query->whereNotIn('invoices.status', ['paid', 'draft']);
+    }
+
+    //  relationships
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -96,13 +131,19 @@ class Invoice extends Model
         return $this->belongsTo(Account::class);
     }
 
+    public function invoiceAccount()
+    {
+        return $this->belongsTo(Account::class, 'invoice_account_id');
+    }
+
+    public function invoiceable()
+    {
+        return $this->morphTo('invoiceable');
+    }
+
     public function account_client()
     {
         return Account::where('client_id', $this->client_id)->limit(1)->get()[0];
-    }
-
-    public function transaction() {
-        return $this->morphOne(Transaction::class, "transactionable");
     }
 
     public function lines()
@@ -110,10 +151,17 @@ class Invoice extends Model
         return $this->hasMany(InvoiceLine::class);
     }
 
+    public function transaction() {
+        return $this->morphOne(Transaction::class, "transactionable");
+    }
 
     public function payments()
     {
         return $this->morphMany(Payment::class, 'payable');
+    }
+
+    public function isBill() {
+      return $this->type == self::DOCUMENT_TYPE_BILL;
     }
 
     //  Utils
@@ -152,7 +200,7 @@ class Invoice extends Model
 
         if ($invoice) {
             $total = InvoiceLine::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(price) as price, sum(discount) as discount, sum(amount) as amount')->get();
-            $totalTax = InvoiceLineTax::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(amount) as amount')->get();
+            $totalTax = InvoiceLineTax::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(amount * type) as amount')->get();
             $result['subtotal'] = $total[0]['price'] ?? 0;
             $discount = $total[0]['discount'] ?? 0;
             $taxTotal = $totalTax[0]['amount'] ?? 0;
@@ -185,11 +233,40 @@ class Invoice extends Model
 
     public function updateDocument($postData) {
         $this->update($postData);
-        CreateInvoiceLine::dispatch($this, $postData)->afterCommit();
+        Bus::chain([
+          new CreateInvoiceLine($this, $postData),
+          new CreateInvoiceTransaction($this,
+            [
+                'transactionType' => 'invoice',
+                'direction' => 'DEPOSIT',
+                'account_id' => $this->account_id,
+                'date' => $this->date,
+                'description' => $this->concept,
+                'total' => $this->total,
+            ]
+        ),
+        ])->dispatch();
+    }
+
+    public static function checkStatus($invoice)
+    {
+        $status = $invoice->status;
+        if ($invoice->debt == 0) {
+            $status = 'paid';
+        } elseif ($invoice->debt > 0 && $invoice->debt < $invoice->total) {
+            $status = 'partial';
+        } elseif ($invoice->debt && $invoice->due_date < date('Y-m-d')) {
+            $status = 'overdue';
+        } elseif ($invoice->debt) {
+            $status = 'unpaid';
+        } else {
+            $status = 'draft';
+        }
+
+        return $status;
     }
 
     // accounting
-
     public static function createContactAccount($invoice)
     {
         $categoryNames = [
@@ -222,6 +299,7 @@ class Invoice extends Model
 
     public static function createInvoiceAccount($invoice)
     {
+       if ($invoice->invoice_account_id) return $invoice->invoice_account_id; 
         $accounts = Account::where([
             'display_id' =>  'sales',
             'team_id' => $invoice->team_id
@@ -242,7 +320,6 @@ class Invoice extends Model
             ]);
             return $account->id;
         }
-
     }
 
     public static function checkPayments($invoice)
@@ -254,26 +331,9 @@ class Invoice extends Model
         }
     }
 
-    public static function checkStatus($invoice)
-    {
-        $status = $invoice->status;
-        if ($invoice->debt == 0) {
-            $status = 'paid';
-        } elseif ($invoice->debt > 0 && $invoice->debt < $invoice->total) {
-            $status = 'partial';
-        } elseif ($invoice->debt) {
-            $status = 'unpaid';
-        } else {
-            $status = 'draft';
-        }
-
-        return $status;
-    }
-
     public function createPayment($formData)
     {
         $formData['amount'] = $formData['amount'] > $this->debt ? $this->debt : $formData['amount'];
-
         return $this->payments()->create(array_merge(
             $formData,
             [
@@ -312,5 +372,33 @@ class Invoice extends Model
     public function deletePayment($id)
     {
         Payment::find($id)->delete();
+    }
+
+    public function getInvoiceData() {
+        $invoiceData = $this->toArray();
+        $invoiceData['client'] = $this->client;
+        $invoiceData['lines'] = $this->lines->toArray();
+        $invoiceData['payments'] = $this->payments()->with(['transaction'])->get()->toArray();
+        $invoiceData['transaction'] = $this->transaction;
+        
+        return $invoiceData;
+    }
+
+    // payable functions
+
+    public function getStatusField(): string {
+      return 'status';
+    }
+
+    public function getConceptLine(): string {
+      return "Payment of ". $this->concept; 
+    }
+
+    public function getTransactionDirection(): string {
+      return $this->isBill() ? Transaction::DIRECTION_DEBIT : Transaction::DIRECTION_DEBIT;
+    }
+
+    public function getCounterAccountId(): int {
+      return $this->isBill() ? $this->invoice_account_id : $this->account_id;
     }
 }

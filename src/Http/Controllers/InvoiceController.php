@@ -25,22 +25,31 @@ class InvoiceController
     }
 
     public function isBill(Request $request) {
-        return  $isBill = str_contains($request->url(), 'bills');
+        return str_contains($request->url(), 'bills');
+    }
+
+    public function getFilterType() {
+      $type = $this->isBill(request()) ? [INVOICE::DOCUMENT_TYPE_BILL] : [INVOICE::DOCUMENT_TYPE_INVOICE];
+      $filters = request()->get('filter');
+      return $filters['type'] ? explode('|', $filters['type']) : $type;
     }
 
     public function index(Request $request)
     {
-        $type = $this->isBill($request) ? 'BILL' : 'INVOICE';
+        $type = $this->getFilterType(); 
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Index', [
             "invoices" => Invoice::where([
-                'type'=> $type,
                 'team_id' => $request->user()->currentTeam->id
-            ])->orderByDesc('date')->orderByDesc('number')->paginate()->through(function ($invoice) {
+            ])
+            ->whereIn('type', $type)
+            ->with(['invoiceAccount', 'invoiceAccount.category'])->orderByDesc('date')->orderByDesc('number')->paginate()->through(function ($invoice) {
                 return [
                     "id" => $invoice->id,
                     "concept" => $invoice->concept,
+                    "category" => $invoice->invoiceAccount->category->name,
+                    "account_name" => $invoice->invoiceAccount->name,
                     "date" => $invoice->date,
-                    "client_name" => $invoice->client?->names,
+                    "client_name" => $invoice->client?->display_name,
                     "number" => $invoice->number,
                     "series" => $invoice->series,
                     "status" => $invoice->status,
@@ -69,7 +78,7 @@ class InvoiceController
             'products' => Product::where([
                 'team_id' => $teamId
             ])->with(['price', 'taxes'])->get(),
-            'clients' => Client::where('team_id', $teamId)->get(),
+            'clients' => Journal::listClientsOf($teamId),
             "categories" => Category::where([
                 'depth' => 0
             ])->with([
@@ -104,17 +113,14 @@ class InvoiceController
         $teamId = $request->user()->current_team_id;
 
         if ($invoice->team_id != $teamId) {
-            Response::redirect('/invoices');
+            return Response::redirect('/invoices');
         }
-        $invoiceData = $invoice->toArray();
-        $invoiceData['client'] = $invoice->client;
-        $invoiceData['lines'] = $invoice->lines->toArray();
-        $invoiceData['payments'] = $invoice->payments()->with(['transaction'])->get()->toArray();
+
         $isBill = $this->isBill($request);
         $type = $isBill ? 'BILL' : 'INVOICE';
 
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Show', [
-            'invoice' => $invoiceData,
+            'invoice' => $invoice->getInvoiceData(),
             'businessData' => Setting::getByTeam($teamId),
             'type' => $type,
         ]);
@@ -133,15 +139,12 @@ class InvoiceController
         if ($invoice->team_id != $teamId) {
             Response::redirect('/invoices');
         }
-        $invoiceData = $invoice->toArray();
-        $invoiceData['client'] = $invoice->client;
-        $invoiceData['lines'] = $invoice->lines->toArray();
-        $invoiceData['payments'] = $invoice->payments()->with(['transaction'])->get()->toArray();
+        
         $isBill = $this->isBill($request);
         $type = $isBill ? 'BILL' : 'INVOICE';
 
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Edit', [
-            'invoice' => $invoiceData,
+            'invoice' => $invoice->getInvoiceData(),
             'products' => Product::where([
                 'team_id' => $teamId
             ])->with(['price'])->get(),
@@ -156,7 +159,8 @@ class InvoiceController
             ])->get(),
             'type' => $type,
             // change this to be dinamyc
-            'clients' => Journal::listClientsOf($teamId)
+            'clients' => Journal::listClientsOf($teamId),
+            'availableTaxes' => Tax::where("team_id", $teamId)->get(),
         ]);
     }
 
@@ -167,12 +171,12 @@ class InvoiceController
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Invoice $invoice, Request $request)
     {
-        $invoice = Invoice::find($id);
+      if ($invoice->team_id != $request->user()->current_team_id) return;
         $postData = $request->post();
         $invoice->updateDocument($postData);
-        return Redirect("/invoices/$id/edit");
+        return Redirect("/invoices/$invoice->id/edit");
     }
 
 
@@ -205,11 +209,11 @@ class InvoiceController
         }
 
         if ($error) {
-            return Response::setStatus(400)->setContent([
-                'status' => [
-                    'message' => $error
-                ]
-            ]);
+            return response([
+              'status' => [
+                  'message' => $error
+              ]
+            ], 400);
         }
 
 

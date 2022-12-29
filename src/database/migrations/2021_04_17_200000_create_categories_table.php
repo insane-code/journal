@@ -25,12 +25,13 @@ class CreateCategoriesTable extends Migration
             $table->text('icon')->nullable();
             $table->string('resource_type', 100)->nullable();
             $table->string('display_id');
+            $table->integer('number')->nullable();
             $table->string('name', 100);
             $table->string('description', 200)->nullable();
             $table->integer('index')->default(0);
             $table->integer('depth')->default(0);
             $table->enum('status', ['disabled','active'])->default('active');
-            $table->json('meta_data')->nullable();
+            $table->json('meta_data')->nullable('{}');
             $table->timestamps();
         });
     }

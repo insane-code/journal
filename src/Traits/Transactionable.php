@@ -104,7 +104,7 @@ abstract class Transactionable extends Model
 
     abstract function getTransactionItems();
     abstract function getTransactionDescription();
-    abstract function getTransactionDirection();
+    abstract function getTransactionDirection(): string;
     abstract function getAccountId();
-    abstract function getCounterAccountId();
+    abstract function getCounterAccountId():int;
 }
