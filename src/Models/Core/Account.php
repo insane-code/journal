@@ -51,7 +51,7 @@ class Account extends Model
             if ($account->account_detail_type_id) {
                 $detailType = AccountDetailType::find($account->account_detail_type_id);
                 $account->balance_type = $detailType?->config['balance_type'] ?? self::BALANCE_TYPE_DEBIT;
-                $account->category_id = $account->category_id ?? $detailType?->config['category_id'];
+                $account->category_id = $account->category_id ?? $detailType?->config['category_id'] ?? null;
                 $account->type = $account->balance_type == self::BALANCE_TYPE_CREDIT ? -1 : 1;
             }
 
