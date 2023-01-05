@@ -76,7 +76,7 @@ class TransactionController
         $transaction = Transaction::where([
             'user_id'=> $request->user()->id,
             'id' => $id
-        ])->get()->first();
+        ])->first();
         $transaction->remove();
         if ($request->query('json')) {
             return $response->sendContent($transaction);
