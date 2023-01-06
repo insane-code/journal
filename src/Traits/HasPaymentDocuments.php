@@ -21,6 +21,11 @@ trait HasPaymentDocuments
         return 'amount';
     }
 
+    public function getTotal() {
+      $totalField = $this->getTotalField();
+      return $this->$totalField;
+    }
+
     public function paymentDocuments()
     {
         return $this->morphMany(PaymentDocument::class, 'resource');
@@ -38,12 +43,11 @@ trait HasPaymentDocuments
 
     public function createPayment($formData)
     {
-        $totalField = $this->getTotalField($formData);
         $amount = (double) $formData['amount'];
         $balance = (double) $amount + (double) $this->amount_paid;
-        $total = (double) $this->$totalField;
-        
-        if ($balance <= $total || $balance <= $this->$totalField) {
+        $total = (double) $this->getTotal();
+
+        if ($balance <= $total || $balance <= $this->$total) {
             $document = null;
 
             DB::transaction(function () use($formData, $document) {
@@ -71,7 +75,7 @@ trait HasPaymentDocuments
 
             return $document;
         }
-        $equal = $balance == $this->$totalField;
-        throw new Exception("Payment of $balance exceeds document debt of {$this->$totalField} {$equal}");
+        $equal = $balance == $total;
+        throw new Exception("Payment of $balance exceeds document debt of {$total}");
     }
 }

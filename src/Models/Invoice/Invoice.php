@@ -13,6 +13,7 @@ use Insane\Journal\Models\Core\Category;
 use Insane\Journal\Models\Core\Payment;
 use Insane\Journal\Models\Core\Transaction;
 use Illuminate\Support\Facades\Bus;
+use Insane\Journal\Jobs\Invoice\CreateInvoiceRelations;
 use Insane\Journal\Journal;
 use Insane\Journal\Traits\IPayableDocument;
 
@@ -33,6 +34,7 @@ class Invoice extends Model implements IPayableDocument
         'number',
         'order_number',
         'type',
+        'category_type',
         'description',
         'direction',
         'notes',
@@ -55,14 +57,14 @@ class Invoice extends Model implements IPayableDocument
     {
         static::creating(function ($invoice) {
             $invoice->series = $invoice->series ?? substr($invoice->date, 0, 4);
+            $invoice->account_id = $invoice->account_id ?? Invoice::createContactAccount($invoice);
+            $invoice->invoice_account_id = $invoice->invoice_account_id ?? Invoice::createInvoiceAccount($invoice);
             self::setNumber($invoice);
         });
 
         static::saving(function ($invoice) {
             Invoice::calculateTotal($invoice);
             Invoice::checkPayments($invoice);
-            $invoice->account_id = $invoice->account_id ?? Invoice::createContactAccount($invoice);
-            $invoice->invoice_account_id = $invoice->invoice_account_id ?? Invoice::createInvoiceAccount($invoice);
         });
 
         static::deleting(function ($invoice) {
@@ -160,6 +162,23 @@ class Invoice extends Model implements IPayableDocument
         return $this->morphMany(Payment::class, 'payable');
     }
 
+    public function relatedParents() {
+      return $this->belongsToMany(
+        Invoice::class,
+        'invoice_relations',
+        'related_invoice_id',
+        'invoice_id',
+      )->withPivot('name', 'date');
+    }
+
+    public function relatedChilds() {
+      return $this->belongsToMany(Invoice::class,
+        'invoice_relations',
+        'related_invoice_id',
+        'invoice_id'
+      );
+    }
+
     public function isBill() {
       return $this->type == self::DOCUMENT_TYPE_BILL;
     }
@@ -226,6 +245,7 @@ class Invoice extends Model implements IPayableDocument
                         'total' => $invoice->total,
                     ]
                 )),
+                new CreateInvoiceRelations($invoice, $invoiceData)
             ])->dispatch();
             return $invoice;
         });
@@ -244,7 +264,8 @@ class Invoice extends Model implements IPayableDocument
                 'description' => $this->concept,
                 'total' => $this->total,
             ]
-        ),
+          ),
+          new CreateInvoiceRelations($this, $postData)
         ])->dispatch();
     }
 
@@ -270,36 +291,38 @@ class Invoice extends Model implements IPayableDocument
     public static function createContactAccount($invoice)
     {
         $categoryNames = [
-            self::DOCUMENT_TYPE_INVOICE => 'expected_payments_customers',
-            self::DOCUMENT_TYPE_BILL => 'expected_payments_vendors',
+          self::DOCUMENT_TYPE_INVOICE => 'expected_payments_customers',
+          self::DOCUMENT_TYPE_BILL => 'expected_payments_vendors',
         ];
-        $categoryName = $categoryNames[$invoice->type];
-        $category = Category::where('display_id', $categoryName)->first();
 
-        $account = Account::where([
-                'client_id' => $invoice->client_id,
-                'category_id' => $category->id
-            ])->first();
-        if ($account) {
-           return $account->id;
-        } else {
-           $account = Account::create([
-                "team_id" => $invoice->team_id,
-                "client_id" => $invoice->client_id,
-                "user_id" => $invoice->user_id,
-                "category_id" => $category->id,
-                "display_id" => "client_{$invoice->client_id}_{$invoice->client->names}",
-                "name" => "{$invoice->client->names} Account",
-                "currency_code" => "DOP"
-            ]);
-            return $account->id;
+        if ($invoice->type) {
+          $categoryName = $categoryNames[$invoice->type];
+          $category = Category::where('display_id', $categoryName)->first();
+
+          $account = Account::where([
+                  'client_id' => $invoice->client_id,
+                  'category_id' => $category->id
+              ])->first();
+          if ($account) {
+             return $account->id;
+          } else {
+             $account = Account::create([
+                  "team_id" => $invoice->team_id,
+                  "client_id" => $invoice->client_id,
+                  "user_id" => $invoice->user_id,
+                  "category_id" => $category->id,
+                  "display_id" => "client_{$invoice->client_id}_{$invoice->client->names}",
+                  "name" => "{$invoice->client->names} Account",
+                  "currency_code" => "DOP"
+              ]);
+              return $account->id;
+          }
         }
-
     }
 
     public static function createInvoiceAccount($invoice)
     {
-       if ($invoice->invoice_account_id) return $invoice->invoice_account_id; 
+       if ($invoice->invoice_account_id) return $invoice->invoice_account_id;
         $accounts = Account::where([
             'display_id' =>  'sales',
             'team_id' => $invoice->team_id
@@ -380,7 +403,7 @@ class Invoice extends Model implements IPayableDocument
         $invoiceData['lines'] = $this->lines->toArray();
         $invoiceData['payments'] = $this->payments()->with(['transaction'])->get()->toArray();
         $invoiceData['transaction'] = $this->transaction;
-        
+
         return $invoiceData;
     }
 
@@ -391,7 +414,7 @@ class Invoice extends Model implements IPayableDocument
     }
 
     public function getConceptLine(): string {
-      return "Payment of ". $this->concept; 
+      return "Payment of ". $this->concept;
     }
 
     public function getTransactionDirection(): string {
