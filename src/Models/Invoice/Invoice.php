@@ -158,6 +158,11 @@ class Invoice extends Model implements IPayableDocument
         return $this->hasMany(InvoiceLine::class);
     }
 
+    public function taxesLines()
+    {
+        return $this->hasMany(InvoiceLineTax::class);
+    }
+
     public function transaction() {
         return $this->morphOne(Transaction::class, "transactionable");
     }

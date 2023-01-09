@@ -18,8 +18,9 @@ return new class extends Migration
             $table->foreignId('team_id');
             $table->foreignId('user_id');
             $table->string('name');
-            $table->decimal('rate', 11, 4);
+            $table->string('label')->nullable();
             $table->text('description')->nullable();
+            $table->decimal('rate', 11, 4);
             $table->integer('type')->default(1);
             $table->boolean('is_default')->default(false);
             $table->timestamps();
