@@ -33,8 +33,8 @@ class Invoice extends Model implements IPayableDocument
         'concept',
         'number',
         'order_number',
-        'type',
         'category_type',
+        'type',
         'description',
         'direction',
         'notes',
@@ -110,6 +110,11 @@ class Invoice extends Model implements IPayableDocument
     public function scopeUnpaid($query)
     {
         return $query->whereNotIn('invoices.status', ['paid', 'draft']);
+    }
+
+    public function scopeCategory($query, $category)
+    {
+        return $query->where('invoices.category_type', $category);
     }
 
     //  relationships
