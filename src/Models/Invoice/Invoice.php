@@ -64,7 +64,6 @@ class Invoice extends Model implements IPayableDocument
 
         static::saving(function ($invoice) {
             Invoice::calculateTotal($invoice);
-            Invoice::checkPayments($invoice);
         });
 
         static::deleting(function ($invoice) {
@@ -178,15 +177,16 @@ class Invoice extends Model implements IPayableDocument
         'invoice_relations',
         'related_invoice_id',
         'invoice_id',
-      )->withPivot('name', 'date');
+      )->as('parent')->withPivot('name', 'date', 'description');
     }
 
     public function relatedChilds() {
-      return $this->belongsToMany(Invoice::class,
+      return $this->belongsToMany(
+        Invoice::class,
         'invoice_relations',
+        'invoice_id',
         'related_invoice_id',
-        'invoice_id'
-      );
+      )->withPivot('name', 'date', 'description');
     }
 
     public function isBill() {
@@ -230,13 +230,15 @@ class Invoice extends Model implements IPayableDocument
         if ($invoice) {
             $total = InvoiceLine::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(price) as price, sum(discount) as discount, sum(amount) as amount')->get();
             $totalTax = InvoiceLineTax::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(amount * type) as amount')->get();
-            $result['subtotal'] = $total[0]['price'] ?? 0;
+
             $discount = $total[0]['discount'] ?? 0;
             $taxTotal = $totalTax[0]['amount'] ?? 0;
             $invoiceTotal =  ($total[0]['amount'] ?? 0);
-            $result['total'] = $invoiceTotal - $discount + $taxTotal;
-            Invoice::where(['id' => $invoice->id])->update($result);
+            $invoice->subtotal = $total[0]['price'] ?? 0;
+            $invoice->discount = $discount;
+            $invoice->total = $invoiceTotal + $taxTotal - $discount;
         }
+        self::checkPayments($invoice);
     }
 
     public static function createDocument($invoiceData) {
@@ -357,10 +359,10 @@ class Invoice extends Model implements IPayableDocument
 
     public static function checkPayments($invoice)
     {
-        if ($invoice && $invoice->payments) {
-            $totalPaid = $invoice->payments()->sum('amount');
-            $invoice->debt = $invoice->total - $totalPaid;
-            $invoice->status = Invoice::checkStatus($invoice);
+      if ($invoice && $invoice->payments) {
+          $totalPaid = $invoice->payments()->sum('amount');
+          $invoice->debt = $invoice->total - $totalPaid;
+          $invoice->status = Invoice::checkStatus($invoice);
         }
     }
 

@@ -31,12 +31,12 @@ class InvoiceController
     public function getFilterType() {
       $type = $this->isBill(request()) ? [INVOICE::DOCUMENT_TYPE_BILL] : [INVOICE::DOCUMENT_TYPE_INVOICE];
       $filters = request()->get('filter');
-      return $filters['type'] ? explode('|', $filters['type']) : $type;
+      return isset($filters['type']) ? explode('|', $filters['type']) : $type;
     }
 
     public function index(Request $request)
     {
-        $type = $this->getFilterType(); 
+        $type = $this->getFilterType();
         return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Index', [
             "invoices" => Invoice::where([
                 'team_id' => $request->user()->currentTeam->id
@@ -139,7 +139,7 @@ class InvoiceController
         if ($invoice->team_id != $teamId) {
             Response::redirect('/invoices');
         }
-        
+
         $isBill = $this->isBill($request);
         $type = $isBill ? 'BILL' : 'INVOICE';
 

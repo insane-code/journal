@@ -21,15 +21,19 @@ class Tax extends Model
     ];
 
     public static function guessRetention($name, $rate, $session, $attrs) {
-      $nameSlug = Str::lower(Str::slug($name, "_"));
-      $tax = Tax::where(['team_id' => $session['team_id'], 'name' => $nameSlug, 'type' => -1])->first();
-      if (count($tax)) {
+      $nameSlug = Str::lower(Str::slug($name, "_"))."_".$rate;
+      $tax = self::where([
+        'team_id' => $session['team_id'],
+        'name' => $nameSlug,
+        'type' => -1]
+        )->first();
+        if ($tax) {
           $tax;
       } else {
-          $tax = Account::create([
+          $tax = Tax::create([
               'user_id' => $session['user_id'],
               'team_id' => $session['team_id'],
-              'name' => $nameSlug."_".$rate,
+              'name' => $nameSlug,
               'label' => $name,
               'rate' => $rate,
               "type" => -1,

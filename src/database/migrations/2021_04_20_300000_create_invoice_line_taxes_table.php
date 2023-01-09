@@ -22,6 +22,8 @@ return new class extends Migration
             $table->foreignId('tax_id');
             $table->integer('index')->default(0);
             $table->string('name');
+            $table->string('label')->nullable();
+            $table->string('concept')->nullable();
             $table->decimal('amount', 11, 4);
             $table->decimal('amount_base', 11, 4);
             $table->decimal('rate', 11, 2)->default(0.00);

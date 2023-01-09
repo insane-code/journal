@@ -38,13 +38,14 @@ class CreateInvoiceRelations implements ShouldQueue
         InvoiceRelation::query()->where('invoice_id', $this->invoice->id)->delete();
 
         foreach ($this->formData['related_invoices'] as $relation) {
-          foreach ($relation['items'] as $relatedInvoiceId) {
+          foreach ($relation['items'] as $relatedInvoice) {
             InvoiceRelation::create([
               "team_id" => $this->invoice->team_id,
               "user_id" => $this->invoice->user_id,
               "name" => $relation['name'],
               "invoice_id" => $this->invoice->id,
-              "related_invoice_id" => $relatedInvoiceId,
+              "related_invoice_id" => $relatedInvoice['id'],
+              "description" => $relatedInvoice['description'],
               "date" => $relation['date'] ?? $this->invoice->date,
             ]);
           }
