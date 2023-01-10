@@ -13,16 +13,16 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('taxes', function (Blueprint $table) {
+        Schema::create('invoice_relations', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->nullable();
             $table->foreignId('team_id');
-            $table->foreignId('user_id');
+            $table->foreignId('invoice_id');
+            $table->foreignId('related_invoice_id');
             $table->string('name');
-            $table->string('label')->nullable();
-            $table->text('description')->nullable();
-            $table->decimal('rate', 11, 4);
-            $table->integer('type')->default(1);
-            $table->boolean('is_default')->default(false);
+            $table->string('description')->nullable();
+            $table->date('date');
+            $table->timestamp('deleted_at')->nullable();
             $table->timestamps();
         });
     }
@@ -34,6 +34,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('taxes');
+        Schema::dropIfExists('invoice_logs');
     }
 };
