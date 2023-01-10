@@ -13,6 +13,8 @@ use Insane\Journal\Models\Core\Category;
 use Insane\Journal\Models\Core\Payment;
 use Insane\Journal\Models\Core\Transaction;
 use Illuminate\Support\Facades\Bus;
+use Insane\Journal\Events\InvoiceCreated;
+use Insane\Journal\Events\InvoiceSaving;
 use Insane\Journal\Jobs\Invoice\CreateInvoiceRelations;
 use Insane\Journal\Journal;
 use Insane\Journal\Traits\IPayableDocument;
@@ -242,25 +244,27 @@ class Invoice extends Model implements IPayableDocument
     }
 
     public static function createDocument($invoiceData) {
-        DB::transaction(function () use ($invoiceData) {
-            $invoice = self::create($invoiceData);
-            Bus::chain([
-                new CreateInvoiceLine($invoice, $invoiceData),
-                new CreateInvoiceTransaction($invoice, array_merge(
-                    $invoice->toArray(),
-                    [
-                        'transactionType' => 'invoice',
-                        'direction' => 'DEPOSIT',
-                        'account_id' => $invoice->account_id,
-                        'date' => $invoice->date,
-                        'description' => $invoice->concept,
-                        'total' => $invoice->total,
-                    ]
-                )),
-                new CreateInvoiceRelations($invoice, $invoiceData)
-            ])->dispatch();
-            return $invoice;
-        });
+      $invoice = self::create($invoiceData);
+      event(new InvoiceSaving($invoiceData));
+      DB::transaction(function () use ($invoiceData, $invoice) {
+        Bus::chain([
+            new CreateInvoiceLine($invoice, $invoiceData),
+            new CreateInvoiceTransaction($invoice, array_merge(
+                $invoice->toArray(),
+                [
+                    'transactionType' => 'invoice',
+                    'direction' => 'DEPOSIT',
+                    'account_id' => $invoice->account_id,
+                    'date' => $invoice->date,
+                    'description' => $invoice->concept,
+                    'total' => $invoice->total,
+                ]
+            )),
+            new CreateInvoiceRelations($invoice, $invoiceData)
+        ])->dispatch();
+      });
+      event(new InvoiceCreated($invoice, $invoiceData));
+      return $invoice;
     }
 
     public function updateDocument($postData) {
@@ -279,6 +283,7 @@ class Invoice extends Model implements IPayableDocument
           ),
           new CreateInvoiceRelations($this, $postData)
         ])->dispatch();
+        return $this;
     }
 
     public static function checkStatus($invoice)

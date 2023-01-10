@@ -57,6 +57,10 @@ class TransactionLine extends Model
         return $this->belongsTo(Transaction::class);
     }
 
+    public function transactionable() {
+        return $this->hasOneThrough('transactionable', Transaction::class);
+    }
+
     public function accountFrom() {
         return $this->belongsToThrough(Account::class, Transaction::class, );
     }

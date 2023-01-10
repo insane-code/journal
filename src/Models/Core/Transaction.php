@@ -3,7 +3,6 @@
 namespace Insane\Journal\Models\Core;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
 use Insane\Journal\Events\TransactionCreated;
 
 class Transaction extends Model
@@ -72,6 +71,11 @@ class Transaction extends Model
 
     public function transactionCategory() {
         return $this->belongsTo(Category::class, 'category_id');
+    }
+
+    public function transactionable()
+    {
+        return $this->morphTo('transactionable');
     }
 
     public function payee() {
