@@ -54,8 +54,9 @@ class CreateInvoiceTransaction implements ShouldQueue
         $this->formData["total"] =  $this->formData["total"] ?? $this->invoice->total;
         $this->formData["account_id"] = $this->formData['account_id'] ?? $setting["default.{$this->formData['transactionType']}.account"];
         $this->formData["category_id"] = null;
+        $this->formData["payee_id"] = $this->invoice->client_id;
         $this->formData["status"] = "verified";
-        $this->formData["transactionable_id"] = $this->invoice->id; 
+        $this->formData["transactionable_id"] = $this->invoice->id;
 
         if ($transaction = $this->invoice->transaction) {
             $transaction->update($this->formData);
@@ -82,7 +83,7 @@ class CreateInvoiceTransaction implements ShouldQueue
             ->get();
 
         $mainAccount = $isSell ? $this->invoice->account_id : Account::where([
-            "team_id" => $this->invoice->team_id, 
+            "team_id" => $this->invoice->team_id,
             "display_id" => "products"])->first()->id;
 
         $items[] = [
@@ -119,17 +120,17 @@ class CreateInvoiceTransaction implements ShouldQueue
         return $items;
     }
 
-    
+
     protected function getBillItems()
     {
         $isExpense = $this->formData['direction'] == "DEPOSIT";
         $items = [];
 
         $mainAccount = $isExpense ? $this->invoice->account_id : Account::where([
-            "team_id" => $this->invoice->team_id, 
+            "team_id" => $this->invoice->team_id,
             "display_id" => "products"])->first()->id;
             $lineCount = 0;
-            
+
             foreach ($this->invoice->lines as $line) {
               // debits
             $items[] = [

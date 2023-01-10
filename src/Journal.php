@@ -29,7 +29,6 @@ class Journal
         return app()->singleton(DeleteAccounts::class, $class);
     }
 
-
     public static function useCustomerModel(string $model) {
       static::$customerModel = $model;
     }

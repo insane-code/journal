@@ -18,6 +18,7 @@ class CreateTransactionLinesTable extends Migration
             $table->foreignId('user_id');
             $table->foreignId('team_id');
             $table->foreignId('transaction_id');
+            $table->foreignId('payee_id')->nullable();
 
             // content
             $table->foreignId('account_id')->nullable();

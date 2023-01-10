@@ -158,6 +158,7 @@ class Transaction extends Model
                 "anchor" => 1,
                 "type"=> $this->direction == 'DEPOSIT' ? 1 : -1,
                 "account_id" => $this->account_id,
+                "payee_id" => $this->payee_id,
                 "category_id" => $this->category_id,
                 "team_id" => $this->team_id,
                 "user_id" => $this->user_id
@@ -167,6 +168,7 @@ class Transaction extends Model
                 "amount" => $this->total,
                 "date" => $this->date,
                 "concept" => $this->description,
+                "payee_id" => $this->payee_id,
                 "index" => 1,
                 "type"=> $this->direction == 'DEPOSIT' ? -1 : 1,
                 "account_id" => $this->counter_account_id ?? $this->payee?->account_id,
@@ -185,6 +187,7 @@ class Transaction extends Model
                     "type"=> $item['type'],
                     "account_id" => $item['account_id'],
                     "category_id" => $item['category_id'],
+                    "payee_id" => $item['payee_id'] ?? $this->payee_id,
                     "team_id" => $this->team_id,
                     "user_id" => $this->user_id
                 ]);
