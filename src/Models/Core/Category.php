@@ -55,7 +55,7 @@ class Category extends Model
 
     public static function findOrCreateByName($session, string $name, int $parentId = null, string $resourceType = 'transactions') {
         $category = Category::where(function($query) use ($name) {
-           return $query->where('display_id', Str::slug($name, "_"))->orWhere('name', $name);
+           return $query->where('display_id', Str::lower(Str::slug($name, "_")))->orWhere('name', $name);
         })->where(function ($query) use ($session) {
             return $query->where('team_id', $session['team_id'])->orWhere('team_id', 0);
         })->first();
@@ -111,7 +111,7 @@ class Category extends Model
             $accountIds = $this->subCategories->pluck('accounts')->flatten()->pluck('id')->toArray();
             return Account::whereIn('id', $accountIds)->pluck('accounts.id')->toArray();
         } else {
-            $this->accounts()->pluck('accounts.id')->toArray();
+            return $this->accounts->pluck('id')->toArray();
         }
     }
 
@@ -138,8 +138,10 @@ class Category extends Model
     public function transactionBalance($clientId) {
       return  TransactionLine::whereIn('account_id', $this->getAllAccounts())
         ->select(DB::raw("sum(amount * transaction_lines.type) balance, accounts.*"))
-        ->where('payee_id', $clientId)
-        ->groupBy('account_id')
+        ->where([
+          'payee_id' => $clientId,
+        ])
+        ->groupBy('account_id', 'payee_id')
         ->join('accounts', 'accounts.id', 'transaction_lines.account_id')
         ->get();
     }
