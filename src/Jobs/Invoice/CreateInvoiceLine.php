@@ -64,7 +64,6 @@ class CreateInvoiceLine implements ShouldQueue
     private function createItemTaxes($taxes, $line) {
         foreach ($taxes as $index => $tax) {
             if (isset($tax['name'])) {
-                    $savedTax = Tax::find($tax['id']);
                     $taxRate = (double) $tax['rate'];
                     $taxLineTotal = (double) $taxRate * $line->amount / 100;
                     $line->taxes()->create([
@@ -75,7 +74,7 @@ class CreateInvoiceLine implements ShouldQueue
                         "tax_id" => $tax['id'],
                         "name" => $tax['name'],
                         "label" => $tax['label'],
-                        "concept" => $savedTax->description,
+                        "concept" => $tax['description'] ?? $tax['concept'],
                         "rate" => $taxRate,
                         "type" => $tax['type'],
                         "amount" => $taxLineTotal,

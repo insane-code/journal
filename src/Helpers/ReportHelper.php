@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\Transaction;
+use Insane\Journal\Models\Invoice\Invoice;
 
 class ReportHelper {
   public function revenueReport($teamId, $methodName = 'payments') {
@@ -91,6 +92,45 @@ class ReportHelper {
     ->get();
   }
 
+  public static function getAccountTransactionsByPeriod(int $teamId, array $accounts, $startDate = null, $endDate = null) {
+    $endDate = $endDate ?? Carbon::now()->endOfMonth()->format('Y-m-d');
+    $startDate = $startDate ?? Carbon::now()->startOfMonth()->format('Y-m-d');
+
+    $results = DB::table('transaction_lines')
+    ->whereBetween('transaction_lines.date', [$startDate, $endDate])
+    ->where([
+        'transaction_lines.team_id' => $teamId,
+        'transactions.status' => 'verified'
+    ])
+    ->where(function($query) use ($accounts) {
+      $query
+      ->whereIn('accounts.display_id', $accounts)
+      ->orWhereIn('categories.display_id', $accounts)
+      ->orWhereIn('g.display_id', $accounts);
+    })
+    ->selectRaw('sum(COALESCE(amount * transaction_lines.type, 0)) as total, 
+      date_format(transactions.date, "%Y-%m-01") as date, 
+      categories.name, 
+      categories.id,
+      categories.display_id,
+      g.display_id groupName'
+    )->groupByRaw('date_format(transactions.date, "%Y-%m"), categories.id')
+    ->join('accounts', 'accounts.id', '=', 'transaction_lines.account_id')
+    ->join('categories', 'accounts.category_id', '=', 'categories.id')
+    ->join('transactions', 'transactions.id', '=', 'transaction_id')
+    ->join(DB::raw('categories g'), 'g.id', 'categories.parent_id')
+    ->get();
+
+    $resultGroup = $results->groupBy('display_id');
+
+    return array_map(function ($account) use ($resultGroup) {
+      return $resultGroup[$account][0] ?? [
+        "display_id" => $account,
+        "total" => 0
+      ]; 
+    }, $accounts);
+  }
+
   public function getAccountBalance($accountId) {
     return DB::table('transaction_lines')
     ->where([
@@ -118,6 +158,7 @@ class ReportHelper {
         'display_id' => $accountName,
         'team_id' => $teamId
     ])->limit(1)->get();
+
     $account = count($account) ? $account[0] : null;
     if ($account) {
         $results = $this->getAccountBalance($account->id, $teamId);
@@ -133,7 +174,7 @@ class ReportHelper {
             'balance' => 0
         ];
     }
- }
+  }
 
 //   async clientsChange({params, response}) {
 //     const table = params.table
@@ -199,12 +240,9 @@ class ReportHelper {
   }
 
   public function debtors($teamId) {
-      return DB::table('invoices')
+      return Invoice::byTeam($teamId)
       ->selectRaw('count(invoices.id) total_debts, sum(invoices.debt) debt, clients.names contact,clients.id contact_id')
-      ->where('invoices.team_id', '=', $teamId)
-      ->where('invoices.status', '=', 'unpaid')
-      ->whereRaw('invoices.due_date <= NOW()')
-      ->where('invoices.type', '=', 'INVOICE')
+      ->late()
       ->join('clients', 'clients.id', '=', 'invoices.client_id')
       ->take(5)
       ->groupBy('invoices.client_id', 'clients.names', 'clients.id')
