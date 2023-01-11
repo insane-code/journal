@@ -2,9 +2,7 @@
 
 namespace Insane\Journal\Http\Controllers;
 
-use App\Models\Client;
 use App\Models\Setting;
-use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Insane\Journal\Contracts\PdfExporter;
@@ -14,13 +12,12 @@ use Insane\Journal\Models\Core\Category;
 use Insane\Journal\Models\Core\Tax;
 use Insane\Journal\Models\Invoice\Invoice;
 use Insane\Journal\Models\Product\Product;
-use Laravel\Jetstream\Jetstream;
+use Exception;
 
 class InvoiceController
 {
     public function __construct()
     {
-        $this->model = new Invoice();
         $this->searchable = ['name'];
         $this->validationRules = [];
     }
@@ -38,27 +35,35 @@ class InvoiceController
     public function index(Request $request)
     {
         $type = $this->getFilterType();
-        return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Index', [
+        $filters = $request->query('filters');
+        $clientId = $filters ? $filters['client_id'] : null;
+
+        return inertia(config('journal.invoices_inertia_path') . '/Index', [
             "invoices" => Invoice::where([
-                'team_id' => $request->user()->currentTeam->id
-            ])
-            ->whereIn('type', $type)
-            ->with(['invoiceAccount', 'invoiceAccount.category'])->orderByDesc('date')->orderByDesc('number')->paginate()->through(function ($invoice) {
-                return [
-                    "id" => $invoice->id,
-                    "concept" => $invoice->concept,
-                    "type" => $invoice->type,
-                    "category" => $invoice->invoiceAccount->category->name,
-                    "account_name" => $invoice->invoiceAccount->name,
-                    "date" => $invoice->date,
-                    "client_name" => $invoice->client?->display_name,
-                    "number" => $invoice->number,
-                    "series" => $invoice->series,
-                    "status" => $invoice->status,
-                    "total" => $invoice->total,
-                    "debt" => $invoice->debt
-                ];
-            }),
+              'team_id' => $request->user()->currentTeam->id
+          ])
+          ->byClient($clientId)
+          ->whereIn('type', $type)
+          ->with(['invoiceAccount', 'invoiceAccount.category'])
+          ->orderByDesc('date')
+          ->orderByDesc('number')
+          ->paginate()
+          ->through(function ($invoice) {
+            return [
+                "id" => $invoice->id,
+                "concept" => $invoice->concept,
+                "type" => $invoice->type,
+                "category" => $invoice->invoiceAccount->category->name,
+                "account_name" => $invoice->invoiceAccount->name,
+                "date" => $invoice->date,
+                "client_name" => $invoice->client?->display_name,
+                "number" => $invoice->number,
+                "series" => $invoice->series,
+                "status" => $invoice->status,
+                "total" => $invoice->total,
+                "debt" => $invoice->debt
+            ];
+          }),
             "type" => $type
         ]);
     }
@@ -73,7 +78,7 @@ class InvoiceController
         $teamId = $request->user()->current_team_id;
         $type = $this->getRequestType($request);
         $accountCategories =  $type == Invoice::DOCUMENT_TYPE_BILL ? ['expected_payments_vendors', 'credit_card'] : ['cash_and_bank', 'expected_payments_customers'];
-        return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Edit', [
+        return inertia(config('journal.invoices_inertia_path') . '/Edit', [
             'invoice' => null,
             'type' => $type,
             'products' => Product::where([

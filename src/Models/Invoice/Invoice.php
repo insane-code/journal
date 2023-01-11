@@ -118,6 +118,13 @@ class Invoice extends Model implements IPayableDocument
         return $query->where('invoices.category_type', $category);
     }
 
+    public function scopeByClient($query, $clientId = null) {
+      if ($clientId) {
+         $query->where('invoices.client_id', $clientId);
+      }
+      return $query;
+    }
+
     //  relationships
     public function user()
     {
