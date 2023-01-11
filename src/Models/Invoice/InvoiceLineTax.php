@@ -19,7 +19,7 @@ class InvoiceLineTax extends Model
       'type',
       'name',
       'label',
-      'description',
+      'concept',
       'quantity',
       'subtotal',
       'discount'
