@@ -50,6 +50,13 @@ class Invoice extends Model implements IPayableDocument
     const DOCUMENT_TYPE_INVOICE = 'INVOICE';
     const DOCUMENT_TYPE_BILL = 'EXPENSE';
 
+    const STATUS_DRAFT = 'draft';
+    const STATUS_UNPAID = 'unpaid';
+    const STATUS_PAID = 'paid';
+    const STATUS_PARTIAL = 'partial';
+    const STATUS_CANCELED = 'canceled';
+    const STATUS_OVERDUE = 'overdue';
+
     /**
      * The "booted" method of the model.
      *
@@ -90,7 +97,7 @@ class Invoice extends Model implements IPayableDocument
      */
     public function scopeLate($query)
     {
-        return $query->whereNotIn('status', ['paid', 'draft'])->whereRaw("curdate() > due_date");
+        return $query->whereNotIn('invoices.status', ['paid', 'draft'])->whereRaw("curdate() > due_date");
     }
 
     public function scopePaid($query)
@@ -100,7 +107,7 @@ class Invoice extends Model implements IPayableDocument
 
     public function scopeNoRefunded($query)
     {
-        return $query->whereNull('refund_id');
+        return $query->whereNull('invoices.refund_id');
     }
 
     public function scopeInvoiceAccount($query, $invoiceAccountId)
@@ -121,6 +128,13 @@ class Invoice extends Model implements IPayableDocument
     public function scopeByClient($query, $clientId = null) {
       if ($clientId) {
          $query->where('invoices.client_id', $clientId);
+      }
+      return $query;
+    }
+
+    public function scopeByTeam($query, $teamId = null) {
+      if ($teamId) {
+         $query->where('invoices.team_id', $teamId);
       }
       return $query;
     }

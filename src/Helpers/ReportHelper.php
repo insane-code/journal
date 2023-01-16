@@ -108,9 +108,9 @@ class ReportHelper {
       ->orWhereIn('categories.display_id', $accounts)
       ->orWhereIn('g.display_id', $accounts);
     })
-    ->selectRaw('sum(COALESCE(amount * transaction_lines.type, 0)) as total, 
-      date_format(transactions.date, "%Y-%m-01") as date, 
-      categories.name, 
+    ->selectRaw('sum(COALESCE(amount * transaction_lines.type, 0)) as total,
+      date_format(transactions.date, "%Y-%m-01") as date,
+      categories.name,
       categories.id,
       categories.display_id,
       g.display_id groupName'
@@ -127,7 +127,7 @@ class ReportHelper {
       return $resultGroup[$account][0] ?? [
         "display_id" => $account,
         "total" => 0
-      ]; 
+      ];
     }, $accounts);
   }
 
@@ -241,7 +241,7 @@ class ReportHelper {
 
   public function debtors($teamId) {
       return Invoice::byTeam($teamId)
-      ->selectRaw('count(invoices.id) total_debts, sum(invoices.debt) debt, clients.names contact,clients.id contact_id')
+      ->select(DB::raw('count(invoices.id) total_debts, sum(invoices.debt) debt, clients.names contact, clients.id contact_id'))
       ->late()
       ->join('clients', 'clients.id', '=', 'invoices.client_id')
       ->take(5)
