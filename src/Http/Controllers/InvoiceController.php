@@ -221,7 +221,6 @@ class InvoiceController
             ], 400);
         }
 
-
         $payment = $invoice->createPayment($postData);
         $invoice->save();
 

@@ -17,7 +17,7 @@ class CreateTransactionLinesTable extends Migration
             $table->id();
             $table->foreignId('user_id');
             $table->foreignId('team_id');
-            $table->foreignId('transaction_id');
+            $table->foreignId('transaction_id')->constrained()->cascadeOnDelete();
             $table->foreignId('payee_id')->nullable();
 
             // content

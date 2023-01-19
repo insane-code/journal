@@ -4,6 +4,7 @@ namespace Insane\Journal\Models\Core;
 
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -122,7 +123,7 @@ class Account extends Model
 
     public static function guessAccount($session, $labels, $data = []) {
 
-        $accountSlug = Str::slug($labels[0], "_");
+        $accountSlug = Str::lower(Str::slug($labels[0], "_"));
         $account = Account::where(['user_id' => $session['user_id'], 'display_id' => $accountSlug])->limit(1)->get();
         if (count($account)) {
             return $account[0]->id;
@@ -168,12 +169,26 @@ class Account extends Model
       ->select('accounts.*');
     }
 
+    public static function getByCategories($teamId, $categories = []) {
+      return Account::where('accounts.team_id', $teamId)
+      ->byCategories($categories)
+      ->orderBy('accounts.index')
+      ->get();
+    }
+
+     public function scopeByCategories($query, array $categories = []) {
+      return $query
+      ->join('categories', 'categories.id', '=', 'accounts.category_id')
+      ->whereIn('categories.display_id', $categories)
+      ->select('accounts.*');
+    }
+
     //  Utils
     public static function setNumber($account)
     {
-        if ($account->category) {
-            $number = $account->category->lastSubcategoryNumber?->number + 1 ?? $account->category->number;
-            $account->number = $number + 1;
-        }
+      if ($account->category) {
+        $number = $account->category->lastSubcategoryNumber?->number + 1 ?? $account->category->number;
+        $account->number = $number + 1;
+      }
     }
 }

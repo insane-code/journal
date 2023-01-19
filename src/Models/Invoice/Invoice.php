@@ -244,12 +244,6 @@ class Invoice extends Model implements IPayableDocument
 
     public static function calculateTotal($invoice)
     {
-        $result = [
-            'subtotal' => 0,
-            'total' => 0,
-            'discount' => 0
-        ];
-
         if ($invoice) {
             $total = InvoiceLine::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(price) as price, sum(discount) as discount, sum(amount) as amount')->get();
             $totalTax = InvoiceLineTax::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(amount * type) as amount')->get();
@@ -456,7 +450,7 @@ class Invoice extends Model implements IPayableDocument
     }
 
     public function getTransactionDirection(): string {
-      return $this->isBill() ? Transaction::DIRECTION_DEBIT : Transaction::DIRECTION_DEBIT;
+      return $this->isBill() ? Transaction::DIRECTION_CREDIT : Transaction::DIRECTION_DEBIT;
     }
 
     public function getCounterAccountId(): int {

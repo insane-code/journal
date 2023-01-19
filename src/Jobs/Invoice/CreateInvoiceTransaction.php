@@ -53,6 +53,7 @@ class CreateInvoiceTransaction implements ShouldQueue
         $this->formData["direction"] = $directions[$this->invoice->type];
         $this->formData["total"] =  $this->formData["total"] ?? $this->invoice->total;
         $this->formData["account_id"] = $this->formData['account_id'] ?? $setting["default.{$this->formData['transactionType']}.account"];
+        $this->formData["counter_account_id"] = $this->formData['counter_account_id'] ?? $this->invoice->invoice_account_id;
         $this->formData["category_id"] = null;
         $this->formData["payee_id"] = $this->invoice->client_id;
         $this->formData["status"] = "verified";
@@ -78,7 +79,7 @@ class CreateInvoiceTransaction implements ShouldQueue
         $isSell = $this->formData['direction'] == "DEPOSIT";
         $items = [];
 
-        $mainAccount = $isSell ? $this->invoice->account_id : Account::where([
+        $incomeAccount = $isSell ? $this->invoice->invoice_account_id : Account::where([
             "team_id" => $this->invoice->team_id,
             "display_id" => "products"])->first()->id;
 
@@ -88,7 +89,7 @@ class CreateInvoiceTransaction implements ShouldQueue
             // debits
             $items[] = [
                 "index" => $lineCount,
-                "account_id" => $line->account_id ?? $mainAccount,
+                "account_id" => $line->account_id ?? $incomeAccount,
                 "category_id" => $line->category_id ?? null,
                 "type" => -1,
                 "concept" => $line->concept ?? $this->formData['concept'],
@@ -114,7 +115,7 @@ class CreateInvoiceTransaction implements ShouldQueue
             // credits
             $items[] = [
                 "index" => $lineCount,
-                "account_id" => $line->category_id ?? $this->invoice->invoice_account_id,
+                "account_id" => $line->category_id ?? $this->invoice->account_id,
                 "category_id" => null,
                 "type" => 1,
                 "concept" => $line->concept ?? $this->formData['concept'],
