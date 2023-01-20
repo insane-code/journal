@@ -131,6 +131,42 @@ class ReportHelper {
     }, $accounts);
   }
 
+  public static function getChartTransactionsByPeriod(int $teamId, array $accounts, $startDate = null, $endDate = null) {
+    $endDate = $endDate ?? Carbon::now()->endOfMonth()->format('Y-m-d');
+    $startDate = $startDate ?? Carbon::now()->startOfMonth()->format('Y-m-d');
+
+    $results = DB::table('transaction_lines')
+    ->whereBetween('transaction_lines.date', [$startDate, $endDate])
+    ->where([
+        'transaction_lines.team_id' => $teamId,
+        'transactions.status' => 'verified'
+    ])
+    ->where(function($query) use ($accounts) {
+      $query
+      ->whereIn('accounts.display_id', $accounts)
+      ->orWhereIn('categories.display_id', $accounts)
+      ->orWhereIn('g.display_id', $accounts);
+    })
+    ->selectRaw('sum(COALESCE(amount * transaction_lines.type * accounts.type, 0)) as total,
+      date_format(transactions.date, "%Y-%m-01") as date,
+      categories.name,
+      categories.id,
+      categories.display_id,
+      g.display_id groupName'
+    )->groupByRaw('date_format(transactions.date, "%Y-%m"), categories.id')
+    ->join('accounts', 'accounts.id', '=', 'transaction_lines.account_id')
+    ->join('categories', 'accounts.category_id', '=', 'categories.id')
+    ->join('transactions', 'transactions.id', '=', 'transaction_id')
+    ->join(DB::raw('categories g'), 'g.id', 'categories.parent_id')
+    ->groupBy('categories.display_id')
+    ->get()->groupBy('groupName');
+
+    return collect($accounts)->reduce(function ($groups, $account) use ($results) {
+      $groups[$account] = isset($results[$account]) ? $results[$account][0]->total : 0;
+      return $groups;
+    });
+  }
+
   public function getAccountBalance($accountId) {
     return DB::table('transaction_lines')
     ->where([
@@ -175,55 +211,6 @@ class ReportHelper {
         ];
     }
   }
-
-//   async clientsChange({params, response}) {
-//     const table = params.table
-//     let dates = [];
-//     let interval = 'MONTH';
-//     for (let index = 0; index < 12; index++) {
-//       if (index == 0) {
-//         dates.push(`select DATE_FORMAT(SUBDATE(CURRENT_DATE(),INTERVAL ${index} ${interval}), '%Y-%m-01') as dateUnit`);
-//       } else {
-//         dates.push(`union all select DATE_FORMAT(SUBDATE(CURRENT_DATE(),INTERVAL ${index} ${interval}), '%Y-%m-01')`);
-//       }
-//     }
-
-//     const sql = `select
-//     dates.dateUnit as unit, count(c.id) as total, DATE_FORMAT(CAST(dates.dateUnit as date), "%M") as month
-//     FROM (${dates.join(' ')}) as dates
-//     LEFT JOIN ${table} c ON DATE_FORMAT(c.created_at, '%Y-%m-01') = dates.dateUnit
-//     GROUP BY dates.dateUnit
-//     `
-
-//     const sql2 = `select count(id) as total from ${table}`;
-
-//     // return response.send(sql);
-//     const results = await Database.raw(sql);
-//     const results2 = await Database.raw(sql2);
-//     return response.json({
-//       total: results2[0][0].total,
-//       values: results[0]
-//     });
-//   }
-
-//   async cashFlowReport({response}) {
-//     const sql = `
-//     SELECT
-//       SUM(payment_docs.amount) AS total,
-//       monthname(MAX(payment_date)) AS month,
-//       DATE_FORMAT(payment_docs.payment_date, "%Y%m") AS yearmonth
-//     FROM
-//       payment_docs
-//     GROUP BY
-//       DATE_FORMAT(payment_docs.payment_date, "%Y%m")
-//     order by
-//       DATE_FORMAT(payment_docs.payment_date, "%Y%m") DESC
-//     LIMIT
-//       12`;
-
-//     const results = await Database.raw(sql);
-//     return response.json(results[0]);
-//   }
 
   public function nextInvoices($teamId) {
    return DB::table('invoices')
