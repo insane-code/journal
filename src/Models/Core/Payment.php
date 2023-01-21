@@ -54,23 +54,17 @@ class Payment extends Model
        return $this->morphOne(Transaction::class, "transactionable");
     }
 
-
     public function createTransaction() {
-      $direction = $this->payable->getTransactionDirection() ?? Transaction::DIRECTION_DEBIT;
-      $counterAccountId = $this->payable->getCounterAccountId();
+      $transactionData = $this->payable->createPaymentTransaction($this);
+      $data = array_merge($transactionData, [
+        'status' => 'verified'
+      ]);
 
-      $transactionData = [
-          "team_id" => $this->team_id,
-          "user_id" => $this->user_id,
-          "date" => $this->payment_date,
-          "description" => $this->concept,
-          "direction" => $direction,
-          "total" => $this->amount,
-          "account_id" => $this->account_id,
-          "counter_account_id" => $counterAccountId
-      ];
-
-      $transaction = $this->transaction()->create($transactionData);
-      $transaction->createLines([]);
+      if ($transaction = $this->transaction) {
+        $transaction->update($data);
+      } else {
+        $transaction = $this->transaction()->create($data);
+      }
+      $transaction->createLines($data['items']);
     }
 }

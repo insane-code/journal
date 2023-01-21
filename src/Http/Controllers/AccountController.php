@@ -212,7 +212,7 @@ class AccountController
         $accountIds = explode(",", $accountIds[0]);
         $balance = DB::table('transaction_lines')
         ->whereIn('transaction_lines.account_id', $accountIds)
-        ->selectRaw('sum(amount * transaction_lines.type * accounts.type)  as total, transaction_lines.account_id, accounts.id, accounts.name, accounts.display_id')
+        ->selectRaw('sum(amount * transaction_lines.type)  as total, transaction_lines.account_id, accounts.id, accounts.name, accounts.display_id')
         ->join('accounts', 'accounts.id', '=', 'transaction_lines.account_id')
         ->groupBy('transaction_lines.account_id')
         ->get()->toArray();

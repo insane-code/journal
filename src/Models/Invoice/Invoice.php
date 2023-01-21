@@ -3,7 +3,6 @@
 namespace Insane\Journal\Models\Invoice;
 
 use App\Models\User;
-use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
 use Insane\Journal\Jobs\Invoice\CreateInvoiceLine;
@@ -17,10 +16,13 @@ use Insane\Journal\Events\InvoiceCreated;
 use Insane\Journal\Events\InvoiceSaving;
 use Insane\Journal\Jobs\Invoice\CreateInvoiceRelations;
 use Insane\Journal\Journal;
+use Insane\Journal\Traits\HasPayments;
 use Insane\Journal\Traits\IPayableDocument;
 
 class Invoice extends Model implements IPayableDocument
 {
+    use HasPayments;
+
     protected $fillable = [
         'team_id',
         'user_id',
@@ -187,11 +189,6 @@ class Invoice extends Model implements IPayableDocument
 
     public function transaction() {
         return $this->morphOne(Transaction::class, "transactionable");
-    }
-
-    public function payments()
-    {
-        return $this->morphMany(Payment::class, 'payable');
     }
 
     public function relatedParents() {
@@ -377,57 +374,8 @@ class Invoice extends Model implements IPayableDocument
         }
     }
 
-    public static function checkPayments($invoice)
-    {
-      if ($invoice && $invoice->payments) {
-          $totalPaid = $invoice->payments()->sum('amount');
-          $invoice->debt = $invoice->total - $totalPaid;
-          $invoice->status = Invoice::checkStatus($invoice);
-        }
-    }
 
-    public function createPayment($formData)
-    {
-        $formData['amount'] = $formData['amount'] > $this->debt ? $this->debt : $formData['amount'];
-        return $this->payments()->create(array_merge(
-            $formData,
-            [
-                'user_id' => $this->user_id,
-                'team_id' => $this->team_id,
-                'client_id' => $this->client_id
-            ]
-        ));
-    }
 
-    public function markAsPaid()
-    {
-        if ($this->debt <= 0) {
-            throw new Exception("This invoice is already paid");
-        }
-
-        $formData = [
-            "amount" => $this->debt,
-            "payment_date" => date("Y-m-d"),
-            "concept" => "Payment for invoice #{$this->number}",
-            "account_id" => Account::guessAccount($this, ['cash_on_hand']),
-            "category_id" => $this->account_id,
-            'user_id' => $this->user_id,
-            'team_id' => $this->team_id,
-            'client_id' => $this->client_id,
-            'currency_code' => $this->currency_code,
-            'currency_rate' => $this->currency_rate,
-            'status' => 'verified'
-        ];
-
-        $this->payments()->create($formData);
-        $this->save();
-
-    }
-
-    public function deletePayment($id)
-    {
-        Payment::find($id)->delete();
-    }
 
     public function getInvoiceData() {
         $invoiceData = $this->toArray();
@@ -440,6 +388,14 @@ class Invoice extends Model implements IPayableDocument
     }
 
     // payable functions
+    public static function checkPayments($invoice)
+    {
+      if ($invoice && $invoice->payments) {
+          $totalPaid = $invoice->payments()->sum('amount');
+          $invoice->debt = $invoice->total - $totalPaid;
+          $invoice->status = Invoice::checkStatus($invoice);
+        }
+    }
 
     public function getStatusField(): string {
       return 'status';

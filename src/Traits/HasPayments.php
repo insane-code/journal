@@ -4,9 +4,10 @@ namespace Insane\Journal\Traits;
 use Exception;
 use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\Payment;
+use Insane\Journal\Models\Core\Transaction;
 
 trait HasPayments
-{  
+{
     protected static function boot()
     {
         parent::boot();
@@ -39,6 +40,7 @@ trait HasPayments
 
     public function createPayment($formData)
     {
+        $formData['amount'] = $formData['amount'] > $this->debt ? $this->debt : $formData['amount'];
         return $this->payments()->create(array_merge(
             $formData,
             [
@@ -77,5 +79,24 @@ trait HasPayments
     public function deletePayment($id)
     {
         Payment::find($id)->delete();
+    }
+
+    protected function createPaymentTransaction(Payment $payment) {
+      $direction = $this->getTransactionDirection() ?? Transaction::DIRECTION_DEBIT;
+      $counterAccountId = $this->getCounterAccountId();
+
+      $transactionData = [
+          "team_id" => $payment->team_id,
+          "user_id" => $payment->user_id,
+          "date" => $payment->payment_date,
+          "description" => $payment->concept,
+          "direction" => $direction,
+          "total" => $payment->amount,
+          "account_id" => $payment->account_id,
+          "counter_account_id" => $counterAccountId
+      ];
+
+      $transaction = $payment->transaction()->create($transactionData);
+      $transaction->createLines([]);
     }
 }

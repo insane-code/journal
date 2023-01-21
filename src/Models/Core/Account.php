@@ -49,11 +49,16 @@ class Account extends Model
                 ], $account->category_id);
             }
 
-            if ($account->account_detail_type_id) {
+            if ($account->category) {
+                $account->type = $account->category->type;
+                $account->balance_type = $account->type == 1 ?  self::BALANCE_TYPE_DEBIT: self::BALANCE_TYPE_CREDIT ;
+            }
+
+            if ($account->account_detail_type_id && !$account->category) {
                 $detailType = AccountDetailType::find($account->account_detail_type_id);
                 $account->balance_type = $detailType?->config['balance_type'] ?? self::BALANCE_TYPE_DEBIT;
-                $account->category_id = $account->category_id ?? $detailType?->config['category_id'] ?? null;
                 $account->type = $account->balance_type == self::BALANCE_TYPE_CREDIT ? -1 : 1;
+                $account->category_id = $account->category_id ?? $detailType?->config['category_id'] ?? null;
             }
 
             self::setNumber($account);
