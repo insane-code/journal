@@ -28,6 +28,7 @@ class CreateAccountsTable extends Migration
             $table->string('display_id');
             $table->integer('number')->nullable();
             $table->string('name');
+            $table->string('alias')->nullable();
             $table->text('description')->nullable();
             $table->string('currency_code', 4)->default("DOP");
             $table->integer('index')->default(0);

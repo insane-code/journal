@@ -18,9 +18,11 @@ class Category extends Model
       'display_id',
       'number',
       'name',
+      'alias',
       'description',
       'depth',
       'index',
+      'type',
       'resource_type'
     ];
 
@@ -41,16 +43,16 @@ class Category extends Model
       return $this->hasOne(self::class, 'parent_id', 'id')->latest('number');
     }
 
+    public function lastAccountNumber() {
+      return $this->hasOne(Account::class, 'category_id', 'id')->latest('number');
+    }
+
     public function category() {
         return $this->belongsTo(Category::class, 'parent_id', 'id');
     }
 
     public function accounts() {
         return $this->hasMany(Account::class, 'category_id', 'id')->orderBy('index');
-    }
-
-    public function lastAccountNumber() {
-        return $this->hasOne(Account::class, 'category_id', 'id')->latest('number');
     }
 
     public static function findOrCreateByName($session, string $name, int $parentId = null, string $resourceType = 'transactions') {
@@ -116,12 +118,21 @@ class Category extends Model
     }
 
     public static function saveBulk(mixed $categories, mixed $extraData) {
+  
         foreach ($categories as $index => $category) {
             $newCategory = array_merge($category, $extraData, ['index' => $index]);
             unset($newCategory['childs']);
             $parentCategory = Category::create($newCategory);
+
+          
+
             if (isset($category['childs'])) {
-                Category::saveBulk($category['childs'], array_merge($extraData, ['depth' => $extraData['depth'] + 1, 'parent_id' => $parentCategory->id]));
+                Category::saveBulk($category['childs'], array_merge(
+                  $extraData, [
+                    'depth' => $extraData['depth'] + 1,
+                    'type' => $parentCategory->type, 
+                    'parent_id' => $parentCategory->id
+                  ]));
             }
         }
     }

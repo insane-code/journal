@@ -4,7 +4,6 @@ namespace Insane\Journal\Models\Core;
 
 use App\Models\Team;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +28,7 @@ class Account extends Model
       'number',
       'display_id',
       'name',
+      'alias',
       'description',
       'currency_code',
       'opening_balance',
@@ -50,8 +50,8 @@ class Account extends Model
             }
 
             if ($account->category) {
-                $account->type = $account->category->type;
-                $account->balance_type = $account->type == 1 ?  self::BALANCE_TYPE_DEBIT: self::BALANCE_TYPE_CREDIT ;
+              $account->type = $account->category->type;
+              $account->balance_type = $account->type == 1 ?  self::BALANCE_TYPE_DEBIT: self::BALANCE_TYPE_CREDIT ;
             }
 
             if ($account->account_detail_type_id && !$account->category) {
@@ -192,7 +192,7 @@ class Account extends Model
     public static function setNumber($account)
     {
       if ($account->category) {
-        $number = $account->category->lastSubcategoryNumber?->number + 1 ?? $account->category->number;
+        $number = $account->category->lastAccountNumber()->where('team_id', $account->team_id)->first()?->number ?? $account->category->number;
         $account->number = $number + 1;
       }
     }
