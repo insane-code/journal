@@ -29,6 +29,7 @@ class CreateTransactionLinesTable extends Migration
             $table->decimal('amount', 11, 2)->default(0.00);
             $table->integer('index')->nullable();
             $table->boolean('anchor')->default(0);
+            $table->boolean('is_split')->default(0);
             $table->timestamps();
         });
     }

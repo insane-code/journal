@@ -105,7 +105,7 @@ class Account extends Model
         return Transaction::whereHas('lines', function ($query) {
             $query->where('account_id', $this->id);
         })
-        ->with(['splits', 'category', 'payee','account', 'counterAccount'])
+        ->with(['splits','payee', 'category', 'splits.payee','account', 'counterAccount'])
         ->orderByDesc('date')
         ->limit($limit)
         ->get();

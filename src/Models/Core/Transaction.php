@@ -126,8 +126,7 @@ class Transaction extends Model
             "transaction_id" =>  $this->id,
             "type" =>  1
         ])->sum('amount');
-
-        $this->update(['total', $total]);
+        $this->updateQuietly(['total' => $total]);
     }
 
     static public function createTransaction($transactionData) {
@@ -282,7 +281,7 @@ class Transaction extends Model
         ->when($orderByDate, function ($query) {
             $query->orderBy('date', 'desc');
         })
-        ->with(['mainLine', 'lines', 'category', 'mainLine.account', 'category.account']);
+        ->with(['mainLine', 'lines', 'category', 'mainLine.account', 'counterLine.account']);
     }
 
     public function scopeByCategories($query, array $displayIds, $teamId) {
@@ -303,7 +302,7 @@ class Transaction extends Model
             'description' => $transaction->description,
             'direction' => $transaction->direction,
             'account' => $transaction->mainLine ? $transaction->mainLine->account: null,
-            'category' => $transaction->mainLine ? $transaction->category->account : null,
+            'category' => $transaction->mainLine ? $transaction->category : null,
             'total' => $transaction->total,
             'lines' => $transaction->lines,
             'mainLine' => $transaction->mainLine,

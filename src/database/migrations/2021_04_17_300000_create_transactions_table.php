@@ -44,6 +44,7 @@ class CreateTransactionsTable extends Migration
             $table->decimal('total', 11, 2)->default(0.00);
             $table->enum('status', ['draft','planned', 'verified', 'canceled'])->default('draft');
             $table->boolean('is_transfer')->default(false);
+            $table->boolean('has_splits')->default(false);
             $table->json('meta_data')->nullable();
             $table->timestamps();
         });
