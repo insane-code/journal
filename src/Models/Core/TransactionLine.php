@@ -35,7 +35,8 @@ class TransactionLine extends Model
         'amount',
         'index',
         'anchor',
-        'type'
+        'type',
+        'is_split'
     ];
 
     public function user()

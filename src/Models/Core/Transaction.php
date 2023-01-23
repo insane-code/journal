@@ -30,6 +30,7 @@ class Transaction extends Model
         'direction',
         'notes',
         'total',
+        'has_splits',
         'currency_code',
         'status'
     ];
@@ -61,15 +62,27 @@ class Transaction extends Model
         return $this->belongsTo(team::class);
     }
 
+    public function account() {
+        return $this->belongsTo(Account::class);
+    }
+
+    public function counterAccount() {
+        return $this->belongsTo(Account::class,  'counter_account_id');
+    }
+
     public function mainLine() {
         return $this->hasOne(TransactionLine::class)->where('anchor', true);
     }
 
-    public function category() {
+    public function splits() {
+        return $this->hasMany(TransactionLine::class)->where('is_split', true);
+    }
+
+    public function counterLine() {
         return $this->hasOne(TransactionLine::class)->where('anchor', false);
     }
 
-    public function transactionCategory() {
+    public function category() {
         return $this->belongsTo(Category::class, 'category_id');
     }
 
@@ -105,6 +118,16 @@ class Transaction extends Model
             ])->max('number');
             $transaction->number = $result + 1;
         }
+    }
+
+    public function calculateTotal()
+    {
+        $total = TransactionLine::where([
+            "transaction_id" =>  $this->id,
+            "type" =>  1
+        ])->sum('amount');
+
+        $this->update(['total', $total]);
     }
 
     static public function createTransaction($transactionData) {
@@ -151,6 +174,15 @@ class Transaction extends Model
         return $this;
     }
 
+    public function guessPayee($data) {
+        $payeeId = $data["payee_id"];
+        if ($data["payee_id"] == 'new') {
+           return Payee::findOrCreateByName($data, $data['payee_label'] ?? 'General Provider');     
+        } else if ($data["payee_id"]) {
+           return Payee::find($payeeId);
+        }
+    }
+
     public function createLines($items = []) {
         TransactionLine::query()->where('transaction_id', $this->id)->delete();
         if (!count($items)) {
@@ -181,6 +213,38 @@ class Transaction extends Model
                 "user_id" => $this->user_id
             ]);
 
+        } else if ($this->has_splits) {
+            foreach ($items as $item) {
+                $payee = $this->guessPayee($item);
+
+                $this->lines()->create([
+                    "date" => $this->date,
+                    "index" => 0,
+                    "anchor" => 1,
+                    "amount" => $item['amount'],
+                    "concept" => $item['concept'] ?? "",
+                    "payee_id" =>  $payee->id,
+                    "type"=> $this->direction == Transaction::DIRECTION_DEBIT ? 1 : -1,
+                    "account_id" => $item['account_id'] ?? $items[0]['account_id'],
+                    "category_id" =>  $item['category_id'],
+                    "team_id" => $this->team_id,
+                    "user_id" => $this->user_id,
+                    "is_split" => true,
+                ]);
+    
+                $this->lines()->create([
+                    "type"=> $this->direction == Transaction::DIRECTION_DEBIT ? -1 : 1,
+                    "index" => 1,
+                    "date" => $this->date,
+                    "amount" => $item['amount'],
+                    "concept" => $item['concept'] ?? "",
+                    "category_id" => 0,
+                    "account_id" => $payee?->account_id,
+                    "payee_id" =>  $payee->id,
+                    "team_id" => $this->team_id,
+                    "user_id" => $this->user_id
+                ]);
+            }
         } else {
             foreach ($items as $item) {
                 $this->lines()->create([
@@ -197,6 +261,8 @@ class Transaction extends Model
                 ]);
             }
         }
+
+        $this->calculateTotal();
     }
 
     public function remove() {

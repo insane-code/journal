@@ -94,9 +94,21 @@ class Account extends Model
     {
         return $this->hasMany(Transaction::class);
     }
+
     public function transactionLines()
     {
         return $this->hasMany(TransactionLine::class)->orderByDesc('date');
+    }
+
+    public function transactionSplits($limit = 25)
+    {
+        return Transaction::whereHas('lines', function ($query) {
+            $query->where('account_id', $this->id);
+        })
+        ->with(['splits', 'category', 'payee','account', 'counterAccount'])
+        ->orderByDesc('date')
+        ->limit($limit)
+        ->get();
     }
 
     public function expense_transactions()
