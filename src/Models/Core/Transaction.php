@@ -176,7 +176,7 @@ class Transaction extends Model
     public function guessPayee($data) {
         $payeeId = $data["payee_id"];
         if ($data["payee_id"] == 'new') {
-           return Payee::findOrCreateByName($data, $data['payee_label'] ?? 'General Provider');     
+           return Payee::findOrCreateByName($data, $data['payee_label'] ?? 'General Provider');
         } else if ($data["payee_id"]) {
            return Payee::find($payeeId);
         }
@@ -230,7 +230,7 @@ class Transaction extends Model
                     "user_id" => $this->user_id,
                     "is_split" => true,
                 ]);
-    
+
                 $this->lines()->create([
                     "type"=> $this->direction == Transaction::DIRECTION_DEBIT ? -1 : 1,
                     "index" => 1,
@@ -269,7 +269,7 @@ class Transaction extends Model
         $this->delete();
     }
 
-    public function scopeGetByMonth($query, $startDate = null, $endDate = null, $orderByDate = true) {
+    public function scopeGetByMonth($query, $startDate = null, $endDate = null, $orderByDate = true, $with = ['mainLine', 'lines', 'category', 'mainLine.account', 'counterLine.account']) {
         $query
         ->when($startDate && !$endDate, function ($query) use ($startDate) {
             $query->where("date", '=',  $startDate);
@@ -280,8 +280,9 @@ class Transaction extends Model
         })
         ->when($orderByDate, function ($query) {
             $query->orderBy('date', 'desc');
-        })
-        ->with(['mainLine', 'lines', 'category', 'mainLine.account', 'counterLine.account']);
+        })->when($with, function ($query) use ($with) {
+            $query->with($with);
+        });
     }
 
     public function scopeByCategories($query, array $displayIds, $teamId) {
