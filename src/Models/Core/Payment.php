@@ -56,8 +56,12 @@ class Payment extends Model
 
     public function createTransaction() {
       $transactionData = $this->payable->createPaymentTransaction($this);
+
+
+
       $data = array_merge($transactionData, [
-        'status' => 'verified'
+        'status' => 'verified',
+        'date' => $this->payment_date,
       ]);
 
       if ($transaction = $this->transaction) {

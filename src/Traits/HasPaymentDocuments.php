@@ -66,7 +66,10 @@ trait HasPaymentDocuments
                     $payment = $document->payments()->create(
                         array_merge(
                             $formData,
-                            $doc
+                            $doc,
+                            [
+                              "payment_date" => $formData['date'] ?? date('Y-m-d')
+                            ]
                         ));
                     $payment->payable->save();
                 }
