@@ -139,9 +139,8 @@ class Account extends Model
     }
 
     public static function guessAccount($session, $labels, $data = []) {
-
         $accountSlug = Str::lower(Str::slug($labels[0], "_"));
-        $account = Account::where(['user_id' => $session['user_id'], 'display_id' => $accountSlug])->limit(1)->get();
+        $account = Account::where(['team_id' => $session['team_id'], 'display_id' => $accountSlug])->limit(1)->get();
         if (count($account)) {
             return $account[0]->id;
         } else {
@@ -161,6 +160,12 @@ class Account extends Model
 
             return $account->id;
         }
+    }
+
+    public static function findByDisplayId(string $name, int $teamId) {
+      return Account::where(function ($query) use ($name) {
+          return $query->where('display_id', Str::lower(Str::slug($name, "_")))->orWhere('name', $name);
+      })->where('team_id', $teamId)->first();
     }
 
     public function addPayee() {
