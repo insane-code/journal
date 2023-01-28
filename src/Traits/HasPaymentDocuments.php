@@ -81,4 +81,12 @@ trait HasPaymentDocuments
         }
         throw new Exception("Payment of $balance exceeds document debt of {$total}");
     }
+
+    public function prePaymentMeta($paymentData) {
+      return  [];
+    }
+
+    public function postPaymentMeta($paymentDoc) {
+      return  [];
+    }
 }
