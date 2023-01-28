@@ -12,6 +12,8 @@ class Tax extends Model
     protected $fillable = [
       'user_id',
       'team_id',
+      'account_id',
+      'translate_account_id',
       'name',
       'label',
       'description',

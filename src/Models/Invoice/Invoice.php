@@ -374,9 +374,6 @@ class Invoice extends Model implements IPayableDocument
         }
     }
 
-
-
-
     public function getInvoiceData() {
         $invoiceData = $this->toArray();
         $invoiceData['client'] = $this->client;
@@ -411,5 +408,85 @@ class Invoice extends Model implements IPayableDocument
 
     public function getCounterAccountId(): int {
       return $this->isBill() ? $this->invoice_account_id : $this->account_id;
+    }
+
+    public function createPaymentTransaction(Payment $payment) {
+        $direction = $this->getTransactionDirection() ?? Transaction::DIRECTION_DEBIT;
+        $counterAccountId = $this->getCounterAccountId();
+
+        return [
+            "team_id" => $payment->team_id,
+            "user_id" => $payment->user_id,
+            "date" => $payment->payment_date,
+            "description" => $payment->concept,
+            "direction" => $direction,
+            "total" => $payment->amount,
+            "account_id" => $payment->account_id,
+            "counter_account_id" => $counterAccountId,
+            "items" => $this->isBill() ? $this->getBillPaymentItems($payment) : []
+        ];
+    }
+
+    protected function getBillPaymentItems($payment)
+    {
+        $isExpense = $this->isBill();
+        $items = [];
+
+        $mainAccount = $isExpense ? $this->account_id : Account::where([
+          "team_id" => $this->team_id,
+          "display_id" => "products"])->first()->id;
+        
+        $lineCount = 0;
+
+        foreach ($this->lines as $line) {
+            // debits
+            $items[] = [
+                "index" => $lineCount,
+                "account_id" => $line->category_id ?? $mainAccount,
+                "category_id" => $line->account_id ?? null,
+                "type" => 1,
+                "concept" => $line->concept ?? $this->formData['concept'],
+                "amount" => $line->amount ?? $payment->total,
+                "anchor" => false,
+            ];
+
+            // taxes and retentions
+            $lineCount+= 1;
+            foreach ($line->taxes as $index => $tax) {
+                $lineCount+=$index;
+                $items[] = [
+                    "index" => $lineCount,
+                    "account_id" => $tax->translation_account_id ?? Account::guessAccount($this, [$tax['name'], 'sales_taxes']),
+                    "category_id" => null,
+                    "type" => $tax->type * -1,
+                    "concept" => $tax['name'],
+                    "amount" => $tax['amount'],
+                    "anchor" => false,
+                ];
+
+                $items[] = [
+                    "index" => $lineCount + 1,
+                    "account_id" => $tax->account_id ?? Account::guessAccount($this, [$tax['name'], 'sales_taxes']),
+                    "category_id" => null,
+                    "type" => $tax->type * 1,
+                    "concept" => $tax['name'],
+                    "amount" => $tax['amount'],
+                    "anchor" => false,
+                ];
+            }
+        }
+            
+          // credits
+          $items[] = [
+            "index" => count($items),
+            "account_id" => $payment->account_id,
+            "category_id" => null,
+            "type" => -1,
+            "concept" => $payment->concept,
+            "amount" => $payment->amount,
+            "anchor" => true,
+        ];
+
+        return $items;
     }
 }

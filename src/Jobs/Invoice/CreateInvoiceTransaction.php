@@ -155,13 +155,23 @@ class CreateInvoiceTransaction implements ShouldQueue
                   $lineCount+=$index;
                   $items[] = [
                       "index" => $lineCount,
-                      "account_id" => $tax->account_id ?? Account::guessAccount($this->invoice, [$tax['name'], 'sales_taxes'] ),
+                      "account_id" => $tax->translation_account_id ?? $tax->account_id ?? Account::guessAccount($this->invoice, [$tax['name'], 'sales_taxes'] ),
                       "category_id" => null,
-                      "type" => -1,
+                      "type" => -1 * $tax->type,
                       "concept" => $tax['name'],
                       "amount" => $tax['amount'],
                       "anchor" => false,
                   ];
+
+                $items[] = [
+                    "index" => $lineCount + 1,
+                    "account_id" => $line->category_id ?? $this->invoice->invoice_account_id,
+                    "category_id" => null,
+                    "type" => 1 * $tax->type,
+                    "concept" => $tax['name'],
+                    "amount" => $tax['amount'],
+                    "anchor" => false,
+                ];
               }
               // credits
               $items[] = [

@@ -17,6 +17,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('team_id');
             $table->foreignId('user_id');
+            $table->foreignId('account_id')->nullable();
+            $table->foreignId('translate_account_id')->nullable();
             $table->string('name');
             $table->string('label')->nullable();
             $table->text('description')->nullable();

@@ -195,7 +195,7 @@ class AccountController
             "tax" => ["liabilities"],
             "balance-sheet" => ["assets", "liabilities", "equity"],
             "income-statement" => ["income", "expenses"],
-            "account-balance" => ["assets", "liabilities", "incomes", "expenses", "equity"],
+            "account-balance" => ["assets", "liabilities", "income", "expenses", "equity"],
         ];
 
         $categoryData = Category::whereIn('display_id', $categories[$category] )->get();
