@@ -27,7 +27,9 @@ class CreateCategoriesTable extends Migration
             $table->string('display_id');
             $table->integer('number')->nullable();
             $table->string('name', 100);
-            $table->string('description', 200)->nullable();
+            $table->string('alias')->nullable();
+            $table->text('description')->nullable();
+            $table->integer('type')->default(1);
             $table->integer('index')->default(0);
             $table->integer('depth')->default(0);
             $table->enum('status', ['disabled','active'])->default('active');

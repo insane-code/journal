@@ -29,12 +29,14 @@ class TransactionLine extends Model
         'user_id',
         'category_id',
         'account_id',
+        'payee_id',
         'date',
         'concept',
         'amount',
         'index',
         'anchor',
-        'type'
+        'type',
+        'is_split'
     ];
 
     public function user()
@@ -54,6 +56,10 @@ class TransactionLine extends Model
 
     public function transaction() {
         return $this->belongsTo(Transaction::class);
+    }
+
+    public function transactionable() {
+        return $this->hasOneThrough('transactionable', Transaction::class);
     }
 
     public function accountFrom() {
@@ -76,11 +82,11 @@ class TransactionLine extends Model
     }
 
     public function getTotalAttribute() {
-        return $this->transaction->total;
+        return $this->transaction?->total;
     }
 
     public function getDescriptionAttribute() {
-        return $this->transaction->description;
+        return $this->transaction?->description;
     }
 
     public function getDirectionAttribute() {
@@ -88,6 +94,6 @@ class TransactionLine extends Model
     }
 
     public function getStatusAttribute() {
-        return $this->transaction->status;
+        return $this->transaction?->status;
     }
 }

@@ -28,6 +28,7 @@ class Account extends Model
       'number',
       'display_id',
       'name',
+      'alias',
       'description',
       'currency_code',
       'opening_balance',
@@ -48,11 +49,16 @@ class Account extends Model
                 ], $account->category_id);
             }
 
-            if ($account->account_detail_type_id) {
+            if ($account->category) {
+              $account->type = $account->category->type;
+              $account->balance_type = $account->type == 1 ?  self::BALANCE_TYPE_DEBIT: self::BALANCE_TYPE_CREDIT ;
+            }
+
+            if ($account->account_detail_type_id && !$account->category) {
                 $detailType = AccountDetailType::find($account->account_detail_type_id);
                 $account->balance_type = $detailType?->config['balance_type'] ?? self::BALANCE_TYPE_DEBIT;
-                $account->category_id = $account->category_id ?? $detailType?->config['category_id'] ?? null;
                 $account->type = $account->balance_type == self::BALANCE_TYPE_CREDIT ? -1 : 1;
+                $account->category_id = $account->category_id ?? $detailType?->config['category_id'] ?? null;
             }
 
             self::setNumber($account);
@@ -88,9 +94,21 @@ class Account extends Model
     {
         return $this->hasMany(Transaction::class);
     }
+
     public function transactionLines()
     {
         return $this->hasMany(TransactionLine::class)->orderByDesc('date');
+    }
+
+    public function transactionSplits($limit = 25)
+    {
+        return Transaction::whereHas('lines', function ($query) {
+            $query->where('account_id', $this->id);
+        })
+        ->with(['splits','payee', 'category', 'splits.payee','account', 'counterAccount'])
+        ->orderByDesc('date')
+        ->limit($limit)
+        ->get();
     }
 
     public function expense_transactions()
@@ -121,9 +139,8 @@ class Account extends Model
     }
 
     public static function guessAccount($session, $labels, $data = []) {
-
-        $accountSlug = Str::slug($labels[0], "_");
-        $account = Account::where(['user_id' => $session['user_id'], 'display_id' => $accountSlug])->limit(1)->get();
+        $accountSlug = Str::lower(Str::slug($labels[0], "_"));
+        $account = Account::where(['team_id' => $session['team_id'], 'display_id' => $accountSlug])->limit(1)->get();
         if (count($account)) {
             return $account[0]->id;
         } else {
@@ -143,6 +160,12 @@ class Account extends Model
 
             return $account->id;
         }
+    }
+
+    public static function findByDisplayId(string $name, int $teamId) {
+      return Account::where(function ($query) use ($name) {
+          return $query->where('display_id', Str::lower(Str::slug($name, "_")))->orWhere('name', $name);
+      })->where('team_id', $teamId)->first();
     }
 
     public function addPayee() {
@@ -168,12 +191,26 @@ class Account extends Model
       ->select('accounts.*');
     }
 
+    public static function getByCategories($teamId, $categories = []) {
+      return Account::where('accounts.team_id', $teamId)
+      ->byCategories($categories)
+      ->orderBy('accounts.index')
+      ->get();
+    }
+
+     public function scopeByCategories($query, array $categories = []) {
+      return $query
+      ->join('categories', 'categories.id', '=', 'accounts.category_id')
+      ->whereIn('categories.display_id', $categories)
+      ->select('accounts.*');
+    }
+
     //  Utils
     public static function setNumber($account)
     {
-        if ($account->category) {
-            $number = $account->category->lastSubcategoryNumber?->number + 1 ?? $account->category->number;
-            $account->number = $number + 1;
-        }
+      if ($account->category) {
+        $number = $account->category->lastAccountNumber()->where('team_id', $account->team_id)->first()?->number ?? $account->category->number;
+        $account->number = $number + 1;
+      }
     }
 }

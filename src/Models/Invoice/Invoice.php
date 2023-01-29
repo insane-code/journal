@@ -3,7 +3,6 @@
 namespace Insane\Journal\Models\Invoice;
 
 use App\Models\User;
-use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
 use Insane\Journal\Jobs\Invoice\CreateInvoiceLine;
@@ -13,12 +12,17 @@ use Insane\Journal\Models\Core\Category;
 use Insane\Journal\Models\Core\Payment;
 use Insane\Journal\Models\Core\Transaction;
 use Illuminate\Support\Facades\Bus;
+use Insane\Journal\Events\InvoiceCreated;
+use Insane\Journal\Events\InvoiceSaving;
 use Insane\Journal\Jobs\Invoice\CreateInvoiceRelations;
 use Insane\Journal\Journal;
+use Insane\Journal\Traits\HasPayments;
 use Insane\Journal\Traits\IPayableDocument;
 
 class Invoice extends Model implements IPayableDocument
 {
+    use HasPayments;
+
     protected $fillable = [
         'team_id',
         'user_id',
@@ -47,6 +51,13 @@ class Invoice extends Model implements IPayableDocument
 
     const DOCUMENT_TYPE_INVOICE = 'INVOICE';
     const DOCUMENT_TYPE_BILL = 'EXPENSE';
+
+    const STATUS_DRAFT = 'draft';
+    const STATUS_UNPAID = 'unpaid';
+    const STATUS_PAID = 'paid';
+    const STATUS_PARTIAL = 'partial';
+    const STATUS_CANCELED = 'canceled';
+    const STATUS_OVERDUE = 'overdue';
 
     /**
      * The "booted" method of the model.
@@ -88,7 +99,7 @@ class Invoice extends Model implements IPayableDocument
      */
     public function scopeLate($query)
     {
-        return $query->whereNotIn('status', ['paid', 'draft'])->whereRaw("curdate() > due_date");
+        return $query->whereNotIn('invoices.status', ['paid', 'draft'])->whereRaw("curdate() > due_date");
     }
 
     public function scopePaid($query)
@@ -98,7 +109,7 @@ class Invoice extends Model implements IPayableDocument
 
     public function scopeNoRefunded($query)
     {
-        return $query->whereNull('refund_id');
+        return $query->whereNull('invoices.refund_id');
     }
 
     public function scopeInvoiceAccount($query, $invoiceAccountId)
@@ -114,6 +125,20 @@ class Invoice extends Model implements IPayableDocument
     public function scopeCategory($query, $category)
     {
         return $query->where('invoices.category_type', $category);
+    }
+
+    public function scopeByClient($query, $clientId = null) {
+      if ($clientId) {
+         $query->where('invoices.client_id', $clientId);
+      }
+      return $query;
+    }
+
+    public function scopeByTeam($query, $teamId = null) {
+      if ($teamId) {
+         $query->where('invoices.team_id', $teamId);
+      }
+      return $query;
     }
 
     //  relationships
@@ -166,11 +191,6 @@ class Invoice extends Model implements IPayableDocument
         return $this->morphOne(Transaction::class, "transactionable");
     }
 
-    public function payments()
-    {
-        return $this->morphMany(Payment::class, 'payable');
-    }
-
     public function relatedParents() {
       return $this->belongsToMany(
         Invoice::class,
@@ -221,12 +241,6 @@ class Invoice extends Model implements IPayableDocument
 
     public static function calculateTotal($invoice)
     {
-        $result = [
-            'subtotal' => 0,
-            'total' => 0,
-            'discount' => 0
-        ];
-
         if ($invoice) {
             $total = InvoiceLine::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(price) as price, sum(discount) as discount, sum(amount) as amount')->get();
             $totalTax = InvoiceLineTax::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(amount * type) as amount')->get();
@@ -242,25 +256,27 @@ class Invoice extends Model implements IPayableDocument
     }
 
     public static function createDocument($invoiceData) {
-        DB::transaction(function () use ($invoiceData) {
-            $invoice = self::create($invoiceData);
-            Bus::chain([
-                new CreateInvoiceLine($invoice, $invoiceData),
-                new CreateInvoiceTransaction($invoice, array_merge(
-                    $invoice->toArray(),
-                    [
-                        'transactionType' => 'invoice',
-                        'direction' => 'DEPOSIT',
-                        'account_id' => $invoice->account_id,
-                        'date' => $invoice->date,
-                        'description' => $invoice->concept,
-                        'total' => $invoice->total,
-                    ]
-                )),
-                new CreateInvoiceRelations($invoice, $invoiceData)
-            ])->dispatch();
-            return $invoice;
-        });
+      $invoice = self::create($invoiceData);
+      event(new InvoiceSaving($invoiceData));
+      DB::transaction(function () use ($invoiceData, $invoice) {
+        Bus::chain([
+            new CreateInvoiceLine($invoice, $invoiceData),
+            new CreateInvoiceTransaction($invoice, array_merge(
+                $invoice->toArray(),
+                [
+                    'transactionType' => 'invoice',
+                    'direction' => 'DEPOSIT',
+                    'account_id' => $invoice->account_id,
+                    'date' => $invoice->date,
+                    'description' => $invoice->concept,
+                    'total' => $invoice->total,
+                ]
+            )),
+            new CreateInvoiceRelations($invoice, $invoiceData)
+        ])->dispatch();
+      });
+      event(new InvoiceCreated($invoice, $invoiceData));
+      return $invoice;
     }
 
     public function updateDocument($postData) {
@@ -279,6 +295,7 @@ class Invoice extends Model implements IPayableDocument
           ),
           new CreateInvoiceRelations($this, $postData)
         ])->dispatch();
+        return $this;
     }
 
     public static function checkStatus($invoice)
@@ -357,58 +374,6 @@ class Invoice extends Model implements IPayableDocument
         }
     }
 
-    public static function checkPayments($invoice)
-    {
-      if ($invoice && $invoice->payments) {
-          $totalPaid = $invoice->payments()->sum('amount');
-          $invoice->debt = $invoice->total - $totalPaid;
-          $invoice->status = Invoice::checkStatus($invoice);
-        }
-    }
-
-    public function createPayment($formData)
-    {
-        $formData['amount'] = $formData['amount'] > $this->debt ? $this->debt : $formData['amount'];
-        return $this->payments()->create(array_merge(
-            $formData,
-            [
-                'user_id' => $this->user_id,
-                'team_id' => $this->team_id,
-                'client_id' => $this->client_id
-            ]
-        ));
-    }
-
-    public function markAsPaid()
-    {
-        if ($this->debt <= 0) {
-            throw new Exception("This invoice is already paid");
-        }
-
-        $formData = [
-            "amount" => $this->debt,
-            "payment_date" => date("Y-m-d"),
-            "concept" => "Payment for invoice #{$this->number}",
-            "account_id" => Account::guessAccount($this, ['cash_on_hand']),
-            "category_id" => $this->account_id,
-            'user_id' => $this->user_id,
-            'team_id' => $this->team_id,
-            'client_id' => $this->client_id,
-            'currency_code' => $this->currency_code,
-            'currency_rate' => $this->currency_rate,
-            'status' => 'verified'
-        ];
-
-        $this->payments()->create($formData);
-        $this->save();
-
-    }
-
-    public function deletePayment($id)
-    {
-        Payment::find($id)->delete();
-    }
-
     public function getInvoiceData() {
         $invoiceData = $this->toArray();
         $invoiceData['client'] = $this->client;
@@ -420,6 +385,14 @@ class Invoice extends Model implements IPayableDocument
     }
 
     // payable functions
+    public static function checkPayments($invoice)
+    {
+      if ($invoice && $invoice->payments) {
+          $totalPaid = $invoice->payments()->sum('amount');
+          $invoice->debt = $invoice->total - $totalPaid;
+          $invoice->status = Invoice::checkStatus($invoice);
+        }
+    }
 
     public function getStatusField(): string {
       return 'status';
@@ -430,10 +403,90 @@ class Invoice extends Model implements IPayableDocument
     }
 
     public function getTransactionDirection(): string {
-      return $this->isBill() ? Transaction::DIRECTION_DEBIT : Transaction::DIRECTION_DEBIT;
+      return $this->isBill() ? Transaction::DIRECTION_CREDIT : Transaction::DIRECTION_DEBIT;
     }
 
     public function getCounterAccountId(): int {
       return $this->isBill() ? $this->invoice_account_id : $this->account_id;
+    }
+
+    public function createPaymentTransaction(Payment $payment) {
+        $direction = $this->getTransactionDirection() ?? Transaction::DIRECTION_DEBIT;
+        $counterAccountId = $this->getCounterAccountId();
+
+        return [
+            "team_id" => $payment->team_id,
+            "user_id" => $payment->user_id,
+            "date" => $payment->payment_date,
+            "description" => $payment->concept,
+            "direction" => $direction,
+            "total" => $payment->amount,
+            "account_id" => $payment->account_id,
+            "counter_account_id" => $counterAccountId,
+            "items" => $this->isBill() ? $this->getBillPaymentItems($payment) : []
+        ];
+    }
+
+    protected function getBillPaymentItems($payment)
+    {
+        $isExpense = $this->isBill();
+        $items = [];
+
+        $mainAccount = $isExpense ? $this->invoice_account_id : Account::where([
+          "team_id" => $this->team_id,
+          "display_id" => "products"])->first()->id;
+        
+        $lineCount = 0;
+
+        foreach ($this->lines as $line) {
+            // debits
+            $items[] = [
+                "index" => $lineCount,
+                "account_id" => $line->category_id ?? $mainAccount,
+                "category_id" => $line->account_id ?? null,
+                "type" => 1,
+                "concept" => $line->concept ?? $this->formData['concept'],
+                "amount" => $line->amount ?? $payment->total,
+                "anchor" => false,
+            ];
+
+            // taxes and retentions
+            $lineCount+= 1;
+            foreach ($line->taxes as $index => $tax) {
+                $lineCount+=$index;
+                $items[] = [
+                    "index" => $lineCount,
+                    "account_id" => $tax->tax->translate_account_id ?? Account::guessAccount($this, [$tax['name'], 'sales_taxes']),
+                    "category_id" => null,
+                    "type" => -1,
+                    "concept" => $tax['name'],
+                    "amount" => $tax['amount'],
+                    "anchor" => false,
+                ];
+
+                $items[] = [
+                    "index" => $lineCount + 1,
+                    "account_id" => $tax->tax->account_id ?? Account::guessAccount($this, [$tax['name'], 'sales_taxes']),
+                    "category_id" => null,
+                    "type" =>  1,
+                    "concept" => $tax['name'],
+                    "amount" => $tax['amount'],
+                    "anchor" => false,
+                ];
+            }
+        }
+            
+          // credits
+          $items[] = [
+            "index" => count($items),
+            "account_id" => $payment->account_id,
+            "category_id" => null,
+            "type" => -1,
+            "concept" => $payment->concept,
+            "amount" => $payment->amount,
+            "anchor" => true,
+        ];
+
+        return $items;
     }
 }

@@ -2,7 +2,6 @@
 
 namespace Insane\Journal\Http\Controllers;
 
-use App\Models\Client;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -13,50 +12,58 @@ use Insane\Journal\Models\Core\Category;
 use Insane\Journal\Models\Core\Tax;
 use Insane\Journal\Models\Invoice\Invoice;
 use Insane\Journal\Models\Product\Product;
-use Laravel\Jetstream\Jetstream;
+use Exception;
 
 class InvoiceController
 {
     public function __construct()
     {
-        $this->model = new Invoice();
         $this->searchable = ['name'];
         $this->validationRules = [];
     }
 
-    public function isBill(Request $request) {
-        return str_contains($request->url(), 'bills');
+    public function getRequestType() {
+        return str_contains(request()->url(), 'bills') ? INVOICE::DOCUMENT_TYPE_BILL : INVOICE::DOCUMENT_TYPE_INVOICE;
     }
 
     public function getFilterType() {
-      $type = $this->isBill(request()) ? [INVOICE::DOCUMENT_TYPE_BILL] : [INVOICE::DOCUMENT_TYPE_INVOICE];
+      $type = $this->getRequestType();
       $filters = request()->get('filter');
-      return isset($filters['type']) ? explode('|', $filters['type']) : $type;
+      return isset($filters['type']) ? explode('|', $filters['type']) : [$type];
     }
 
     public function index(Request $request)
     {
         $type = $this->getFilterType();
-        return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Index', [
+        $filters = $request->query('filters');
+        $clientId = $filters ? $filters['client_id'] : null;
+
+        return inertia(config('journal.invoices_inertia_path') . '/Index', [
             "invoices" => Invoice::where([
-                'team_id' => $request->user()->currentTeam->id
-            ])
-            ->whereIn('type', $type)
-            ->with(['invoiceAccount', 'invoiceAccount.category'])->orderByDesc('date')->orderByDesc('number')->paginate()->through(function ($invoice) {
-                return [
-                    "id" => $invoice->id,
-                    "concept" => $invoice->concept,
-                    "category" => $invoice->invoiceAccount->category->name,
-                    "account_name" => $invoice->invoiceAccount->name,
-                    "date" => $invoice->date,
-                    "client_name" => $invoice->client?->display_name,
-                    "number" => $invoice->number,
-                    "series" => $invoice->series,
-                    "status" => $invoice->status,
-                    "total" => $invoice->total,
-                    "debt" => $invoice->debt
-                ];
-            }),
+              'team_id' => $request->user()->currentTeam->id
+          ])
+          ->byClient($clientId)
+          ->whereIn('type', $type)
+          ->with(['invoiceAccount', 'invoiceAccount.category'])
+          ->orderByDesc('date')
+          ->orderByDesc('number')
+          ->paginate()
+          ->through(function ($invoice) {
+            return [
+                "id" => $invoice->id,
+                "concept" => $invoice->concept,
+                "type" => $invoice->type,
+                "category" => $invoice->invoiceAccount->category->alias ?? $invoice->invoiceAccount->category->name,
+                "account_name" => $invoice->invoiceAccount->alias ?? $invoice->invoiceAccount->name,
+                "date" => $invoice->date,
+                "client_name" => $invoice->client?->display_name,
+                "number" => $invoice->number,
+                "series" => $invoice->series,
+                "status" => $invoice->status,
+                "total" => $invoice->total,
+                "debt" => $invoice->debt
+            ];
+          }),
             "type" => $type
         ]);
     }
@@ -69,10 +76,9 @@ class InvoiceController
     public function create(Request $request)
     {
         $teamId = $request->user()->current_team_id;
-        $isBill = $this->isBill($request);
-        $type = $isBill ? 'BILL' : 'INVOICE';
-        $accountCategories =  $isBill ? ['expected_payments_vendors', 'credit_card'] : ['cash_and_bank', 'expected_payments_customers'];
-        return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Edit', [
+        $type = $this->getRequestType($request);
+        $accountCategories =  $type == Invoice::DOCUMENT_TYPE_BILL ? ['expected_payments_vendors', 'credit_card'] : ['cash_and_bank', 'expected_payments_customers'];
+        return inertia(config('journal.invoices_inertia_path') . '/Edit', [
             'invoice' => null,
             'type' => $type,
             'products' => Product::where([
@@ -99,7 +105,16 @@ class InvoiceController
         $postData['user_id'] = $request->user()->id;
         $postData['team_id'] = $request->user()->current_team_id;
         Invoice::createDocument($postData);
-        return redirect("/invoices/");
+        return redirect("/invoices");
+    }
+
+    private function getInvoiceSecured($invoiceId) {
+      $invoice = Invoice::find($invoiceId);
+      $type = $this->getRequestType();
+      if ($invoice->team_id !== request()->user()->current_team_id || $type !== $invoice->type) {
+        throw new Exception('This is not allowed');
+      };
+      return $invoice;
     }
 
     /**
@@ -107,23 +122,19 @@ class InvoiceController
     *
     * @return \Illuminate\Http\Response
     */
-    public function show(Request $request, $id)
+    public function show(int $invoiceId)
     {
-        $invoice = Invoice::find($id);
-        $teamId = $request->user()->current_team_id;
-
-        if ($invoice->team_id != $teamId) {
-            return Response::redirect('/invoices');
-        }
-
-        $isBill = $this->isBill($request);
-        $type = $isBill ? 'BILL' : 'INVOICE';
-
-        return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Show', [
-            'invoice' => $invoice->getInvoiceData(),
-            'businessData' => Setting::getByTeam($teamId),
-            'type' => $type,
+      try {
+        $invoice = $this->getInvoiceSecured($invoiceId);
+         
+        return inertia(config('journal.invoices_inertia_path') . '/Show', [
+          'invoice' => $invoice->getInvoiceData(),
+          'businessData' => Setting::getByTeam($invoice->team_id),
+          'type' => $invoice->type,
         ]);
+      } catch (Exception $e) {
+        redirect('/invoices');
+      }
     }
 
     /**
@@ -131,37 +142,31 @@ class InvoiceController
     *
     * @return \Illuminate\Http\Response
     */
-    public function edit(Request $request, $id)
+    public function edit(int $invoiceId)
     {
-        $invoice = Invoice::find($id);
-        $teamId = $request->user()->current_team_id;
-
-        if ($invoice->team_id != $teamId) {
-            Response::redirect('/invoices');
-        }
-
-        $isBill = $this->isBill($request);
-        $type = $isBill ? 'BILL' : 'INVOICE';
-
-        return Jetstream::inertia()->render($request, config('journal.invoices_inertia_path') . '/Edit', [
+      try {
+        $invoice = $this->getInvoiceSecured($invoiceId);
+        return inertia(config('journal.invoices_inertia_path') . '/Edit', [
             'invoice' => $invoice->getInvoiceData(),
             'products' => Product::where([
-                'team_id' => $teamId
+                'team_id' => $invoice->team_id
             ])->with(['price'])->get(),
             "categories" => Category::where([
                 'depth' => 1
             ])->with([
                 'subCategories',
-                'accounts' => function ($query) use ($teamId) {
-                    $query->where('team_id', '=', $teamId);
+                'accounts' => function ($query) use ($invoice) {
+                    $query->where('team_id', '=', $invoice->team_id);
                 },
                 'accounts.lastTransactionDate'
             ])->get(),
-            'type' => $type,
-            // change this to be dinamyc
-            'clients' => Journal::listClientsOf($teamId),
-            'availableTaxes' => Tax::where("team_id", $teamId)->get(),
+            'type' => $invoice->type,
+            'clients' => Journal::listClientsOf($invoice->team_id),
+            'availableTaxes' => Tax::where("team_id", $invoice->team_id)->get(),
         ]);
+      } catch (Exception $e) {
+        return redirect('/invoices');
+      }
     }
 
     /**
@@ -215,7 +220,6 @@ class InvoiceController
               ]
             ], 400);
         }
-
 
         $payment = $invoice->createPayment($postData);
         $invoice->save();

@@ -17,7 +17,8 @@ class CreateTransactionLinesTable extends Migration
             $table->id();
             $table->foreignId('user_id');
             $table->foreignId('team_id');
-            $table->foreignId('transaction_id');
+            $table->foreignId('transaction_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('payee_id')->nullable();
 
             // content
             $table->foreignId('account_id')->nullable();
@@ -28,6 +29,7 @@ class CreateTransactionLinesTable extends Migration
             $table->decimal('amount', 11, 2)->default(0.00);
             $table->integer('index')->nullable();
             $table->boolean('anchor')->default(0);
+            $table->boolean('is_split')->default(0);
             $table->timestamps();
         });
     }

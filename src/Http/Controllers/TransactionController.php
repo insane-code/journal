@@ -48,6 +48,13 @@ class TransactionController
 
     }
 
+    public function show(Transaction $transaction) {
+        return array_merge(
+            $transaction->toArray(),
+            ["lines" => $transaction->lines]
+        );
+    }
+
     public function store(Request $request, Response $response) {
         $postData = $request->post();
         $postData['user_id'] = $request->user()->id;

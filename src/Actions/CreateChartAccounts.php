@@ -28,9 +28,10 @@ class CreateChartAccounts
         if (count($accounts)) {
             foreach ($accounts as $index => $account) {
                 $detailType = isset($account['detail_type']) ? $account['detail_type'] : 'bank';
+                $type = $account['balance_type'] == 'DEBIT' ? 1 : -1;
                 Account::create(array_merge($account, $generalInfo, [
                     'index' => $index,
-                    'type' => $account['balance_type'] == 'DEBIT' ? 1 : -1,
+                    'type' => $type,
                     'account_detail_type_id' => AccountDetailType::where('name', $detailType)->first()->id
                 ]));
             }
