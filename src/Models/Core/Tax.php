@@ -32,7 +32,7 @@ class Tax extends Model
         if ($tax) {
           $tax;
       } else {
-          $tax = Tax::create([
+          $tax = Tax::create(array_merge($attrs, [
               'user_id' => $session['user_id'],
               'team_id' => $session['team_id'],
               'name' => $nameSlug,
@@ -40,7 +40,7 @@ class Tax extends Model
               'rate' => $rate,
               "type" => -1,
               'description' => $attrs['description'],
-          ]);
+          ]));
       }
       return $tax;
     }

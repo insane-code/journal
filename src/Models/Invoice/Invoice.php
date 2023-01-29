@@ -432,7 +432,7 @@ class Invoice extends Model implements IPayableDocument
         $isExpense = $this->isBill();
         $items = [];
 
-        $mainAccount = $isExpense ? $this->account_id : Account::where([
+        $mainAccount = $isExpense ? $this->invoice_account_id : Account::where([
           "team_id" => $this->team_id,
           "display_id" => "products"])->first()->id;
         
@@ -456,9 +456,9 @@ class Invoice extends Model implements IPayableDocument
                 $lineCount+=$index;
                 $items[] = [
                     "index" => $lineCount,
-                    "account_id" => $tax->translation_account_id ?? Account::guessAccount($this, [$tax['name'], 'sales_taxes']),
+                    "account_id" => $tax->tax->translate_account_id ?? Account::guessAccount($this, [$tax['name'], 'sales_taxes']),
                     "category_id" => null,
-                    "type" => $tax->type * -1,
+                    "type" => -1,
                     "concept" => $tax['name'],
                     "amount" => $tax['amount'],
                     "anchor" => false,
@@ -466,9 +466,9 @@ class Invoice extends Model implements IPayableDocument
 
                 $items[] = [
                     "index" => $lineCount + 1,
-                    "account_id" => $tax->account_id ?? Account::guessAccount($this, [$tax['name'], 'sales_taxes']),
+                    "account_id" => $tax->tax->account_id ?? Account::guessAccount($this, [$tax['name'], 'sales_taxes']),
                     "category_id" => null,
-                    "type" => $tax->type * 1,
+                    "type" =>  1,
                     "concept" => $tax['name'],
                     "amount" => $tax['amount'],
                     "anchor" => false,

@@ -3,6 +3,7 @@
 namespace Insane\Journal\Models\Invoice;
 
 use Illuminate\Database\Eloquent\Model;
+use Insane\Journal\Models\Core\Tax;
 use Insane\Journal\Models\Product\Product;
 
 class InvoiceLineTax extends Model
@@ -27,6 +28,10 @@ class InvoiceLineTax extends Model
 
     public function product() {
         return $this->belongsTo(Product::class);
+    }
+
+    public function tax() {
+        return $this->belongsTo(Tax::class);
     }
 
     static public function updateStock($lineItem) {

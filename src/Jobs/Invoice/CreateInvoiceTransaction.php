@@ -134,56 +134,56 @@ class CreateInvoiceTransaction implements ShouldQueue
 
         $mainAccount = $isExpense ? $this->invoice->account_id : Account::where([
           "team_id" => $this->invoice->team_id,
-          "display_id" => "products"])->first()->id;
-          $lineCount = 0;
+          "display_id" => "products"
+        ])->first()->id;
+        $lineCount = 0;
 
-          foreach ($this->invoice->lines as $line) {
-                // debits
-              $items[] = [
-                  "index" => $lineCount,
-                  "account_id" => $line->account_id ?? $mainAccount,
-                  "category_id" => $line->category_id ?? null,
-                  "type" => 1,
-                  "concept" => $line->concept ?? $this->formData['concept'],
-                  "amount" => $line->amount ?? $this->formData['total'],
-                  "anchor" => false,
-              ];
-
-              // taxes and retentions
-              $lineCount+= 1;
-              foreach ($line->taxes as $index => $tax) {
-                  $lineCount+=$index;
-                  $items[] = [
-                      "index" => $lineCount,
-                      "account_id" => $tax->translation_account_id ?? $tax->account_id ?? Account::guessAccount($this->invoice, [$tax['name'], 'sales_taxes'] ),
-                      "category_id" => null,
-                      "type" => -1 * $tax->type,
-                      "concept" => $tax['name'],
-                      "amount" => $tax['amount'],
-                      "anchor" => false,
-                  ];
-
+        foreach ($this->invoice->lines as $line) {
+            // debits
+            $items[] = [
+                "index" => $lineCount,
+                "account_id" => $line->account_id ??  $mainAccount,
+                "category_id" => $line->category_id ?? null,
+                "type" => 1,
+                "concept" => $line->concept ?? $this->formData['concept'],
+                "amount" => $line->amount ?? $this->formData['total'],
+                "anchor" => false,
+            ];
+            // taxes and retentions
+            $lineCount+= 1;
+            foreach ($line->taxes as $index => $tax) {
+                $lineCount+=$index;
                 $items[] = [
-                    "index" => $lineCount + 1,
-                    "account_id" => $line->category_id ?? $this->invoice->invoice_account_id,
+                    "index" => $lineCount,
+                    "account_id" => $tax->tax->translate_account_id ?? $tax->account_id ?? Account::guessAccount($this->invoice, [$tax['name'], 'sales_taxes'] ),
                     "category_id" => null,
-                    "type" => 1 * $tax->type,
+                    "type" => 1,
                     "concept" => $tax['name'],
                     "amount" => $tax['amount'],
                     "anchor" => false,
                 ];
-              }
-              // credits
-              $items[] = [
-                  "index" => $lineCount,
-                  "account_id" => $line->category_id ?? $this->invoice->invoice_account_id,
-                  "category_id" => null,
-                  "type" => -1,
-                  "concept" => $line->concept ?? $this->formData['concept'],
-                  "amount" => $line->amount - $line->taxes->sum('amount'),
-                  "anchor" => false,
-              ];
-          }
-          return $items;
+
+                $items[] = [
+                    "index" => $lineCount,
+                    "account_id" => $line->category_id ?? $this->invoice->invoice_account_id,
+                    "category_id" => null,
+                    "type" => -1,
+                    "concept" => $tax['name'],
+                    "amount" => $tax['amount'],
+                    "anchor" => false,
+                ];
+            }
+            // credits
+            $items[] = [
+                "index" => $lineCount,
+                "account_id" => $line->category_id ?? $this->invoice->invoice_account_id,
+                "category_id" => null,
+                "type" => -1,
+                "concept" => $line->concept ?? $this->formData['concept'],
+                "amount" => $line->amount - $line->taxes->sum('amount'),
+                "anchor" => false,
+            ];
+        }
+        return $items;
     }
 }
