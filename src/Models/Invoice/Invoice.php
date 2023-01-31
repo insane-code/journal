@@ -14,6 +14,7 @@ use Insane\Journal\Models\Core\Transaction;
 use Illuminate\Support\Facades\Bus;
 use Insane\Journal\Events\InvoiceCreated;
 use Insane\Journal\Events\InvoiceSaving;
+use Insane\Journal\Jobs\Invoice\CreateExpenseDetails;
 use Insane\Journal\Jobs\Invoice\CreateInvoiceRelations;
 use Insane\Journal\Journal;
 use Insane\Journal\Traits\HasPayments;
@@ -272,7 +273,8 @@ class Invoice extends Model implements IPayableDocument
                     'total' => $invoice->total,
                 ]
             )),
-            new CreateInvoiceRelations($invoice, $invoiceData)
+            new CreateInvoiceRelations($invoice, $invoiceData),
+            new CreateExpenseDetails($invoice, $invoiceData)
         ])->dispatch();
       });
       event(new InvoiceCreated($invoice, $invoiceData));
@@ -305,7 +307,7 @@ class Invoice extends Model implements IPayableDocument
             $status = 'paid';
         } elseif ($invoice->debt > 0 && $invoice->debt < $invoice->total) {
             $status = 'partial';
-        } elseif ($invoice->debt && $invoice->due_date < date('Y-m-d')) {
+        } elseif ($invoice->debt > 0 && $invoice->due_date < date('Y-m-d')) {
             $status = 'overdue';
         } elseif ($invoice->debt) {
             $status = 'unpaid';
@@ -435,7 +437,7 @@ class Invoice extends Model implements IPayableDocument
         $mainAccount = $isExpense ? $this->invoice_account_id : Account::where([
           "team_id" => $this->team_id,
           "display_id" => "products"])->first()->id;
-        
+
         $lineCount = 0;
 
         foreach ($this->lines as $line) {
@@ -475,7 +477,7 @@ class Invoice extends Model implements IPayableDocument
                 ];
             }
         }
-            
+
           // credits
           $items[] = [
             "index" => count($items),
