@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Insane\Journal\Contracts\DeleteAccounts;
 use Insane\Journal\Events\AccountCreated;
 use Insane\Journal\Events\AccountUpdated;
+use Insane\Journal\Helpers\ReportHelper;
 use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\AccountDetailType;
 use Insane\Journal\Models\Core\Category;
@@ -188,88 +189,21 @@ class AccountController
         ]);
     }
 
-    public function statements(Request $request, string $category = "income") {
-        $categories = [
-            "income" => ["income"],
-            "expense" => ["expenses"],
-            "tax" => ["liabilities"],
-            "balance-sheet" => ["assets", "liabilities", "equity"],
-            "income-statement" => ["income", "expenses"],
-            "account-balance" => ["assets", "liabilities", "income", "expenses", "equity"],
-        ];
+    public function statements(Request $request, string $reportName = "income") {
+        $filters = $request->query('filters');
+        $accountId = $filters ? $filters['account'] : null;
 
-        $categoryData = Category::whereIn('display_id', $categories[$category] )->get();
-
-        $categoryIds = $categoryData->pluck('id')->toArray();
-
-        $accountIds = DB::table('categories')
-        ->whereIn('categories.parent_id', $categoryIds)
-        ->selectRaw('group_concat(accounts.id) as account_ids, group_concat(accounts.name) as account_names')
-        ->joinSub(DB::table('accounts')->where('team_id', $request->user()->current_team_id), 'accounts','category_id', '=', 'categories.id')
-        ->get()->pluck('account_ids')->toArray();
-
-
-        $accountIds = explode(",", $accountIds[0]);
-        
-        $balanceByAccounts = DB::table('transaction_lines')
-        ->whereIn('transaction_lines.account_id', $accountIds)
-        ->selectRaw("
-            sum(amount * transaction_lines.type)  as total,
-            transaction_lines.account_id,
-            accounts.id, 
-            accounts.name, 
-            accounts.display_id,
-            categories.display_id category,
-            g.display_id ledger,
-            g.id ledger_id
-        ")
-        ->join('accounts', 'accounts.id', '=', 'transaction_lines.account_id')
-        ->join('categories', 'accounts.category_id', 'categories.id')
-        ->join(DB::raw('categories g'), 'categories.parent_id', 'g.id')
-        ->groupBy('transaction_lines.account_id');
-
-        // all the accounts with balance are here
-
-
-        $categoryAccounts = Category::where([
-          'depth' => 1,
-          ])
-          ->whereIn('parent_id', $categoryIds)
-          ->with([
-          'accounts' => function ($query) use ($request) {
-              $query->where('team_id', '=', $request->user()->current_team_id);
-          },
-          'category'
-        ])->get()->toArray();
-
-        $balance = $balanceByAccounts->get()->toArray();
-        $categoryAccounts = array_map(function ($subCategory) use ($balance) {
-            $total = [];
-            if (isset($subCategory['accounts'])) {
-                foreach ($subCategory['accounts'] as $accountIndex => $account) {
-                    $index = array_search($account['id'], array_column($balance, 'id'));
-                    if ($index !== false ) {
-                        $subCategory['accounts'][$accountIndex]['balance'] = $balance[$index]->total;
-                        $total[] = $balance[$index]->total;
-                    }
-                }
-            }
-            $subCategory['total'] = array_sum($total);
-            return $subCategory;
-        }, $categoryAccounts);
-
-
-        $ledger = DB::table('categories')
-        ->whereIn('categories.display_id', $categories[$category])
-        ->selectRaw('sum(COALESCE(total, 0)) total, categories.alias, categories.display_id, categories.name')
-        ->leftJoinSub($balanceByAccounts, 'balance', function($join) {
-            $join->on('categories.id', 'balance.ledger_id');
-        })->groupBy('categories.id')->get();
+        [
+            "ledger" => $ledger,
+            "categoryAccounts" => $categoryAccounts
+        ] = ReportHelper::getGeneralLedger(request()->user()->current_team_id, $reportName, [
+            "account_id" => $accountId
+        ]);
 
         return Jetstream::inertia()->render($request, config('journal.statements_inertia_path') . '/Category', [
             "categories" => $categoryAccounts,
             "ledger" => $ledger->groupBy('display_id'),
-            'categoryType' => $category
+            'categoryType' => $reportName
         ]);
     }
 }

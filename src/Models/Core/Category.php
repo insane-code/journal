@@ -118,19 +118,19 @@ class Category extends Model
     }
 
     public static function saveBulk(mixed $categories, mixed $extraData) {
-  
+
         foreach ($categories as $index => $category) {
             $newCategory = array_merge($category, $extraData, ['index' => $index]);
             unset($newCategory['childs']);
             $parentCategory = Category::create($newCategory);
 
-          
+
 
             if (isset($category['childs'])) {
                 Category::saveBulk($category['childs'], array_merge(
                   $extraData, [
                     'depth' => $extraData['depth'] + 1,
-                    'type' => $parentCategory->type, 
+                    'type' => $parentCategory->type,
                     'parent_id' => $parentCategory->id
                   ]));
             }
@@ -155,5 +155,17 @@ class Category extends Model
         ->groupBy('account_id', 'payee_id')
         ->join('accounts', 'accounts.id', 'transaction_lines.account_id')
         ->get();
+    }
+
+
+    public function scopeHasAccounts($query, mixed $accountIds) {
+      if ($accountIds) {
+        return $query->whereHas('accounts', function($query) use ($accountIds) {
+          $query->when($accountIds, function($q) use ($accountIds) {
+            $q->whereIn('accounts.id', $accountIds);
+          });
+        });
+      }
+      return $query;
     }
 }
