@@ -55,12 +55,13 @@ class Payee extends Model
            $clientTrustType = AccountDetailType::where([
                 'name' => 'client_trust_account',
             ])->first();
+
            $account = Account::create([
                 "team_id" => $payee->team_id,
                 "user_id" => $payee->user_id,
                 "display_id" => Str::slug($accountName),
                 "name" => $accountName,
-                "account_detail_type_id" => $clientTrustType->id,
+                "account_detail_type_id" => $clientTrustType?->id ?? 1,
                 "currency_code" => "DOP"
             ]);
             return $account->id;
