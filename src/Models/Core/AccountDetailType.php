@@ -16,6 +16,7 @@ class AccountDetailType extends Model
     const CLIENT_TRUST = 'client_trust_account';
     const MONEY_MARKET = 'money_market';
     const RENT_HELD_IN_TRUST = 'rent_held_in_trust';
+    const EXPENSE = 'expense';
 
     const ALL = [self::CASH, self::BANK, self::CASH_ON_HAND, self::SAVINGS, self::CREDIT_CARD];
 
