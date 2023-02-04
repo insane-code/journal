@@ -5,6 +5,7 @@ namespace Insane\Journal\Models\Core;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 
@@ -212,5 +213,30 @@ class Account extends Model
         $number = $account->category->lastAccountNumber()->where('team_id', $account->team_id)->first()?->number ?? $account->category->number;
         $account->number = $number + 1;
       }
+    }
+
+    public function openBalance($amount, $type = 1, $counterAccountId = null) {
+      $formData = [
+        'account_id' => $this->id,
+        'team_id' => $this->team_id,
+        'user_id' => $this->user_id,
+        'date' => Carbon::now()->format('Y-m-d H:i:s'),
+        'payee_id' => 'new',
+        'payee_label' => $this->user->name,
+        'currency_code' => $this->currency_code ?? "DOP",
+        'counter_account_id' => $counterAccountId ?? Account::guessAccount($this, ['opening_balance_capital', 'business_owner_contribution']),
+        'description' => 'Starting Balance',
+        'direction' => $type == 1 ? Transaction::DIRECTION_DEBIT : Transaction::DIRECTION_CREDIT,
+        'total' => $amount,
+        'items' => [],
+        'status' => Transaction::STATUS_VERIFIED,
+        'metaData' => json_encode([
+              "resource_id" => "SYSTEM:$this->id",
+              "resource_origin" => 'SYSTEM',
+              "resource_type" => 'transaction',
+          ])
+      ];
+
+      Transaction::createTransaction($formData);
     }
 }
