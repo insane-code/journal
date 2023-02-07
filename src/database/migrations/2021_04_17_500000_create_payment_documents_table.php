@@ -32,6 +32,7 @@ class CreatePaymentDocumentsTable extends Migration
             $table->text('notes')->nullable();
             $table->boolean('checked')->default(false);
             $table->json('meta_data')->default('[]');
+            $table->json('documents')->default('[]');
             $table->timestamps();
         });
     }
