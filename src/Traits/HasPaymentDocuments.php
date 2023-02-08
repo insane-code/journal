@@ -68,7 +68,7 @@ trait HasPaymentDocuments
                             $formData,
                             $doc,
                             [
-                              "payment_date" => $formData['date'] ?? date('Y-m-d')
+                              "payment_date" => $document->payment_date ?? date('Y-m-d')
                             ]
                         ));
                     $payment->payable->save();
