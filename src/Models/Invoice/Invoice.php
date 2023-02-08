@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Bus;
 use Insane\Journal\Events\InvoiceCreated;
 use Insane\Journal\Events\InvoiceSaving;
 use Insane\Journal\Jobs\Invoice\CreateExpenseDetails;
+use Insane\Journal\Jobs\Invoice\CreateInvoicePayments;
 use Insane\Journal\Jobs\Invoice\CreateInvoiceRelations;
 use Insane\Journal\Journal;
 use Insane\Journal\Traits\HasPayments;
@@ -242,17 +243,15 @@ class Invoice extends Model implements IPayableDocument
 
     public static function calculateTotal($invoice)
     {
-        if ($invoice) {
-            $total = InvoiceLine::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(price) as price, sum(discount) as discount, sum(amount) as amount')->get();
-            $totalTax = InvoiceLineTax::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(amount * type) as amount')->get();
+        $total = InvoiceLine::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(price) as price, sum(discount) as discount, sum(amount) as amount')->get();
+        $totalTax = InvoiceLineTax::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(amount * type) as amount')->get();
 
-            $discount = $total[0]['discount'] ?? 0;
-            $taxTotal = $totalTax[0]['amount'] ?? 0;
-            $invoiceTotal =  ($total[0]['amount'] ?? 0);
-            $invoice->subtotal = $total[0]['price'] ?? 0;
-            $invoice->discount = $discount;
-            $invoice->total = $invoiceTotal + $taxTotal - $discount;
-        }
+        $discount = $total[0]['discount'] ?? 0;
+        $taxTotal = $totalTax[0]['amount'] ?? 0;
+        $invoiceTotal =  ($total[0]['amount'] ?? 0);
+        $invoice->subtotal = $total[0]['price'] ?? 0;
+        $invoice->discount = $discount;
+        $invoice->total = $invoiceTotal + $taxTotal - $discount;
         self::checkPayments($invoice);
     }
 
@@ -274,7 +273,8 @@ class Invoice extends Model implements IPayableDocument
                 ]
             )),
             new CreateInvoiceRelations($invoice, $invoiceData),
-            new CreateExpenseDetails($invoice, $invoiceData)
+            new CreateExpenseDetails($invoice, $invoiceData),
+            new CreateInvoicePayments($invoice, $invoiceData)
         ])->dispatch();
       });
       event(new InvoiceCreated($invoice, $invoiceData));
