@@ -47,8 +47,8 @@ trait HasPaymentDocuments
         $amount = (double) $formData['amount'];
         $balance = (double) $amount + (double) $totalPaid;
         $total = (double) $this->getTotal();
-
-        if ($balance <= $total || $balance <= $this->$total) {
+        $left = abs($balance - $total) > 0.0001;
+        if ($balance <= $total || $balance <= $this->$total || $left) {
             $document = null;
 
             DB::transaction(function () use($formData, $document) {
@@ -79,7 +79,10 @@ trait HasPaymentDocuments
 
             return $document;
         }
-        throw new Exception("Payment of $balance exceeds document debt of {$total}");
+        throw new Exception(__("Payment of :balance exceeds document debt of :debt", [
+          "balance" => $balance,
+          "debt" => $total,
+        ]));
     }
 
     public function prePaymentMeta($paymentData) {
