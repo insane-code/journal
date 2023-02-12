@@ -362,7 +362,7 @@ class Invoice extends Model implements IPayableDocument
         if (count($accounts)) {
            return $accounts[0]->id;
         } else {
-           $category = Category::where('display_id', 'income')->first();
+           $category = Category::where('display_id', 'operating_income')->first();
            $account = Account::create([
                 "team_id" => $invoice->team_id,
                 "client_id" => 0,
