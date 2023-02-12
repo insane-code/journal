@@ -14,6 +14,7 @@ trait HasPaymentDocuments
         static::saving(function ($payable) {
             self::calculateTotal($payable);
             self::checkPayments($payable);
+            self::checkStatus($payable);
         });
     }
 
@@ -35,9 +36,7 @@ trait HasPaymentDocuments
     {
         if ($payable && $payable->paymentDocuments) {
             $payments = $payable->paymentDocuments()->selectRaw('COALESCE(sum(amount), 0) total, count(id) count')->first();
-            $statusField = $payable->getStatusField();
             $payable->amount_paid = $payments->total;
-            $payable->$statusField = self::checkStatus($payable);
         }
     }
 
