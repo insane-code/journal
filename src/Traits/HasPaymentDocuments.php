@@ -34,9 +34,9 @@ trait HasPaymentDocuments
     public static function checkPayments($payable)
     {
         if ($payable && $payable->paymentDocuments) {
-            $totalPaid = $payable->paymentDocuments()->sum('amount');
+            $payments = $payable->paymentDocuments()->selectRaw('COALESCE(sum(amount), 0) total, count(id) count')->first();
             $statusField = $payable->getStatusField();
-            $payable->amount_paid = $totalPaid;
+            $payable->amount_paid = $payments->total;
             $payable->$statusField = self::checkStatus($payable);
         }
     }
@@ -50,8 +50,7 @@ trait HasPaymentDocuments
         $left = abs($balance - $total) > 0.0001;
         if ($balance <= $total || $balance <= $this->$total || $left) {
             $document = null;
-
-            DB::transaction(function () use($formData, $document) {
+            $document = DB::transaction(function () use($formData, $document) {
                 $document = $this->paymentDocuments()->create(array_merge(
                     $formData,
                     [
@@ -73,10 +72,10 @@ trait HasPaymentDocuments
                         ));
                     $payment->payable->save();
                 }
-
                 $this->save();
+                $document->fresh()->autoUpdateMetaData();
+                return $document;
             });
-
             return $document;
         }
         throw new Exception(__("Payment of :balance exceeds document debt of :debt", [

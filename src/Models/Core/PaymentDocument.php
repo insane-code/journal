@@ -18,6 +18,8 @@ class PaymentDocument extends Model
         'reference',
         'resource_id',
         'resource_type',
+        'payment_method_id',
+        'payment_method',
         'payment_date',
         'concept',
         'amount',
@@ -96,4 +98,12 @@ class PaymentDocument extends Model
         // }
     }
 
+    public function autoUpdateMetadata() {
+      $metaData = $this->payable->postPaymentMeta($this);
+      $this->meta_data = array_merge(
+        ...$this->meta_data,
+        ...$metaData
+      );
+      $this->saveQuietly();
+    }
 }

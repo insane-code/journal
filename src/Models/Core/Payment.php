@@ -18,6 +18,8 @@ class Payment extends Model
         'payable_id',
         'payable_type',
         'payment_date',
+        'payment_method_id',
+        'payment_method',
         'concept',
         'notes',
         'account_id',

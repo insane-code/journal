@@ -22,8 +22,9 @@ class CreatePaymentDocumentsTable extends Migration
             $table->foreignId('resource_id');
             $table->string('resource_type');
 
-            $table->foreignId('payment_method_id')->nullable();
             $table->foreignId('account_id');
+            $table->string('payment_method')->nullable();
+            $table->foreignId('payment_method_id')->nullable();
 
             $table->date('payment_date');
             $table->decimal('amount', 11, 2);
