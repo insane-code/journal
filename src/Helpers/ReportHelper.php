@@ -310,17 +310,19 @@ class ReportHelper {
     $accountsWithActivity = $config['account_id'] ? [$config['account_id']] : $balanceByAccounts->pluck('id')->toArray();
 
     // @todo Analyze this, since I think I just will display subcategories with account transactions I just need to group the first query and the last.
-    $categoryAccounts = Category::where([
-      'depth' => 1,
+    $categoryAccounts = Category::select('categories.*')->where([
+      'categories.depth' => 1,
       ])
-      ->whereIn('parent_id', $categoryIds)
+      ->whereIn('categories.parent_id', $categoryIds)
       ->hasAccounts($accountsWithActivity)
       ->with(['accounts' => function ($query) use ($teamId, $accountsWithActivity) {
           $query->where('team_id', '=', $teamId);
           $query->whereIn('id', $accountsWithActivity);
       },
-        'category'
+        'category',
       ])
+      ->join(DB::raw('categories ledger'), 'categories.parent_id', '=', 'ledger.id')
+      ->orderBy('ledger.index')
       ->get()
       ->toArray();
 
