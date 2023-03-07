@@ -106,7 +106,7 @@ class Invoice extends Model implements IPayableDocument
 
     public function scopePaid($query)
     {
-        return $query->whereIn('invoices.status', ['paid']);
+        return $query->where('invoices.status', 'paid');
     }
 
     public function scopeNoRefunded($query)
@@ -125,6 +125,11 @@ class Invoice extends Model implements IPayableDocument
     }
 
     public function scopeCategory($query, $category)
+    {
+        return $query->where('invoices.category_type', $category);
+    }
+
+    public function scopeCategoryType($query, $category)
     {
         return $query->where('invoices.category_type', $category);
     }
@@ -418,7 +423,7 @@ class Invoice extends Model implements IPayableDocument
         } else {
             $direction = $this->getTransactionDirection() ?? Transaction::DIRECTION_DEBIT;
             $counterAccountId = $this->getCounterAccountId();
-    
+
             return [
                 "team_id" => $payment->team_id,
                 "user_id" => $payment->user_id,
@@ -443,18 +448,21 @@ class Invoice extends Model implements IPayableDocument
           "display_id" => "products"])->first()->id;
 
         $lineCount = 0;
+        $taxAmount = 0;
 
         foreach ($this->lines as $line) {
             // debits
+            $lineTaxAmount = $line->taxes->sum('amount');
             $items[] = [
                 "index" => $lineCount,
-                "account_id" => $line->category_id ?? $mainAccount,
-                "category_id" => $line->account_id ?? null,
+                "account_id" =>  $mainAccount,
+                "category_id" => null,
                 "type" => 1,
                 "concept" => $line->concept ?? $this->formData['concept'],
-                "amount" => $line->amount ?? $payment->total,
+                "amount" => ($line->amount ?? $payment->total) - $lineTaxAmount,
                 "anchor" => false,
             ];
+            echo $lineTaxAmount . PHP_EOL;
 
             // taxes and retentions
             $lineCount+= 1;
@@ -469,6 +477,8 @@ class Invoice extends Model implements IPayableDocument
                     "amount" => $tax['amount'],
                     "anchor" => false,
                 ];
+
+                $taxAmount += $tax['amount'];
 
                 $items[] = [
                     "index" => $lineCount + 1,

@@ -125,7 +125,10 @@ class ReportHelper {
         ELSE 0
       END) outcome,
       date_format(transactions.date, "%Y-%m-01") as date,
+      accounts.display_id accountName,
+      accounts.alias alias,
       categories.name,
+      categories.alias categoryAlias,
       categories.id,
       categories.display_id,
       g.display_id groupName'

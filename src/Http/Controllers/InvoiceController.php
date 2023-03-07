@@ -108,12 +108,11 @@ class InvoiceController
         return redirect("/invoices");
     }
 
-    private function getInvoiceSecured($invoiceId) {
+    private function getInvoiceSecured($invoiceId, $secured = true) {
       $invoice = Invoice::find($invoiceId);
-      $type = $this->getRequestType();
-      if ($invoice->team_id !== request()->user()->current_team_id || $type !== $invoice->type) {
+      if ($secured && ($invoice->team_id !== request()->user()->current_team_id || $this->getRequestType() !== $invoice->type)) {
         throw new Exception('This is not allowed');
-      };
+      }
       return $invoice;
     }
 
@@ -126,7 +125,7 @@ class InvoiceController
     {
       try {
         $invoice = $this->getInvoiceSecured($invoiceId);
-         
+
         return inertia(config('journal.invoices_inertia_path') . '/Show', [
           'invoice' => $invoice->getInvoiceData(),
           'businessData' => Setting::getByTeam($invoice->team_id),
@@ -189,6 +188,31 @@ class InvoiceController
       $exporter = app(PdfExporter::class);
       $exporter->process($invoice);
       return $exporter->previewAs($invoice->concept);
+    }
+
+    /**
+    * Show the form for editing a resource.
+    *
+    * @return \Illuminate\Http\Response
+    */
+    public function publicPreview(int $invoiceId)
+    {
+      try {
+        $invoice = $this->getInvoiceSecured($invoiceId, false);
+        $isJson = request()->query('json');
+        $response = [
+          'invoice' => $invoice->getInvoiceData(),
+          'businessData' => Setting::getByTeam($invoice->team_id),
+          'type' => $invoice->type
+        ];
+        if ($isJson) {
+          return response($response, 201);
+        } else {
+          return inertia(config('journal.invoices_inertia_path') . '/Show', $response);
+        }
+      } catch (Exception $e) {
+        redirect('/invoices');
+      }
     }
 
   /**

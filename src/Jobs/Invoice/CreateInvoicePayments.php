@@ -34,7 +34,6 @@ class CreateInvoicePayments implements ShouldQueue
     public function handle()
     {
       if (isset($this->formData['payment_details'])) {
-
         $paymentDetails = $this->formData['payment_details'];
         $this->invoice->markAsPaid($paymentDetails);
       }
