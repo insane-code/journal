@@ -88,7 +88,8 @@ class Invoice extends Model implements IPayableDocument
                 }
             }
 
-            Payment::where('invoice_id', $invoice->id)->delete();
+            $invoice->payments()->delete();
+            $invoice->transaction()->delete();
             InvoiceLine::where('invoice_id', $invoice->id)->delete();
         });
     }

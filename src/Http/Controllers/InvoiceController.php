@@ -190,6 +190,21 @@ class InvoiceController
       return $exporter->previewAs($invoice->concept);
     }
 
+    public function destroy(Request $request, Response $response, $id) {
+      $postData = $request->post();
+      $postData['user_id'] = $request->user()->id;
+      $postData['team_id'] = $request->user()->current_team_id;
+      $invoice = Invoice::where([
+          'team_id'=> $request->user()->id,
+          'id' => $id
+      ])->first();
+      $invoice->delete();
+      if ($request->query('json')) {
+          return $response->sendContent($invoice);
+      }
+      return Redirect()->back();
+  }
+
     /**
     * Show the form for editing a resource.
     *
