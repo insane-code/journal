@@ -10,7 +10,6 @@ use Insane\Journal\Models\Invoice\Invoice;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Insane\Journal\Models\Core\Account;
-use Insane\Journal\Models\Invoice\InvoiceLineTax;
 
 class CreateInvoiceTransaction implements ShouldQueue
 {
@@ -146,7 +145,7 @@ class CreateInvoiceTransaction implements ShouldQueue
                 "category_id" => $line->category_id ?? null,
                 "type" => 1,
                 "concept" => $line->concept ?? $this->formData['concept'],
-                "amount" => $line->amount ?? $this->formData['total'],
+                "amount" => ($line->amount ?? $this->formData['total']),
                 "anchor" => false,
             ];
             // taxes and retentions
@@ -163,15 +162,15 @@ class CreateInvoiceTransaction implements ShouldQueue
                     "anchor" => false,
                 ];
 
-                $items[] = [
-                    "index" => $lineCount,
-                    "account_id" => $line->category_id ?? $this->invoice->invoice_account_id,
-                    "category_id" => null,
-                    "type" => -1,
-                    "concept" => $tax['name'],
-                    "amount" => $tax['amount'],
-                    "anchor" => false,
-                ];
+                // $items[] = [
+                //     "index" => $lineCount,
+                //     "account_id" => $line->category_id ?? $this->invoice->invoice_account_id,
+                //     "category_id" => null,
+                //     "type" => -1,
+                //     "concept" => $tax['name'],
+                //     "amount" => $tax['amount'],
+                //     "anchor" => false,
+                // ];
             }
             // credits
             $items[] = [

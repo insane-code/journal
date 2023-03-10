@@ -10,8 +10,8 @@ use Insane\Journal\Http\Controllers\ProductController;
 use Insane\Journal\Http\Controllers\ReportController;
 use Insane\Journal\Http\Controllers\TransactionController;
 
-Route::middleware(config('jetstream.middleware', ['web']))->group(function() {
 
+Route::middleware(config('jetstream.middleware', ['web']))->group(function() {
     Route::group(['middleware' => ['auth', 'verified']], function () {
         // Accounting
         Route::resource('/accounts', AccountController::class);
@@ -32,7 +32,7 @@ Route::middleware(config('jetstream.middleware', ['web']))->group(function() {
         Route::get('/invoices/{invoice}/print', [InvoiceController::class, 'print']);
         Route::post('/invoices/{id}/mark-as-paid', [InvoiceController::class, 'markAsPaid']);
         Route::delete('/invoices/{id}/payment/{paymentId}', [InvoiceController::class, 'deletePayment']);
-
+        Route::get('/invoices/{invoice}/preview', [InvoiceController::class, 'publicPreview']);
         // Bills
         Route::resource('/bills', InvoiceController::class);
         // Payments

@@ -22,8 +22,9 @@ class CreatePaymentDocumentsTable extends Migration
             $table->foreignId('resource_id');
             $table->string('resource_type');
 
-            $table->foreignId('payment_method_id')->nullable();
             $table->foreignId('account_id');
+            $table->string('payment_method')->nullable();
+            $table->foreignId('payment_method_id')->nullable();
 
             $table->date('payment_date');
             $table->decimal('amount', 11, 2);
@@ -32,6 +33,7 @@ class CreatePaymentDocumentsTable extends Migration
             $table->text('notes')->nullable();
             $table->boolean('checked')->default(false);
             $table->json('meta_data')->default('[]');
+            $table->json('documents')->default('[]');
             $table->timestamps();
         });
     }
@@ -43,6 +45,6 @@ class CreatePaymentDocumentsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('payments');
+        Schema::dropIfExists('payment_documents');
     }
 }

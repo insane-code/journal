@@ -4,6 +4,7 @@ namespace Insane\Journal\Models\Core;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Payment extends Model
 {
@@ -17,6 +18,8 @@ class Payment extends Model
         'payable_id',
         'payable_type',
         'payment_date',
+        'payment_method_id',
+        'payment_method',
         'concept',
         'notes',
         'account_id',
@@ -42,6 +45,11 @@ class Payment extends Model
         });
     }
 
+    public function scopeByPayable($query, $payableClass)
+    {
+        return $query->where('payable_type', $payableClass);
+    }
+
     /**
      * Get all of the posts that are assigned this tag.
      */
@@ -57,9 +65,9 @@ class Payment extends Model
     public function createTransaction() {
       $transactionData = $this->payable->createPaymentTransaction($this);
 
-
-
       $data = array_merge($transactionData, [
+        "team_id" => $this->payable->team_id,
+        "user_id" => $this->payable->user_id,
         'status' => 'verified',
         'date' => $this->payment_date,
       ]);

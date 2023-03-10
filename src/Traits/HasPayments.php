@@ -51,7 +51,7 @@ trait HasPayments
         ));
     }
 
-    public function markAsPaid()
+    public function markAsPaid($formData = [])
     {
         if ($this->debt <= 0) {
             throw new Exception("This document is already paid");
@@ -60,8 +60,8 @@ trait HasPayments
         $formData = [
             "amount" => $this->debt,
             "payment_date" => date("Y-m-d"),
-            "concept" => "Payment for invoice #{$this->number}",
-            "account_id" => Account::guessAccount($this, ['cash_on_hand']),
+            "concept" => $formData['concept'] ?? "Payment {$this->invoice->concept}",
+            "account_id" => $formData['account_id'] ?? Account::guessAccount($this, ['cash_on_hand']),
             "category_id" => $this->contact_account_id,
             'user_id' => $this->user_id,
             'team_id' => $this->team_id,

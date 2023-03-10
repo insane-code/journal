@@ -23,8 +23,9 @@ class CreatePaymentsTable extends Migration
             $table->foreignId('payable_id');
             $table->string('payable_type');
 
-            $table->foreignId('payment_method_id')->nullable();
             $table->foreignId('account_id');
+            $table->foreignId('payment_method_id')->nullable();
+            $table->string('payment_method')->nullable();
 
             $table->date('payment_date');
             $table->decimal('amount', 11, 2);

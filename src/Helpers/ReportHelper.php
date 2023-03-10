@@ -10,7 +10,7 @@ use Insane\Journal\Models\Core\Transaction;
 use Insane\Journal\Models\Invoice\Invoice;
 
 class ReportHelper {
-  public function revenueReport($teamId, $methodName = 'payments') {
+  public function revenueReport($teamId, $methodName = 'payments', $params = null) {
     $year = Carbon::now()->format('Y');
     $previousYear = Carbon::now()->subYear(1)->format('Y');
 
@@ -21,8 +21,8 @@ class ReportHelper {
 
     $method = $types[$methodName];
 
-    $results = self::$method($year, $teamId);
-    $previousYearResult = self::$method($previousYear, $teamId);
+    $results = self::$method($year, $teamId, $params);
+    $previousYearResult = self::$method($previousYear, $teamId, $params);
 
     $results = [
         "currentYear" => [
@@ -55,13 +55,18 @@ class ReportHelper {
     }, $resultGroup);
   }
 
-  public static function getPaymentsByYear($year, $teamId) {
-    return DB::table('payments')
+  public static function getPaymentsByYear($year, $teamId, $payableType = null) {
+    $payments = DB::table('payments')
     ->where(DB::raw('YEAR(payments.payment_date)'), '=', $year)
     ->where('team_id', '=', $teamId)
     ->selectRaw('sum(COALESCE(amount,0)) as total, YEAR(payments.payment_date) as year, MONTH(payments.payment_date) as months')
-    ->groupByRaw('MONTH(payments.payment_date), YEAR(payments.payment_date)')
-    ->get();
+    ->groupByRaw('MONTH(payments.payment_date), YEAR(payments.payment_date)');
+
+    if ($payableType) {
+      $payments->where('payments.payable_type', $payableType);
+    }
+
+    return $payments->get();
   }
 
   public static function getExpensesByYear($year, $teamId) {
@@ -120,7 +125,10 @@ class ReportHelper {
         ELSE 0
       END) outcome,
       date_format(transactions.date, "%Y-%m-01") as date,
+      accounts.display_id accountName,
+      accounts.alias alias,
       categories.name,
+      categories.alias categoryAlias,
       categories.id,
       categories.display_id,
       g.display_id groupName'
@@ -305,17 +313,19 @@ class ReportHelper {
     $accountsWithActivity = $config['account_id'] ? [$config['account_id']] : $balanceByAccounts->pluck('id')->toArray();
 
     // @todo Analyze this, since I think I just will display subcategories with account transactions I just need to group the first query and the last.
-    $categoryAccounts = Category::where([
-      'depth' => 1,
+    $categoryAccounts = Category::select('categories.*')->where([
+      'categories.depth' => 1,
       ])
-      ->whereIn('parent_id', $categoryIds)
+      ->whereIn('categories.parent_id', $categoryIds)
       ->hasAccounts($accountsWithActivity)
       ->with(['accounts' => function ($query) use ($teamId, $accountsWithActivity) {
           $query->where('team_id', '=', $teamId);
           $query->whereIn('id', $accountsWithActivity);
       },
-        'category'
+        'category',
       ])
+      ->join(DB::raw('categories ledger'), 'categories.parent_id', '=', 'ledger.id')
+      ->orderBy('ledger.index')
       ->get()
       ->toArray();
 

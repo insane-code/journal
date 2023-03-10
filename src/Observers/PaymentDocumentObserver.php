@@ -15,11 +15,11 @@ class PaymentDocumentObserver
 
     public function saved(PaymentDocument $document)
     {
-      $metaData = $document->payable->postPaymentMeta($document);
-      $document->meta_data = array_merge(
-        ...$document->meta_data,
-        ...$metaData
-      );
-      $document->saveQuietly();
+      // $metaData = $document->payable->postPaymentMeta($document);
+      // $document->meta_data = array_merge(
+      //   ...$document->meta_data,
+      //   ...$metaData
+      // );
+      // $document->saveQuietly();
     }
 }

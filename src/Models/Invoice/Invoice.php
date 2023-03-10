@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Bus;
 use Insane\Journal\Events\InvoiceCreated;
 use Insane\Journal\Events\InvoiceSaving;
 use Insane\Journal\Jobs\Invoice\CreateExpenseDetails;
+use Insane\Journal\Jobs\Invoice\CreateInvoicePayments;
 use Insane\Journal\Jobs\Invoice\CreateInvoiceRelations;
 use Insane\Journal\Journal;
 use Insane\Journal\Traits\HasPayments;
@@ -87,7 +88,8 @@ class Invoice extends Model implements IPayableDocument
                 }
             }
 
-            Payment::where('invoice_id', $invoice->id)->delete();
+            $invoice->payments()->delete();
+            $invoice->transaction()->delete();
             InvoiceLine::where('invoice_id', $invoice->id)->delete();
         });
     }
@@ -105,7 +107,7 @@ class Invoice extends Model implements IPayableDocument
 
     public function scopePaid($query)
     {
-        return $query->whereIn('invoices.status', ['paid']);
+        return $query->where('invoices.status', 'paid');
     }
 
     public function scopeNoRefunded($query)
@@ -124,6 +126,11 @@ class Invoice extends Model implements IPayableDocument
     }
 
     public function scopeCategory($query, $category)
+    {
+        return $query->where('invoices.category_type', $category);
+    }
+
+    public function scopeCategoryType($query, $category)
     {
         return $query->where('invoices.category_type', $category);
     }
@@ -242,17 +249,15 @@ class Invoice extends Model implements IPayableDocument
 
     public static function calculateTotal($invoice)
     {
-        if ($invoice) {
-            $total = InvoiceLine::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(price) as price, sum(discount) as discount, sum(amount) as amount')->get();
-            $totalTax = InvoiceLineTax::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(amount * type) as amount')->get();
+        $total = InvoiceLine::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(price) as price, sum(discount) as discount, sum(amount) as amount')->get();
+        $totalTax = InvoiceLineTax::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(amount * type) as amount')->get();
 
-            $discount = $total[0]['discount'] ?? 0;
-            $taxTotal = $totalTax[0]['amount'] ?? 0;
-            $invoiceTotal =  ($total[0]['amount'] ?? 0);
-            $invoice->subtotal = $total[0]['price'] ?? 0;
-            $invoice->discount = $discount;
-            $invoice->total = $invoiceTotal + $taxTotal - $discount;
-        }
+        $discount = $total[0]['discount'] ?? 0;
+        $taxTotal = $totalTax[0]['amount'] ?? 0;
+        $invoiceTotal =  ($total[0]['amount'] ?? 0);
+        $invoice->subtotal = $total[0]['price'] ?? 0;
+        $invoice->discount = $discount;
+        $invoice->total = $invoiceTotal + $taxTotal - $discount;
         self::checkPayments($invoice);
     }
 
@@ -274,7 +279,8 @@ class Invoice extends Model implements IPayableDocument
                 ]
             )),
             new CreateInvoiceRelations($invoice, $invoiceData),
-            new CreateExpenseDetails($invoice, $invoiceData)
+            new CreateExpenseDetails($invoice, $invoiceData),
+            new CreateInvoicePayments($invoice, $invoiceData)
         ])->dispatch();
       });
       event(new InvoiceCreated($invoice, $invoiceData));
@@ -362,7 +368,7 @@ class Invoice extends Model implements IPayableDocument
         if (count($accounts)) {
            return $accounts[0]->id;
         } else {
-           $category = Category::where('display_id', 'income')->first();
+           $category = Category::where('display_id', 'operating_income')->first();
            $account = Account::create([
                 "team_id" => $invoice->team_id,
                 "client_id" => 0,
@@ -413,20 +419,24 @@ class Invoice extends Model implements IPayableDocument
     }
 
     public function createPaymentTransaction(Payment $payment) {
-        $direction = $this->getTransactionDirection() ?? Transaction::DIRECTION_DEBIT;
-        $counterAccountId = $this->getCounterAccountId();
+        if (method_exists($this->invoiceable, 'createPaymentTransaction')) {
+            return $this->invoiceable->createPaymentTransaction($payment, $this);
+        } else {
+            $direction = $this->getTransactionDirection() ?? Transaction::DIRECTION_DEBIT;
+            $counterAccountId = $this->getCounterAccountId();
 
-        return [
-            "team_id" => $payment->team_id,
-            "user_id" => $payment->user_id,
-            "date" => $payment->payment_date,
-            "description" => $payment->concept,
-            "direction" => $direction,
-            "total" => $payment->amount,
-            "account_id" => $payment->account_id,
-            "counter_account_id" => $counterAccountId,
-            "items" => $this->isBill() ? $this->getBillPaymentItems($payment) : []
-        ];
+            return [
+                "team_id" => $payment->team_id,
+                "user_id" => $payment->user_id,
+                "date" => $payment->payment_date,
+                "description" => $payment->concept,
+                "direction" => $direction,
+                "total" => $payment->amount,
+                "account_id" => $payment->account_id,
+                "counter_account_id" => $counterAccountId,
+                "items" => $this->isBill() ? $this->getBillPaymentItems($payment) : []
+            ];
+        }
     }
 
     protected function getBillPaymentItems($payment)
@@ -439,18 +449,21 @@ class Invoice extends Model implements IPayableDocument
           "display_id" => "products"])->first()->id;
 
         $lineCount = 0;
+        $taxAmount = 0;
 
         foreach ($this->lines as $line) {
             // debits
+            $lineTaxAmount = $line->taxes->sum('amount');
             $items[] = [
                 "index" => $lineCount,
-                "account_id" => $line->category_id ?? $mainAccount,
-                "category_id" => $line->account_id ?? null,
+                "account_id" =>  $mainAccount,
+                "category_id" => null,
                 "type" => 1,
                 "concept" => $line->concept ?? $this->formData['concept'],
-                "amount" => $line->amount ?? $payment->total,
+                "amount" => ($line->amount ?? $payment->total) - $lineTaxAmount,
                 "anchor" => false,
             ];
+            echo $lineTaxAmount . PHP_EOL;
 
             // taxes and retentions
             $lineCount+= 1;
@@ -465,6 +478,8 @@ class Invoice extends Model implements IPayableDocument
                     "amount" => $tax['amount'],
                     "anchor" => false,
                 ];
+
+                $taxAmount += $tax['amount'];
 
                 $items[] = [
                     "index" => $lineCount + 1,

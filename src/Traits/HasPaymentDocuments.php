@@ -14,6 +14,7 @@ trait HasPaymentDocuments
         static::saving(function ($payable) {
             self::calculateTotal($payable);
             self::checkPayments($payable);
+            self::checkStatus($payable);
         });
     }
 
@@ -34,10 +35,8 @@ trait HasPaymentDocuments
     public static function checkPayments($payable)
     {
         if ($payable && $payable->paymentDocuments) {
-            $totalPaid = $payable->paymentDocuments()->sum('amount');
-            $statusField = $payable->getStatusField();
-            $payable->amount_paid = $totalPaid;
-            $payable->$statusField = self::checkStatus($payable);
+            $payments = $payable->paymentDocuments()->selectRaw('COALESCE(sum(amount), 0) total, count(id) count')->first();
+            $payable->amount_paid = $payments->total;
         }
     }
 
@@ -47,11 +46,10 @@ trait HasPaymentDocuments
         $amount = (double) $formData['amount'];
         $balance = (double) $amount + (double) $totalPaid;
         $total = (double) $this->getTotal();
-
-        if ($balance <= $total || $balance <= $this->$total) {
+        $left = abs($balance - $total) > 0.0001;
+        if ($balance <= $total || $balance <= $this->$total || $left) {
             $document = null;
-
-            DB::transaction(function () use($formData, $document) {
+            $document = DB::transaction(function () use($formData, $document) {
                 $document = $this->paymentDocuments()->create(array_merge(
                     $formData,
                     [
@@ -68,18 +66,21 @@ trait HasPaymentDocuments
                             $formData,
                             $doc,
                             [
-                              "payment_date" => $formData['date'] ?? date('Y-m-d')
+                              "payment_date" => $document->payment_date ?? date('Y-m-d')
                             ]
                         ));
                     $payment->payable->save();
                 }
-
                 $this->save();
+                $document->fresh()->autoUpdateMetaData();
+                return $document;
             });
-
             return $document;
         }
-        throw new Exception("Payment of $balance exceeds document debt of {$total}");
+        throw new Exception(__("Payment of :balance exceeds document debt of :debt", [
+          "balance" => $balance,
+          "debt" => $total,
+        ]));
     }
 
     public function prePaymentMeta($paymentData) {
