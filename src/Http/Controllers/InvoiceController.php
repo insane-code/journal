@@ -242,28 +242,18 @@ class InvoiceController
     {
         $invoice = Invoice::find($id);
         $postData = $request->post();
-        $error = "";
-
-        if (!$invoice) {
-            $error = "resource not found";
-        }
-
-        if ($invoice && $invoice->debt <= 0) {
-            $error = "This invoice is already paid";
-        }
-
-        if ($error) {
+        
+        try {
+          $payment = $invoice->createPayment($postData);
+          $invoice->save();
+          return $response->send($payment);
+        } catch (Exception $e) {
             return response([
               'status' => [
                   'message' => $error
               ]
             ], 400);
         }
-
-        $payment = $invoice->createPayment($postData);
-        $invoice->save();
-
-        return $response->send($payment);
     }
 
     public function markAsPaid(Request $request, $id)
