@@ -40,8 +40,15 @@ trait HasPayments
 
     public function createPayment($formData)
     {
-        $formData['amount'] = $formData['amount'] > $this->debt ? $this->debt : $formData['amount'];
-        return $this->payments()->create(array_merge(
+        $paid = $this->payments->sum('amount');
+        if ($paid >= $this->total) {
+            throw new Exception("This invoice is already paid");
+        }
+
+        $debt = $this->total - $paid;
+
+        $formData['amount'] = $formData['amount'] > $debt ? $debt : $formData['amount'];
+        $payment = $this->payments()->create(array_merge(
             $formData,
             [
                 'user_id' => $formData['user_id'] ?? $this->user_id,
@@ -49,6 +56,9 @@ trait HasPayments
                 'client_id' => $formData['client_id'] ?? $this->client_id,
             ]
         ));
+
+        $this->save();
+        return $payment;
     }
 
     public function markAsPaid($formData = [])

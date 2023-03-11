@@ -28,6 +28,7 @@ class CreatePaymentsTable extends Migration
             $table->string('payment_method')->nullable();
 
             $table->date('payment_date');
+            $table->date('document_date')->nullable();
             $table->decimal('amount', 11, 2);
             $table->string('concept', 50);
             $table->string('reference', 200)->nullable();
