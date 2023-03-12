@@ -88,7 +88,8 @@ trait HasPayments
 
     public function deletePayment($id)
     {
-        Payment::find($id)->delete();
+        Payment::destroy($id);
+        $this->save();
     }
 
     public function createPaymentTransaction(Payment $payment) {

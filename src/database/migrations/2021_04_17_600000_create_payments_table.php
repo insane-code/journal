@@ -24,10 +24,12 @@ class CreatePaymentsTable extends Migration
             $table->string('payable_type');
 
             $table->foreignId('account_id');
+            $table->string('account_name')->nullable();
             $table->foreignId('payment_method_id')->nullable();
             $table->string('payment_method')->nullable();
 
             $table->date('payment_date');
+            $table->integer('number')->nullable();
             $table->date('document_date')->nullable();
             $table->decimal('amount', 11, 2);
             $table->string('concept', 50);

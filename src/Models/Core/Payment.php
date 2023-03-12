@@ -24,6 +24,8 @@ class Payment extends Model
         'concept',
         'notes',
         'account_id',
+        'account_name',
+        'number',
         'amount',
         'documents'
     ];
@@ -36,6 +38,14 @@ class Payment extends Model
     {
         static::created(function ($payment) {
            $payment->createTransaction();
+        });
+
+        static::creating(function ($payment) {
+          self::setNumber($payment);
+        });
+
+        static::saving(function ($payment) {
+           $payment->account_name = $payment->account->alias ?? $payment->account->name;
         });
 
         static::deleting(function ($payment) {
@@ -59,9 +69,38 @@ class Payment extends Model
         return $this->morphTo();
     }
 
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
+    }
+
     public function transaction() {
        return $this->morphOne(Transaction::class, "transactionable");
     }
+
+       //  Utils
+       public static function setNumber($payment)
+       {
+           $isInvalidNumber = true;
+   
+           if ($payment->number) {
+               $isInvalidNumber = Payment::where([
+                   "team_id" => $payment->team_id,
+                   "number" => $payment->number,
+               ])->whereNot([
+                   "id" => $payment->id
+               ])->get();
+   
+               $isInvalidNumber = count($isInvalidNumber);
+           }
+   
+           if ($isInvalidNumber) {
+               $result = Payment::where([
+                   "team_id" => $payment->team_id,
+               ])->max('number');
+               $payment->number = $result + 1;
+           }
+       }
 
     public function createTransaction() {
       $transactionData = $this->payable->createPaymentTransaction($this);
