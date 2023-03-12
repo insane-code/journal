@@ -5,8 +5,6 @@ namespace Insane\Journal\Http\Controllers;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Response as FacadesResponse;
 use Insane\Journal\Models\Core\Category;
 use Insane\Journal\Models\Core\Payment;
 use Insane\Journal\Models\Product\Product;
@@ -150,11 +148,9 @@ class PaymentsController
      * @param {Request} ctx.request
      * @param {Response} ctx.response
      */
-    public function deletePayment(Response $response, $id, $paymentId)
+    public function destroy(Response $response, Payment $payment)
     {
-        $resource = Invoice::find($id);
-        $resource->deletePayment($paymentId);
-        $resource->save();
-        return $response->send($resource);
+        $payment->payable->deletePayment($payment->id);
+        return $response->send($payment);
     }
 }

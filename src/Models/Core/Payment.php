@@ -18,11 +18,14 @@ class Payment extends Model
         'payable_id',
         'payable_type',
         'payment_date',
+        'document_date',
         'payment_method_id',
         'payment_method',
         'concept',
         'notes',
         'account_id',
+        'account_name',
+        'number',
         'amount',
         'documents'
     ];
@@ -35,6 +38,14 @@ class Payment extends Model
     {
         static::created(function ($payment) {
            $payment->createTransaction();
+        });
+
+        static::creating(function ($payment) {
+          self::setNumber($payment);
+        });
+
+        static::saving(function ($payment) {
+           $payment->account_name = $payment->account->alias ?? $payment->account->name;
         });
 
         static::deleting(function ($payment) {
@@ -58,9 +69,38 @@ class Payment extends Model
         return $this->morphTo();
     }
 
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
+    }
+
     public function transaction() {
        return $this->morphOne(Transaction::class, "transactionable");
     }
+
+       //  Utils
+       public static function setNumber($payment)
+       {
+           $isInvalidNumber = true;
+   
+           if ($payment->number) {
+               $isInvalidNumber = Payment::where([
+                   "team_id" => $payment->team_id,
+                   "number" => $payment->number,
+               ])->whereNot([
+                   "id" => $payment->id
+               ])->get();
+   
+               $isInvalidNumber = count($isInvalidNumber);
+           }
+   
+           if ($isInvalidNumber) {
+               $result = Payment::where([
+                   "team_id" => $payment->team_id,
+               ])->max('number');
+               $payment->number = $result + 1;
+           }
+       }
 
     public function createTransaction() {
       $transactionData = $this->payable->createPaymentTransaction($this);
@@ -68,9 +108,12 @@ class Payment extends Model
       $data = array_merge($transactionData, [
         "team_id" => $this->payable->team_id,
         "user_id" => $this->payable->user_id,
+        "client_id" => $this->payable->client_id,
+        "payee_id" => $this->payable->client_id,
         'status' => 'verified',
         'date' => $this->payment_date,
       ]);
+
 
       if ($transaction = $this->transaction) {
         $transaction->update($data);

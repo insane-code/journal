@@ -10,19 +10,22 @@ use Insane\Journal\Models\Core\Transaction;
 use Insane\Journal\Models\Invoice\Invoice;
 
 class ReportHelper {
-  public function revenueReport($teamId, $methodName = 'payments', $params = null) {
+  public function revenueReport($teamId, $methodName = 'payments') {
     $year = Carbon::now()->format('Y');
     $previousYear = Carbon::now()->subYear(1)->format('Y');
 
     $types = [
       'payments' => 'getPaymentsByYear',
       'expenses' => 'getExpensesByYear',
+      'income' => 'getExpensesByYear',
+      'incoming' => 'getIncomingByYear',
+      'outgoing' => 'getOutgoingByYear',
     ];
 
     $method = $types[$methodName];
 
-    $results = self::$method($year, $teamId, $params);
-    $previousYearResult = self::$method($previousYear, $teamId, $params);
+    $results = self::$method($year, $teamId);
+    $previousYearResult = self::$method($previousYear, $teamId);
 
     $results = [
         "currentYear" => [
@@ -55,18 +58,13 @@ class ReportHelper {
     }, $resultGroup);
   }
 
-  public static function getPaymentsByYear($year, $teamId, $payableType = null) {
-    $payments = DB::table('payments')
+  public static function getPaymentsByYear($year, $teamId) {
+    return DB::table('payments')
     ->where(DB::raw('YEAR(payments.payment_date)'), '=', $year)
     ->where('team_id', '=', $teamId)
     ->selectRaw('sum(COALESCE(amount,0)) as total, YEAR(payments.payment_date) as year, MONTH(payments.payment_date) as months')
-    ->groupByRaw('MONTH(payments.payment_date), YEAR(payments.payment_date)');
-
-    if ($payableType) {
-      $payments->where('payments.payable_type', $payableType);
-    }
-
-    return $payments->get();
+    ->groupByRaw('MONTH(payments.payment_date), YEAR(payments.payment_date)')
+    ->get();
   }
 
   public static function getExpensesByYear($year, $teamId) {
@@ -79,6 +77,21 @@ class ReportHelper {
     ])
     ->whereNotNull('category_id')
     ->selectRaw('sum(COALESCE(total,0)) as total, YEAR(transactions.date) as year, MONTH(transactions.date) as months')
+    ->groupByRaw('MONTH(transactions.date), YEAR(transactions.date)')
+    ->get();
+  }
+
+  public static function getIncomingByYear($year, $teamId) {
+    return DB::table('transaction_lines')
+    ->where(DB::raw('YEAR(transactions.date)'), '=', $year)
+    ->where([
+        'transactions.team_id' => $teamId,
+        'type' => 1,
+        'transactions.status' => 'verified'
+    ])
+    ->whereNotNull('category_id')
+    ->selectRaw('sum(COALESCE(amount,0)) as total, YEAR(transactions.date) as year, MONTH(transactions.date) as months')
+    ->join('transactions', 'transactions.id', '=', 'transaction_lines.transaction.id')
     ->groupByRaw('MONTH(transactions.date), YEAR(transactions.date)')
     ->get();
   }
@@ -103,7 +116,7 @@ class ReportHelper {
     $startDate = $startDate ?? Carbon::now()->startOfMonth()->format('Y-m-d');
 
     $results = DB::table('transaction_lines')
-    ->whereBetween('transaction_lines.date', [$startDate, $endDate])
+    ->whereBetween('transactions.date', [$startDate, $endDate])
     ->where([
         'transaction_lines.team_id' => $teamId,
         'transactions.status' => 'verified'
@@ -117,31 +130,34 @@ class ReportHelper {
     ->selectRaw('
       sum(COALESCE(amount * transaction_lines.type, 0)) as total,
       SUM(CASE
-          WHEN transaction_lines.type > 0 THEN amount
+          WHEN transaction_lines.type = 1 THEN transaction_lines.amount
           ELSE 0
       END) as income,
       SUM(CASE
-        WHEN transaction_lines.type < 0 THEN amount
+        WHEN transaction_lines.type = -1 THEN transaction_lines.amount
         ELSE 0
       END) outcome,
-      date_format(transactions.date, "%Y-%m-01") as date,
-      accounts.display_id accountName,
-      accounts.alias alias,
+      accounts.id account_id,
+      group_concat(concat(transaction_lines.amount * transaction_lines.type, ":", transaction_lines.id)),
+      date_format(transaction_lines.date, "%Y-%m-01") as date,
+      accounts.display_id account_display_id,
+      accounts.name account_name,
+      accounts.alias account_alias,
       categories.name,
-      categories.alias categoryAlias,
       categories.id,
       categories.display_id,
-      g.display_id groupName'
-    )->groupByRaw('date_format(transactions.date, "%Y-%m"), categories.id')
+      categories.alias,
+      g.display_id groupName,
+      g.alias groupAlias,
+      MONTH(transactions.date) as months'
+    )->groupByRaw('date_format(transactions.date, "%Y-%m"), accounts.id, categories.id')
     ->join('accounts', 'accounts.id', '=', 'transaction_lines.account_id')
     ->join('categories', 'accounts.category_id', '=', 'categories.id')
     ->join('transactions', 'transactions.id', '=', 'transaction_id')
     ->join(DB::raw('categories g'), 'g.id', 'categories.parent_id')
     ->get();
 
-    return $results->groupBy($groupBy);
-
-
+    return $groupBy ? $results->groupBy($groupBy) : $results;
   }
 
   public static function getAccountTransactionsByPeriod(int $teamId, array $accounts, $startDate = null, $endDate = null, $groupBy = "display_id") {
@@ -313,19 +329,17 @@ class ReportHelper {
     $accountsWithActivity = $config['account_id'] ? [$config['account_id']] : $balanceByAccounts->pluck('id')->toArray();
 
     // @todo Analyze this, since I think I just will display subcategories with account transactions I just need to group the first query and the last.
-    $categoryAccounts = Category::select('categories.*')->where([
-      'categories.depth' => 1,
+    $categoryAccounts = Category::where([
+      'depth' => 1,
       ])
-      ->whereIn('categories.parent_id', $categoryIds)
+      ->whereIn('parent_id', $categoryIds)
       ->hasAccounts($accountsWithActivity)
       ->with(['accounts' => function ($query) use ($teamId, $accountsWithActivity) {
           $query->where('team_id', '=', $teamId);
           $query->whereIn('id', $accountsWithActivity);
       },
-        'category',
+        'category'
       ])
-      ->join(DB::raw('categories ledger'), 'categories.parent_id', '=', 'ledger.id')
-      ->orderBy('ledger.index')
       ->get()
       ->toArray();
 
