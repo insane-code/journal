@@ -126,7 +126,6 @@ class InvoiceController
     */
     public function show(int $invoiceId)
     {
-      dd("Hola mundo");
       try {
         $invoice = $this->getInvoiceSecured($invoiceId);
 
