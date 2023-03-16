@@ -16,6 +16,9 @@ use Exception;
 
 class InvoiceController
 {
+    private $searchable = [];
+    private $validationRules = [];
+
     public function __construct()
     {
         $this->searchable = ['name'];
@@ -123,6 +126,7 @@ class InvoiceController
     */
     public function show(int $invoiceId)
     {
+      dd("Hola mundo");
       try {
         $invoice = $this->getInvoiceSecured($invoiceId);
 
