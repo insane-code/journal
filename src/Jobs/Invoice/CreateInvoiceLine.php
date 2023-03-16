@@ -77,7 +77,7 @@ class CreateInvoiceLine implements ShouldQueue
                         "concept" => $tax['description'] ?? $tax['concept'],
                         "rate" => $taxRate,
                         "type" => $tax['type'],
-                        "amount" => $taxLineTotal,
+                        "amount" => $tax['amount'] ?? $taxLineTotal,
                         "amount_base" => $line->amount,
                         "index" => $index,
                     ]);

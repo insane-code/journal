@@ -16,6 +16,9 @@ use Exception;
 
 class InvoiceController
 {
+    private $searchable = [];
+    private $validationRules = [];
+
     public function __construct()
     {
         $this->searchable = ['name'];
