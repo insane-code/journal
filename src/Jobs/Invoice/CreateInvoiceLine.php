@@ -73,6 +73,7 @@ class CreateInvoiceLine implements ShouldQueue
                         "invoice_line_id" => $line->id,
                         "tax_id" => $tax['id'],
                         "name" => $tax['name'],
+                        "is_fixed" => $tax['is_fixed'],
                         "label" => $tax['label'],
                         "concept" => $tax['description'] ?? $tax['concept'],
                         "rate" => $taxRate,

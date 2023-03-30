@@ -13,6 +13,7 @@ class InvoiceLineTax extends Model
       'user_id',
       'invoice_id',
       'tax_id',
+      'is_fixed',
       'amount',
       'amount_base',
       'rate',
