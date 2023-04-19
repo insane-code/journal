@@ -13,6 +13,7 @@ use Insane\Journal\Models\Core\Tax;
 use Insane\Journal\Models\Invoice\Invoice;
 use Insane\Journal\Models\Product\Product;
 use Exception;
+use Insane\Journal\Services\InvoiceService;
 
 class InvoiceController
 {
@@ -178,11 +179,10 @@ class InvoiceController
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Invoice $invoice, Request $request)
+    public function update(Invoice $invoice, InvoiceService $invoiceService)
     {
-      if ($invoice->team_id != $request->user()->current_team_id) return;
-        $postData = $request->post();
-        $invoice->updateDocument($postData);
+        if ($invoice->team_id != request()->user()->current_team_id) return;
+        $invoiceService->update($invoice, request()->post());
         return Redirect("/invoices/$invoice->id/edit");
     }
 
