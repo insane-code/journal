@@ -339,22 +339,23 @@ class Invoice extends Model implements IPayableDocument
           $category = Category::where('display_id', $categoryName)->first();
 
           $account = Account::where([
-                  'client_id' => $invoice->client_id,
-                  'category_id' => $category->id
-              ])->first();
+            'client_id' => $invoice->client_id,
+            'category_id' => $category->id
+          ])->first();
+
           if ($account) {
-             return $account->id;
+            return $account->id;
           } else {
-             $account = Account::create([
-                  "team_id" => $invoice->team_id,
-                  "client_id" => $invoice->client_id,
-                  "user_id" => $invoice->user_id,
-                  "category_id" => $category->id,
-                  "display_id" => "client_{$invoice->client_id}_{$invoice->client->names}",
-                  "name" => "{$invoice->client->names} Account",
-                  "currency_code" => "DOP"
-              ]);
-              return $account->id;
+            $account = Account::create([
+                "team_id" => $invoice->team_id,
+                "client_id" => $invoice->client_id,
+                "user_id" => $invoice->user_id,
+                "category_id" => $category->id,
+                "display_id" => "client_{$invoice->client_id}_{$invoice->client->names}",
+                "name" => "{$invoice->client->names} Account",
+                "currency_code" => "DOP"
+            ]);
+            return $account->id;
           }
         }
     }
@@ -390,7 +391,7 @@ class Invoice extends Model implements IPayableDocument
         $invoiceData['lines'] = $this->lines->toArray();
         $invoiceData['payments'] = $this->payments()->with(['transaction'])->get()->toArray();
         $invoiceData['transaction'] = $this->transaction;
-
+        $invoiceData['account'] = $this->account;
         return $invoiceData;
     }
 
