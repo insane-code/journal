@@ -42,10 +42,10 @@ class InvoiceService
 
     public function update(Invoice $invoice, $postData) {
         $this->validator->validateUpdate($invoice, $postData);
-
+        
         $invoice->update($postData);
+        CreateInvoiceLine::dispatchSync($invoice, $postData);
         Bus::chain([
-          new CreateInvoiceLine($invoice, $postData),
           new CreateInvoiceTransaction($invoice,
             [
                 'transactionType' => 'invoice',
