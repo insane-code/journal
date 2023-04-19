@@ -389,7 +389,7 @@ class Invoice extends Model implements IPayableDocument
         $invoiceData = $this->toArray();
         $invoiceData['client'] = $this->client;
         $invoiceData['lines'] = $this->lines->toArray();
-        $invoiceData['payments'] = $this->payments()->with(['transaction'])->get()->toArray();
+        $invoiceData['payments'] = $this->payments()->with(['transaction', 'account'])->get()->toArray();
         $invoiceData['transaction'] = $this->transaction;
         $invoiceData['account'] = $this->account;
         return $invoiceData;
