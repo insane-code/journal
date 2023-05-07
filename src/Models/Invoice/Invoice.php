@@ -13,6 +13,7 @@ use Insane\Journal\Models\Core\Payment;
 use Insane\Journal\Models\Core\Transaction;
 use Illuminate\Support\Facades\Bus;
 use Insane\Journal\Events\InvoiceCreated;
+use Insane\Journal\Events\InvoiceDeleted;
 use Insane\Journal\Events\InvoiceSaving;
 use Insane\Journal\Jobs\Invoice\CreateExpenseDetails;
 use Insane\Journal\Jobs\Invoice\CreateInvoicePayments;
@@ -93,6 +94,10 @@ class Invoice extends Model implements IPayableDocument
             $invoice->lines()->delete();
             $invoice->taxesLines()->delete();
             DB::table('invoice_relations')->where('invoice_id', $invoice->id)->delete();
+        });
+
+        static::deleted(function ($invoice) {
+            event(new InvoiceDeleted($invoice));
         });
     }
 
