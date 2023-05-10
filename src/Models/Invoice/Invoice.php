@@ -54,6 +54,7 @@ class Invoice extends Model implements IPayableDocument
 
     const DOCUMENT_TYPE_INVOICE = 'INVOICE';
     const DOCUMENT_TYPE_BILL = 'EXPENSE';
+    const DOCUMENT_TYPE_CREDIT_NOTE = 'CREDIT_NOTE';
 
     const STATUS_DRAFT = 'draft';
     const STATUS_UNPAID = 'unpaid';
@@ -200,6 +201,11 @@ class Invoice extends Model implements IPayableDocument
     public function taxesLines()
     {
         return $this->hasMany(InvoiceLineTax::class);
+    }
+
+    public function credits()
+    {
+      return $this->hasMany(Invoice::class)->where('type', Invoice::DOCUMENT_TYPE_CREDIT_NOTE);
     }
 
     public function transaction() {
@@ -405,7 +411,8 @@ class Invoice extends Model implements IPayableDocument
     {
       if ($invoice && $invoice->payments) {
           $totalPaid = $invoice->payments()->sum('amount');
-          $invoice->debt = $invoice->total - $totalPaid;
+          $totalCredited = $invoice->credits()->sum('amount');
+          $invoice->debt = $invoice->total - ($totalPaid + $totalCredited);
           $invoice->status = Invoice::checkStatus($invoice);
         }
     }
