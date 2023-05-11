@@ -36,20 +36,21 @@ class CreateInvoiceTransaction implements ShouldQueue
     public function handle()
     {
         $setting = Setting::where("team_id", $this->invoice->team_id)->get()->toArray();
-
         $directions = [
             Invoice::DOCUMENT_TYPE_INVOICE => 'DEPOSIT' ,
-            Invoice::DOCUMENT_TYPE_BILL => 'WITHDRAW'
+            Invoice::DOCUMENT_TYPE_BILL => 'WITHDRAW',
+            Invoice::DOCUMENT_TYPE_CREDIT_NOTE => 'WITHDRAW',
+            Invoice::DOCUMENT_TYPE_DEBIT_NOTE => 'DEPOSIT'
         ];
         unset($this->formData['transactionType']);
-
+        
         $this->formData['team_id'] = $this->invoice->team_id;
         $this->formData['user_id'] = $this->invoice->user_id;
         $this->formData['resource_id'] = $this->invoice->id;
         $this->formData['transactionable_id'] = Invoice::class;
         $this->formData['date'] =  $this->formData['date'] ?? $this->invoice->date ?? date('Y-m-d');
         $this->formData["description"] = $this->formData["description"] ?? $this->invoice->description;
-        $this->formData["direction"] = $directions[$this->invoice->type];
+        $this->formData["direction"] = $directions[$this->invoice->type] ?? "withdraw";
         $this->formData["total"] =  $this->formData["total"] ?? $this->invoice->total;
         $this->formData["account_id"] = $this->formData['account_id'] ?? $setting["default.{$this->formData['transactionType']}.account"];
         $this->formData["counter_account_id"] = $this->formData['counter_account_id'] ?? $this->invoice->invoice_account_id;
@@ -58,6 +59,8 @@ class CreateInvoiceTransaction implements ShouldQueue
         $this->formData["status"] = "verified";
         $this->formData["transactionable_id"] = $this->invoice->id;
 
+        
+
         if ($transaction = $this->invoice->transaction) {
             $transaction->update($this->formData);
         } else {
@@ -65,6 +68,8 @@ class CreateInvoiceTransaction implements ShouldQueue
         }
         $items = $this->getTransactionItems();
         $transaction->createLines($items);
+
+
         return $transaction;
     }
 

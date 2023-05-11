@@ -64,7 +64,7 @@ trait HasPayments
     public function markAsPaid($formData = [])
     {
         if ($this->debt <= 0) {
-            throw new Exception("This document is already paid");
+          throw new Exception("The document {$this->concept} is already paid");
         }
 
         $formData = [
@@ -83,7 +83,6 @@ trait HasPayments
 
         $this->payments()->create($formData);
         $this->save();
-
     }
 
     public function deletePayment($id)

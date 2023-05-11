@@ -147,13 +147,14 @@ class Category extends Model
     }
 
     public function transactionBalance($clientId) {
-      return  TransactionLine::whereIn('account_id', $this->getAllAccounts())
-        ->select(DB::raw("sum(amount * transaction_lines.type) balance, accounts.*"))
+      return TransactionLine::selectRaw("sum(amount * transaction_lines.type) balance, accounts.*, categories.name cat_name")
+        ->whereIn('account_id', $this->accounts->pluck('id')->toArray())
         ->where([
           'payee_id' => $clientId,
         ])
         ->groupBy('account_id', 'payee_id')
         ->join('accounts', 'accounts.id', 'transaction_lines.account_id')
+        ->leftJoin('categories', 'categories.id', 'accounts.category_id')
         ->get();
     }
 
@@ -167,5 +168,16 @@ class Category extends Model
         });
       }
       return $query;
+    }
+
+    public static function getCatalog($teamId) {
+        return Category::where([
+            'categories.team_id' => $teamId,
+            'categories.resource_type' => 'accounts'
+        ])
+            ->whereNull('parent_id')
+            ->orderBy('index')
+            ->with(['subCategories'])
+            ->get();
     }
 }
