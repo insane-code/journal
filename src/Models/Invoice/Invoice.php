@@ -54,6 +54,8 @@ class Invoice extends Model implements IPayableDocument
 
     const DOCUMENT_TYPE_INVOICE = 'INVOICE';
     const DOCUMENT_TYPE_BILL = 'EXPENSE';
+    const DOCUMENT_TYPE_CREDIT_NOTE = 'CREDIT_NOTE';
+    const DOCUMENT_TYPE_DEBIT_NOTE = 'DEBIT_NOTE';
 
     const STATUS_DRAFT = 'draft';
     const STATUS_UNPAID = 'unpaid';
@@ -202,6 +204,11 @@ class Invoice extends Model implements IPayableDocument
         return $this->hasMany(InvoiceLineTax::class);
     }
 
+    public function credits()
+    {
+      return $this->hasMany(Invoice::class)->where('type', Invoice::DOCUMENT_TYPE_CREDIT_NOTE);
+    }
+
     public function transaction() {
         return $this->morphOne(Transaction::class, "transactionable");
     }
@@ -222,6 +229,34 @@ class Invoice extends Model implements IPayableDocument
         'invoice_id',
         'related_invoice_id',
       )->withPivot('name', 'date', 'description');
+    }
+
+    public function notes() {
+        return $this->belongsToMany(
+            Invoice::class,
+            'invoice_notes',
+            'note_id',
+            'invoice_id',
+        )
+        ->as('parent')
+        ->withPivot('amount', 'date', 'number', 'type');
+    }
+
+    public function appliedNotes() {
+        return $this->belongsToMany(
+            Invoice::class,
+            'invoice_notes',
+            'invoice_id',
+            'note_id',
+        )->withPivot('amount', 'date', 'number', 'type');
+    }
+
+    public function creditNotes() {
+        $this->notes()->where('type', 'credit');
+    }
+
+    public function debitNotes() {
+        $this->notes()->where('type', 'debit');
     }
 
     public function isBill() {
@@ -331,6 +366,18 @@ class Invoice extends Model implements IPayableDocument
         return $status;
     }
 
+    public function applyNote($invoiceNoteId, $type, $amount, $date) {
+        return InvoiceNote::create([
+            "team_id" => $this->team_id,
+            "user_id" => $this->user_id,
+            "amount" => $amount,
+            "invoice_id" => $this->id,
+            "note_id" => $invoiceNoteId,
+            "type" => $type,
+            "date" => $date,
+        ]);
+    }
+
     // accounting
     public static function createContactAccount($invoice)
     {
@@ -400,13 +447,31 @@ class Invoice extends Model implements IPayableDocument
         return $invoiceData;
     }
 
+    public function getPaidAmount() {
+        try {
+            $selection = DB::select(DB::raw('SELECT invoice_id, sum(amount) as total
+            FROM (SELECT payable_id as invoice_id, amount
+            from payments
+            WHERE payable_type=?
+            UNION
+             SELECT invoice_id, amount
+             FROM invoice_notes
+            ) AS combine
+            WHERE invoice_id=? limit 1'), [Invoice::class, $this->id]);
+            return $selection[0]->total ?? 0;
+        } catch (\Exception $e) {
+            echo $e->getMessage();
+            return 0;
+        }
+    }
+
     // payable functions
     public static function checkPayments($invoice)
     {
-      if ($invoice && $invoice->payments) {
-          $totalPaid = $invoice->payments()->sum('amount');
-          $invoice->debt = $invoice->total - $totalPaid;
-          $invoice->status = Invoice::checkStatus($invoice);
+        if ($invoice && $invoice->payments) {
+            $totalPaid = $invoice->getPaidAmount();
+            $invoice->debt = $invoice->total - $totalPaid;
+            $invoice->status = Invoice::checkStatus($invoice);
         }
     }
 

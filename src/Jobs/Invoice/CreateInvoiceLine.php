@@ -37,7 +37,7 @@ class CreateInvoiceLine implements ShouldQueue
     {
         InvoiceLine::query()->where('invoice_id', $this->invoice->id)->delete();
         InvoiceLineTax::query()->where('invoice_id', $this->invoice->id)->delete();
-        if (isset($this->formData['items'])) {
+        if (isset($this->formData['items']) && count($this->formData['items'])) {
             foreach ($this->formData['items'] as $index => $item) {
                 $line = $this->invoice->lines()->create([
                     "team_id" => $this->invoice->team_id,
@@ -55,7 +55,7 @@ class CreateInvoiceLine implements ShouldQueue
     
                 isset($item['taxes']) ? $this->createItemTaxes($item['taxes'], $line) : null;
             }
-        } else {
+        } else {   
             $line = $this->invoice->lines()->create([
                 "team_id" => $this->invoice->team_id,
                 "user_id" => $this->invoice->user_id,
@@ -69,8 +69,9 @@ class CreateInvoiceLine implements ShouldQueue
                 "price" => $this->formData['total'],
                 "amount" => $this->formData['total'],
             ]);
-        }
 
+        }
+        
         $this->invoice->save();
         return $this->invoice;
     }
