@@ -263,6 +263,10 @@ class Invoice extends Model implements IPayableDocument
       return $this->type == self::DOCUMENT_TYPE_BILL;
     }
 
+    public function isOutgoingMovement() {
+      return $this->type == self::DOCUMENT_TYPE_BILL || $this->type == self::DOCUMENT_TYPE_CREDIT_NOTE;
+    }
+
     //  Utils
     public static function setNumber($invoice)
     {
@@ -367,7 +371,7 @@ class Invoice extends Model implements IPayableDocument
     }
 
     public function applyNote($invoiceNoteId, $type, $amount, $date) {
-        return InvoiceNote::create([
+        InvoiceNote::create([
             "team_id" => $this->team_id,
             "user_id" => $this->user_id,
             "amount" => $amount,
@@ -376,6 +380,8 @@ class Invoice extends Model implements IPayableDocument
             "type" => $type,
             "date" => $date,
         ]);
+
+        $this->update();
     }
 
     // accounting
@@ -468,8 +474,8 @@ class Invoice extends Model implements IPayableDocument
     // payable functions
     public static function checkPayments($invoice)
     {
-        if ($invoice && $invoice->payments) {
-            $totalPaid = $invoice->getPaidAmount();
+      if ($invoice && ($invoice->payments || $invoice->creditNotes)) {
+        $totalPaid = $invoice->getPaidAmount();
             $invoice->debt = $invoice->total - $totalPaid;
             $invoice->status = Invoice::checkStatus($invoice);
         }
@@ -484,11 +490,11 @@ class Invoice extends Model implements IPayableDocument
     }
 
     public function getTransactionDirection(): string {
-      return $this->isBill() ? Transaction::DIRECTION_CREDIT : Transaction::DIRECTION_DEBIT;
+      return $this->isOutgoingMovement() ? Transaction::DIRECTION_CREDIT : Transaction::DIRECTION_DEBIT;
     }
 
     public function getCounterAccountId(): int {
-      return $this->isBill() ? $this->invoice_account_id : $this->account_id;
+      return $this->isOutgoingMovement() ? $this->invoice_account_id : $this->account_id;
     }
 
     public function createPaymentTransaction(Payment $payment) {

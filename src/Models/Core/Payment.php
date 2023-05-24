@@ -45,7 +45,8 @@ class Payment extends Model
         });
 
         static::saving(function ($payment) {
-           $payment->account_name = $payment->account->alias ?? $payment->account->name;
+          $account =$payment->account ?? Account::find($payment->account_id);
+          $payment->account_name = $account?->alias ?? $account?->name;
         });
 
         static::deleting(function ($payment) {

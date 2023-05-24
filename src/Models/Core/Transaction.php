@@ -4,6 +4,7 @@ namespace Insane\Journal\Models\Core;
 
 use Illuminate\Database\Eloquent\Model;
 use Insane\Journal\Events\TransactionCreated;
+use Illuminate\Support\Str;
 
 class Transaction extends Model
 {
@@ -132,10 +133,15 @@ class Transaction extends Model
     static public function createTransaction($transactionData) {
         $account = Account::find($transactionData['account_id']);
         $currencyCode = $transactionData['currency_code'] ?? $account->currency_code;
-        $payeeId = $transactionData["payee_id"];
+        $payeeId = $transactionData["payee_id"] ?? null;
+        $isNewPayee = Str::contains($payeeId, "new::");
 
-        if ($transactionData["payee_id"] == 'new') {
-            $payee = Payee::findOrCreateByName($transactionData, $transactionData['payee_label'] ?? 'General Provider');
+        if (!isset($transactionData["payee_id"]) && $transactionData["counter_account_id"]) {
+            $payee = Payee::findOrCreateByName($transactionData, Account::find($transactionData["counter_account_id"]));
+            $payeeId = $payee->id;
+        } else if ($payeeId == 'new' || $isNewPayee) {
+            $label = $transactionData['payee_label'] ?? trim(Str::replace($transactionData["payee_id"], 'new::', '')) ?? 'General Provider';
+            $payee = Payee::findOrCreateByName($transactionData, $label);
             $payeeId = $payee->id;
             $transactionData["payee_id"] = $payeeId;
             $transactionData["counter_account_id"] = $payee->account_id;
