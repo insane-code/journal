@@ -32,6 +32,7 @@ class Transaction extends Model
         'notes',
         'total',
         'has_splits',
+        'is_transfer',
         'currency_code',
         'status'
     ];
