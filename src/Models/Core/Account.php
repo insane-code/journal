@@ -101,13 +101,14 @@ class Account extends Model
         return $this->hasMany(TransactionLine::class)->orderByDesc('date');
     }
 
-    public function transactionSplits($limit = 25)
+    public function transactionSplits($limit = 25, $startDate, $endDate)
     {
         return Transaction::whereHas('lines', function ($query) {
             $query->where('account_id', $this->id);
         })
         ->with(['splits','payee', 'category', 'splits.payee','account', 'counterAccount'])
         ->orderByDesc('date')
+        ->whereBetween('date', [$startDate, $endDate])
         ->limit($limit)
         ->get();
     }
