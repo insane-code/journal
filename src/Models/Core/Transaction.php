@@ -136,8 +136,10 @@ class Transaction extends Model
         $currencyCode = $transactionData['currency_code'] ?? $account->currency_code;
         $payeeId = $transactionData["payee_id"] ?? null;
         $isNewPayee = Str::contains($payeeId, "new::");
-    
-        if (!isset($transactionData["payee_id"]) && $transactionData["counter_account_id"]) {
+
+        if (isset($transactionData["is_transfer"]) && $transactionData["is_transfer"]) {
+            $payeeId = "";
+        } else if (!isset($transactionData["payee_id"]) && $transactionData["counter_account_id"]) {
             $payee = Payee::findOrCreateByName($transactionData, Account::find($transactionData["counter_account_id"]));
             $payeeId = $payee->id;
         } else if ($payeeId == 'new' || $isNewPayee) {
@@ -155,7 +157,7 @@ class Transaction extends Model
         $transactionData['payee_id'] = $payeeId;
 
         return $transactionData;
-    } 
+    }
 
 
     static public function createTransaction($transactionData) {
@@ -166,7 +168,7 @@ class Transaction extends Model
             'date' => $data['date'],
             'total' => $data['total'],
             'description' => $data['description'],
-            'currency_code' => $data['currencyCode'],
+            'currency_code' => $data['currency_code'],
             'direction' => $data['direction'],
             'payee_id' => $data['payee_id'],
         ])->first();
