@@ -131,18 +131,20 @@ class Transaction extends Model
         $this->updateQuietly(['total' => $total]);
     }
 
-    static public function createTransaction($transactionData) {
+    static public function sanitizeData($transactionData, Transaction $transaction = null) {
         $account = Account::find($transactionData['account_id']);
         $currencyCode = $transactionData['currency_code'] ?? $account->currency_code;
         $payeeId = $transactionData["payee_id"] ?? null;
         $isNewPayee = Str::contains($payeeId, "new::");
 
-        if (!isset($transactionData["payee_id"]) && $transactionData["counter_account_id"]) {
+        if (isset($transactionData["is_transfer"]) && $transactionData["is_transfer"]) {
+            $payeeId = "";
+        } else if (!isset($transactionData["payee_id"]) && $transactionData["counter_account_id"]) {
             $payee = Payee::findOrCreateByName($transactionData, Account::find($transactionData["counter_account_id"]));
             $payeeId = $payee->id;
         } else if ($payeeId == 'new' || $isNewPayee) {
-            $label = $transactionData['payee_label'] ?? trim(Str::replace($transactionData["payee_id"], 'new::', '')) ?? 'General Provider';
-            $payee = Payee::findOrCreateByName($transactionData, $label);
+            $label = $transactionData['payee_label'] ?? trim(Str::replace('new::', '', $transactionData["payee_id"])) ?? 'General Provider';
+            $payee = Payee::findOrCreateByName($transaction?->toArray() ?? $transactionData, $label);
             $payeeId = $payee->id;
             $transactionData["payee_id"] = $payeeId;
             $transactionData["counter_account_id"] = $payee->account_id;
@@ -151,21 +153,31 @@ class Transaction extends Model
             $transactionData["counter_account_id"] = $transactionData["counter_account_id"] ?? $payee->account_id;
         }
 
+        $transactionData['currency_code'] = $currencyCode;
+        $transactionData['payee_id'] = $payeeId;
+
+        return $transactionData;
+    }
+
+
+    static public function createTransaction($transactionData) {
+        $data = self::sanitizeData($transactionData);
+
         $transaction = Transaction::where([
-            "team_id" => $transactionData['team_id'],
-            'date' => $transactionData['date'],
-            'total' => $transactionData['total'],
-            'description' => $transactionData['description'],
-            'currency_code' => $currencyCode,
-            'direction' => $transactionData['direction'],
-            'payee_id' => $payeeId,
+            "team_id" => $data['team_id'],
+            'date' => $data['date'],
+            'total' => $data['total'],
+            'description' => $data['description'],
+            'currency_code' => $data['currency_code'],
+            'direction' => $data['direction'],
+            'payee_id' => $data['payee_id'],
         ])->first();
 
         if ($transaction) {
-            $transaction->updateTransaction($transactionData);
+            $transaction->updateTransaction($data);
         } else {
-            $items = isset($transactionData['items']) ? $transactionData['items'] : [];
-            $transaction = Transaction::create($transactionData);
+            $items = isset($data['items']) ? $data['items'] : [];
+            $transaction = Transaction::create($data);
             $transaction->createLines($items);
         }
 
@@ -174,8 +186,10 @@ class Transaction extends Model
     }
 
     public function updateTransaction($transactionData) {
-        $this->update($transactionData);
-        $items = isset($transactionData['items']) ? $transactionData['items'] : [];
+        $data = self::sanitizeData($transactionData, $this);
+
+        $this->update($data);
+        $items = isset($data['items']) ? $data['items'] : [];
         $this->createLines($items);
         return $this;
     }

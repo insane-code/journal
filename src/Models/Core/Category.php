@@ -23,6 +23,7 @@ class Category extends Model
       'depth',
       'index',
       'type',
+      'color',
       'resource_type'
     ];
 
