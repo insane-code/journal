@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Insane\Journal\Models\Accounting\Reconciliation;
 
 class Account extends Model
 {
@@ -101,15 +102,27 @@ class Account extends Model
         return $this->hasMany(TransactionLine::class)->orderByDesc('date');
     }
 
-    public function transactionSplits($limit = 25, $startDate, $endDate)
+    public function reconciliationsPending()
+    {
+        return $this->hasMany(Reconciliation::class)->pending()->orderByDesc('date');
+    }
+
+    public function reconciliations()
+    {
+        return $this->hasMany(Reconciliation::class)->orderByDesc('date');
+    }
+
+    public function transactionSplits($limit = 25, $startDate, $endDate, $filters = [])
     {
         return Transaction::whereHas('lines', function ($query) {
-            $query->where('account_id', $this->id);
+            $query->where('account_id', $this->id)
+            ->when($filters['direction'] ?? null, fn($q) => $q->where('type', $filters['direction']));
         })
         ->with(['splits','payee', 'category', 'splits.payee','account', 'counterAccount'])
         ->orderByDesc('date')
         ->whereBetween('date', [$startDate, $endDate])
         ->when($limit, fn($q) => $q->limit($limit))
+        ->filterLine($filters)
         ->get();
     }
 
@@ -203,6 +216,7 @@ class Account extends Model
         return Account::where('accounts.team_id', $teamId)
         ->byDetailTypes($detailTypes)
         ->orderBy('accounts.index')
+        ->withCount('reconciliationsPending')
         ->get();
     }
 

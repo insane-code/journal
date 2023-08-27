@@ -318,6 +318,19 @@ class Transaction extends Model
             return $query->whereIn('category_id', $categories);
     }
 
+    public function scopeFilterLine($query, array $filters)
+    {
+        $query->when($filters['search'] ?? null, function ($query, $search) {
+            $query->where('transactions.description', 'like', '%'.$search.'%');
+            $query->orWhere('transactions.date', 'like', '%'.$search.'%');
+            $query->orWhere('transactions.total', 'like', '%'.$search.'%');
+            $query->orWhere('payees.name', 'like', '%'.$search.'%');
+            $query->orWhere('categories.name', 'like', '%'.$search.'%');
+            $query->leftJoin('payees', 'payees.id', 'transactions.payee_id');
+            $query->leftJoin('categories', 'categories.id', 'transactions.category_id');
+        });
+    }
+
     public static function parser($transaction) {
         return [
             'id' => $transaction->id,
