@@ -139,6 +139,8 @@ class Transaction extends Model
 
         if (isset($transactionData["is_transfer"]) && $transactionData["is_transfer"]) {
             $payeeId = "";
+            $transactionData["category_id"] = null;
+            $transactionData["payee_id"] = null;
         } else if (!isset($transactionData["payee_id"]) && $transactionData["counter_account_id"]) {
             $payee = Payee::findOrCreateByName($transactionData, Account::find($transactionData["counter_account_id"]));
             $payeeId = $payee->id;
@@ -242,7 +244,7 @@ class Transaction extends Model
                     "index" => 0,
                     "anchor" => 1,
                     "amount" => $item['amount'],
-                    "concept" => $item['concept'] ?? "",
+                    "concept" => $item['concept'] ?? $item["payee_label"] . " " . $this->description,
                     "payee_id" =>  $payee->id,
                     "type"=> $this->direction == Transaction::DIRECTION_DEBIT ? 1 : -1,
                     "account_id" => $item['account_id'] ?? $items[0]['account_id'],
@@ -257,7 +259,7 @@ class Transaction extends Model
                     "index" => 1,
                     "date" => $this->date,
                     "amount" => $item['amount'],
-                    "concept" => $item['concept'] ?? "",
+                    "concept" => $item['concept'] ?? $item["payee_label"] . " " . $this->description,
                     "category_id" => 0,
                     "account_id" => $payee?->account_id,
                     "payee_id" =>  $payee->id,
