@@ -109,7 +109,27 @@ class Account extends Model
         ->with(['splits','payee', 'category', 'splits.payee','account', 'counterAccount'])
         ->orderByDesc('date')
         ->whereBetween('date', [$startDate, $endDate])
-        ->limit($limit)
+        ->when($limit, fn($q) => $q->limit($limit))
+        ->get();
+    }
+
+    public function transactionsToReconcile($startDate, $endDate)
+    {
+        return DB::table("transaction_lines")->selectRaw("
+            transaction_lines.id AS id,
+            transaction_lines.transaction_id,
+            transaction_lines.team_id,
+            transaction_lines.user_id
+        ")->where([
+            'transaction_lines.account_id' => $this->id,
+            'transactions.status' => Transaction::STATUS_VERIFIED
+        ])
+        ->whereNull('reconciliation_entries.id')
+        ->join('transactions', 'transactions.id', 'transaction_lines.transaction_id')
+        ->leftJoin('reconciliation_entries', 'reconciliation_entries.transaction_line_id', 'transaction_lines.id')
+        ->orderByDesc('transactions.date')
+        ->when($startDate && $endDate, fn($q) => $q->whereBetween('transactions.date', [$startDate, $endDate]))
+        ->when($endDate, fn($q) => $q->where('transactions.date', '<', $endDate))
         ->get();
     }
 
@@ -135,7 +155,7 @@ class Account extends Model
     public function getBalanceAttribute()
     {
         return $this->transactionLines()
-        ->where('transactions.status', 'verified')
+        ->where('transactions.status', Transaction::STATUS_VERIFIED)
         ->join('transactions', 'transactions.id', 'transaction_lines.transaction_id')
         ->sum(DB::raw("amount * type"));
     }

@@ -42,7 +42,7 @@ class CreateTransactionsTable extends Migration
             $table->string('currency_code', 3)->default('DOP');
             $table->decimal('currency_rate', 11, 4)->default(1);
             $table->decimal('total', 11, 2)->default(0.00);
-            $table->enum('status', ['draft','planned', 'verified', 'canceled'])->default('draft');
+            $table->enum('status', ['draft','planned', 'verified', 'cleared' ,'canceled'])->default('draft');
             $table->boolean('is_transfer')->default(false);
             $table->boolean('has_splits')->default(false);
             $table->json('meta_data')->nullable();
