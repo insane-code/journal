@@ -11,7 +11,7 @@ use Insane\Journal\Models\Core\Transaction;
 use Laravel\Jetstream\Jetstream;
 
 
-class TransactionController
+final class TransactionController
 {
 
     public function __construct()
@@ -48,6 +48,13 @@ class TransactionController
 
     }
 
+    public function show(Transaction $transaction) {
+        return array_merge(
+            $transaction->toArray(),
+            ["lines" => $transaction->lines]
+        );
+    }
+
     public function store(Request $request, Response $response) {
         $postData = $request->post();
         $postData['user_id'] = $request->user()->id;
@@ -70,13 +77,11 @@ class TransactionController
     }
 
     public function destroy(Request $request, Response $response, $id) {
-        $postData = $request->post();
-        $postData['user_id'] = $request->user()->id;
-        $postData['team_id'] = $request->user()->current_team_id;
         $transaction = Transaction::where([
-            'user_id'=> $request->user()->id,
+            'team_id'=> $request->user()->current_team_id,
             'id' => $id
-        ])->get()->first();
+        ])
+        ->first();
         $transaction->remove();
         if ($request->query('json')) {
             return $response->sendContent($transaction);

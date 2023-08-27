@@ -3,14 +3,36 @@
 namespace Insane\Journal\Models\Invoice;
 
 use Illuminate\Database\Eloquent\Model;
+use Insane\Journal\Models\Core\Tax;
+use Insane\Journal\Models\Product\Product;
 
 class InvoiceLineTax extends Model
 {
-    protected $fillable = ['team_id','user_id','invoice_id', 'tax_id', 'amount' , 'amount_base', 'rate', 'index', 'name', 'quantity', 'subtotal', 'discount'];
-
+    protected $fillable = [
+      'team_id',
+      'user_id',
+      'invoice_id',
+      'tax_id',
+      'is_fixed',
+      'amount',
+      'amount_base',
+      'rate',
+      'index',
+      'type',
+      'name',
+      'label',
+      'concept',
+      'quantity',
+      'subtotal',
+      'discount'
+    ];
 
     public function product() {
         return $this->belongsTo(Product::class);
+    }
+
+    public function tax() {
+        return $this->belongsTo(Tax::class);
     }
 
     static public function updateStock($lineItem) {

@@ -8,7 +8,6 @@ use Illuminate\Queue\InteractsWithQueue;
 use Insane\Journal\Models\Invoice\Invoice;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Insane\Journal\Models\Core\Tax;
 use Insane\Journal\Models\Invoice\InvoiceLine;
 use Insane\Journal\Models\Invoice\InvoiceLineTax;
 
@@ -38,23 +37,42 @@ class CreateInvoiceLine implements ShouldQueue
     {
         InvoiceLine::query()->where('invoice_id', $this->invoice->id)->delete();
         InvoiceLineTax::query()->where('invoice_id', $this->invoice->id)->delete();
-        foreach ($this->formData['items'] as $item) {
+        if (isset($this->formData['items']) && count($this->formData['items'])) {
+            foreach ($this->formData['items'] as $index => $item) {
+                $line = $this->invoice->lines()->create([
+                    "team_id" => $this->invoice->team_id,
+                    "user_id" => $this->invoice->user_id,
+                    "concept" => $item['concept'],
+                    "category_id" => $item['category_id'] ?? null,
+                    "account_id" => $item['account_id'] ?? null,
+                    "date" => $item['date'] ?? $this->invoice->date,
+                    "index" => $item['index'] ?? $index,
+                    "product_id" => $item['product_id'] ?? null,
+                    "quantity" => $item['quantity'],
+                    "price" => $item['price'],
+                    "amount" => $item['amount'],
+                ]);
+    
+                isset($item['taxes']) ? $this->createItemTaxes($item['taxes'], $line) : null;
+            }
+        } else {   
             $line = $this->invoice->lines()->create([
                 "team_id" => $this->invoice->team_id,
                 "user_id" => $this->invoice->user_id,
-                "concept" => $item['concept'],
-                "index" => $item['index'],
-                "product_id" => $item['product_id'] ?? null,
-                "quantity" => $item['quantity'],
-                "price" => $item['price'],
-                "amount" => $item['amount'],
+                "concept" => $this->invoice->concept,
+                "category_id" => null,
+                "account_id" =>  null,
+                "date" => $this->invoice->date,
+                "index" => 0,
+                "product_id" => null,
+                "quantity" => 1,
+                "price" => $this->formData['total'],
+                "amount" => $this->formData['total'],
             ]);
 
-            isset($item['taxes']) ? $this->createItemTaxes($item['taxes'], $line) : null;
         }
-
+        
         $this->invoice->save();
-
         return $this->invoice;
     }
 
@@ -70,8 +88,12 @@ class CreateInvoiceLine implements ShouldQueue
                         "invoice_line_id" => $line->id,
                         "tax_id" => $tax['id'],
                         "name" => $tax['name'],
+                        "is_fixed" => $tax['is_fixed'],
+                        "label" => $tax['label'],
+                        "concept" => $tax['description'] ?? $tax['concept'],
                         "rate" => $taxRate,
-                        "amount" => $taxLineTotal,
+                        "type" => $tax['type'],
+                        "amount" => $tax['amount'] ?? $taxLineTotal,
                         "amount_base" => $line->amount,
                         "index" => $index,
                     ]);

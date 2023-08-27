@@ -2,14 +2,12 @@
 
 namespace Insane\Journal\Http\Controllers;
 
-use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Redirect;
 use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\Category;
 use Insane\Journal\Models\Core\Tax;
-use Insane\Journal\Models\Invoice\Invoice;
 use Insane\Journal\Models\Product\Product;
 use Laravel\Jetstream\Jetstream;
 

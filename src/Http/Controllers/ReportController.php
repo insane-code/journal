@@ -4,11 +4,8 @@ namespace Insane\Journal\Http\Controllers;
 
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redirect;
 use Insane\Journal\Helpers\CategoryHelper;
-use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\Category;
 use Laravel\Jetstream\Jetstream;
 

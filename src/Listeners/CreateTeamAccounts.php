@@ -36,7 +36,11 @@ class CreateTeamAccounts
         ];
 
         foreach ($accounts as $index => $account) {
-            Account::create(array_merge($account, $generalInfo, ['index' => $index]));
+            Account::create(array_merge(
+              $account,
+              $generalInfo, 
+              ['index' => $index]
+            ));
         }
     }
 

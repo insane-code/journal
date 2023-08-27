@@ -3,9 +3,12 @@
 namespace Insane\Journal\Helpers;
 
 use Carbon\Carbon;
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\DB;
 use Insane\Journal\Models\Core\Account;
+use Insane\Journal\Models\Core\Category;
 use Insane\Journal\Models\Core\Transaction;
+use Insane\Journal\Models\Invoice\Invoice;
 
 class ReportHelper {
   public function revenueReport($teamId, $methodName = 'payments') {
@@ -15,6 +18,9 @@ class ReportHelper {
     $types = [
       'payments' => 'getPaymentsByYear',
       'expenses' => 'getExpensesByYear',
+      'income' => 'getExpensesByYear',
+      'incoming' => 'getIncomingByYear',
+      'outgoing' => 'getOutgoingByYear',
     ];
 
     $method = $types[$methodName];
@@ -70,8 +76,23 @@ class ReportHelper {
         'direction' => Transaction::DIRECTION_CREDIT,
         'status' => 'verified'
     ])
-    ->whereNotNull('transaction_category_id')
+    ->whereNotNull('category_id')
     ->selectRaw('sum(COALESCE(total,0)) as total, YEAR(transactions.date) as year, MONTH(transactions.date) as months')
+    ->groupByRaw('MONTH(transactions.date), YEAR(transactions.date)')
+    ->get();
+  }
+
+  public static function getIncomingByYear($year, $teamId) {
+    return DB::table('transaction_lines')
+    ->where(DB::raw('YEAR(transactions.date)'), '=', $year)
+    ->where([
+        'transactions.team_id' => $teamId,
+        'type' => 1,
+        'transactions.status' => 'verified'
+    ])
+    ->whereNotNull('category_id')
+    ->selectRaw('sum(COALESCE(amount,0)) as total, YEAR(transactions.date) as year, MONTH(transactions.date) as months')
+    ->join('transactions', 'transactions.id', '=', 'transaction_lines.transaction.id')
     ->groupByRaw('MONTH(transactions.date), YEAR(transactions.date)')
     ->get();
   }
@@ -84,11 +105,150 @@ class ReportHelper {
         'direction' => Transaction::DIRECTION_CREDIT,
         'transactions.status' => 'verified'
     ])
-    ->whereNotNull('transaction_category_id')
-    ->selectRaw('sum(COALESCE(total,0)) as total, date_format(transactions.date, "%Y-%m-01") as date, categories.name, categories.id')
+    ->whereNotNull('category_id')
+    ->selectRaw('sum(COALESCE(total, 0)) as total, date_format(transactions.date, "%Y-%m-01") as date, categories.name, categories.id')
     ->groupByRaw('date_format(transactions.date, "%Y-%m"), categories.id')
-    ->join('categories', 'transactions.transaction_category_id', '=', 'categories.id')
+    ->join('categories', 'transactions.category_id', '=', 'categories.id')
     ->get();
+  }
+
+  public static function getTransactionsByAccount(int $teamId, array $accounts, $startDate = null, $endDate = null, $groupBy = "display_id", $transactionableType = null) {
+    $endDate = $endDate ?? Carbon::now()->endOfMonth()->format('Y-m-d');
+    $startDate = $startDate ?? Carbon::now()->startOfMonth()->format('Y-m-d');
+
+    $results = DB::table('transaction_lines')
+    ->whereBetween('transactions.date', [$startDate, $endDate])
+    ->where([
+        'transaction_lines.team_id' => $teamId,
+        'transactions.status' => 'verified',
+    ])
+    ->when($transactionableType, fn ($q) => $q->where('transactionable_type', $transactionableType) )
+    ->where(function($query) use ($accounts) {
+      $query
+      ->whereIn('accounts.display_id', $accounts)
+      ->orWhereIn('categories.display_id', $accounts)
+      ->orWhereIn('g.display_id', $accounts);
+    })
+    ->selectRaw('
+      sum(COALESCE(amount * transaction_lines.type, 0)) as total,
+      SUM(CASE
+          WHEN transaction_lines.type = 1 THEN transaction_lines.amount
+          ELSE 0
+      END) as income,
+      SUM(CASE
+        WHEN transaction_lines.type = -1 THEN transaction_lines.amount
+        ELSE 0
+      END) outcome,
+      accounts.id account_id,
+      group_concat(concat(transaction_lines.amount * transaction_lines.type, ":", transaction_lines.id)) details,
+      date_format(transaction_lines.date, "%Y-%m-01") as date,
+      accounts.display_id account_display_id,
+      accounts.name account_name,
+      accounts.alias account_alias,
+      categories.name,
+      categories.id,
+      categories.display_id,
+      categories.alias,
+      g.display_id groupName,
+      g.alias groupAlias,
+      MONTH(transactions.date) as months'
+    )->groupByRaw('date_format(transactions.date, "%Y-%m"), accounts.id, categories.id')
+    ->join('accounts', 'accounts.id', '=', 'transaction_lines.account_id')
+    ->join('categories', 'accounts.category_id', '=', 'categories.id')
+    ->join('transactions', 'transactions.id', '=', 'transaction_id')
+    ->join(DB::raw('categories g'), 'g.id', 'categories.parent_id')
+    ->get();
+
+    return $groupBy ? $results->groupBy($groupBy) : $results;
+  }
+
+  public static function getAccountTransactionsByMonths(int $teamId, array $accounts, $startDate = null, $endDate = null, $groupBy = null, $transactionableType = null) {
+    $endDate = $endDate ?? Carbon::now()->endOfMonth()->format('Y-m-d');
+    $startDate = $startDate ?? Carbon::now()->startOfMonth()->format('Y-m-d');
+
+    return DB::table('transaction_lines')
+    ->whereBetween('transactions.date', [$startDate, $endDate])
+    ->where([
+        'transaction_lines.team_id' => $teamId,
+        'transactions.status' => 'verified',
+    ])
+    ->where(function($query) use ($accounts) {
+      $query
+      ->whereIn('accounts.display_id', $accounts)
+      ->orWhereIn('categories.display_id', $accounts)
+      ->orWhereIn('g.display_id', $accounts);
+    })
+    ->selectRaw('
+      sum(COALESCE(amount * transaction_lines.type, 0)) as total,
+      SUM(CASE
+          WHEN transaction_lines.type = 1 THEN transaction_lines.amount
+          ELSE 0
+      END) as income,
+      SUM(CASE
+        WHEN transaction_lines.type = -1 THEN transaction_lines.amount
+        ELSE 0
+      END) outcome,
+      accounts.id account_id,
+      group_concat(CASE
+        WHEN transaction_lines.type = -1
+        THEN concat(transaction_lines.amount * transaction_lines.type, ":", transaction_lines.id, ":" , accounts.display_id, "|paymentId:", transactions.transactionable_id, "|transactionType:", transactions.transactionable_type)
+        ELSE ""
+        END
+      ) outgoing_details,
+      group_concat(CASE
+        WHEN transaction_lines.type = 1
+        THEN concat(transaction_lines.amount * transaction_lines.type, ":", transaction_lines.id, ":" , accounts.display_id)
+        ELSE ""
+        END
+      ) income_details,
+      date_format(transaction_lines.date, "%Y-%m-01") as date,
+      accounts.display_id account_display_id,
+      accounts.name account_name,
+      accounts.alias account_alias,
+      categories.name,
+      categories.id,
+      categories.display_id,
+      categories.alias,
+      g.display_id groupName,
+      g.alias groupAlias,
+      transactions.transactionable_id,
+      MONTH(transactions.date) as months'
+    )->when($groupBy, fn ($q) => $q->groupByRaw($groupBy))
+    ->join('accounts', 'accounts.id', '=', 'transaction_lines.account_id')
+    ->join('categories', 'accounts.category_id', '=', 'categories.id')
+    ->join('transactions', function (JoinClause $join) use ($transactionableType) {
+      $join->on('transactions.id', '=', 'transaction_id')
+           ->when($transactionableType, fn ($q) => $q->where('transactions.transactionable_type', $transactionableType));
+    })
+    ->join(DB::raw('categories g'), 'g.id', 'categories.parent_id')
+    ->orderByRaw('g.index')
+    ->get();
+  }
+
+  public static function getAccountTransactionsByPeriod(int $teamId, array $accounts, $startDate = null, $endDate = null, $groupBy = "display_id") {
+    $endDate = $endDate ?? Carbon::now()->endOfMonth()->format('Y-m-d');
+    $startDate = $startDate ?? Carbon::now()->startOfMonth()->format('Y-m-d');
+
+    $resultGroup = self::getTransactionsByAccount($teamId, $accounts, $startDate, $endDate);
+
+    return array_map(function ($account) use ($resultGroup) {
+      return $resultGroup[$account][0] ?? [
+        "display_id" => $account,
+        "total" => 0
+      ];
+    }, $accounts);
+  }
+
+  public static function getChartTransactionsByPeriod(int $teamId, array $accounts, $startDate = null, $endDate = null) {
+    $endDate = $endDate ?? Carbon::now()->endOfMonth()->format('Y-m-d');
+    $startDate = $startDate ?? Carbon::now()->startOfMonth()->format('Y-m-d');
+
+    $results = self::getTransactionsByAccount($teamId, $accounts, $startDate, $endDate, "groupName");
+
+    return collect($accounts)->reduce(function ($groups, $account) use ($results) {
+      $groups[$account] = isset($results[$account]) ? $results[$account][0] : [];
+      return $groups;
+    });
   }
 
   public function getAccountBalance($accountId) {
@@ -118,6 +278,7 @@ class ReportHelper {
         'display_id' => $accountName,
         'team_id' => $teamId
     ])->limit(1)->get();
+
     $account = count($account) ? $account[0] : null;
     if ($account) {
         $results = $this->getAccountBalance($account->id, $teamId);
@@ -133,56 +294,7 @@ class ReportHelper {
             'balance' => 0
         ];
     }
- }
-
-//   async clientsChange({params, response}) {
-//     const table = params.table
-//     let dates = [];
-//     let interval = 'MONTH';
-//     for (let index = 0; index < 12; index++) {
-//       if (index == 0) {
-//         dates.push(`select DATE_FORMAT(SUBDATE(CURRENT_DATE(),INTERVAL ${index} ${interval}), '%Y-%m-01') as dateUnit`);
-//       } else {
-//         dates.push(`union all select DATE_FORMAT(SUBDATE(CURRENT_DATE(),INTERVAL ${index} ${interval}), '%Y-%m-01')`);
-//       }
-//     }
-
-//     const sql = `select
-//     dates.dateUnit as unit, count(c.id) as total, DATE_FORMAT(CAST(dates.dateUnit as date), "%M") as month
-//     FROM (${dates.join(' ')}) as dates
-//     LEFT JOIN ${table} c ON DATE_FORMAT(c.created_at, '%Y-%m-01') = dates.dateUnit
-//     GROUP BY dates.dateUnit
-//     `
-
-//     const sql2 = `select count(id) as total from ${table}`;
-
-//     // return response.send(sql);
-//     const results = await Database.raw(sql);
-//     const results2 = await Database.raw(sql2);
-//     return response.json({
-//       total: results2[0][0].total,
-//       values: results[0]
-//     });
-//   }
-
-//   async cashFlowReport({response}) {
-//     const sql = `
-//     SELECT
-//       SUM(payment_docs.amount) AS total,
-//       monthname(MAX(payment_date)) AS month,
-//       DATE_FORMAT(payment_docs.payment_date, "%Y%m") AS yearmonth
-//     FROM
-//       payment_docs
-//     GROUP BY
-//       DATE_FORMAT(payment_docs.payment_date, "%Y%m")
-//     order by
-//       DATE_FORMAT(payment_docs.payment_date, "%Y%m") DESC
-//     LIMIT
-//       12`;
-
-//     const results = await Database.raw(sql);
-//     return response.json(results[0]);
-//   }
+  }
 
   public function nextInvoices($teamId) {
    return DB::table('invoices')
@@ -193,20 +305,98 @@ class ReportHelper {
     ->where('invoices.type', '=', 'INVOICE')
 
     ->join('clients', 'clients.id', '=', 'invoices.client_id')
+    ->groupBy(['clients.names', 'clients.id', 'invoices.debt', 'invoices.due_date', 'invoices.id', 'invoices.concept'])
     ->take(5)
     ->get();
   }
 
   public function debtors($teamId) {
-      return DB::table('invoices')
-      ->selectRaw('count(invoices.id) total_debts, sum(invoices.debt) debt, clients.names contact,clients.id contact_id')
-      ->where('invoices.team_id', '=', $teamId)
-      ->where('invoices.status', '=', 'unpaid')
-      ->whereRaw('invoices.due_date <= NOW()')
-      ->where('invoices.type', '=', 'INVOICE')
+      return Invoice::byTeam($teamId)
+      ->select(DB::raw('count(invoices.id) total_debts, sum(invoices.debt) debt, clients.names contact, clients.id contact_id'))
+      ->late()
       ->join('clients', 'clients.id', '=', 'invoices.client_id')
       ->take(5)
-      ->groupBy('invoices.client_id')
+      ->groupBy('invoices.client_id', 'clients.names', 'clients.id')
       ->get();
+  }
+
+  public static function getReportConfig(string $reportName) {
+
+    $categoriesGroups = [
+      "income" => [
+        "categories" =>["income"]
+      ],
+      "expense" => [
+        "categories" =>["expenses"]
+      ],
+      "tax" => [
+        "categories" => ["liabilities"]
+      ],
+      "cash-flow" => [
+        "categories" => ["assets", "liabilities", "equity"]
+      ],
+      "balance-sheet" => [
+        "categories" => ["assets", "liabilities", "equity"]
+      ],
+      "income-statement" => [
+        "categories" => ["income", "expenses"]
+      ],
+      "account-balance" => [
+        "categories" => ["assets", "liabilities", "income", "expenses", "equity"],
+      ],
+      "payments" => [
+        "categories" => ["real_state", "expected_payments_owners", "real_state_operative", "expected_commissions_owners"],
+        "type" => Payment::class,
+        "groupBy" => "account_display_id"
+      ]
+    ];
+
+    return $categoriesGroups[$reportName];
+  }
+
+  public static function getGeneralLedger($teamId, $reportName, $config = []) {
+    $reportConfig = self::getReportConfig($reportName);
+    $queryResults = self::getAccountTransactionsByMonths(
+      $teamId,
+      $reportConfig["categories"],
+      $config["dates"][0] ?? null,
+      $config["dates"][1] ?? null,
+      $reportConfig["groupBy"] ?? "display_id",
+      null
+    );
+
+    if (isset($config['account_id'])) {
+      $queryResults->whereIn('accounts.id', [$config['account_id']]);
     }
+
+    return [
+      "ledger" => [
+        "ledgers" => $queryResults->groupBy('groupName')->map(fn ($ledger) => [
+          "total" => $ledger->sum("total"),
+          "outcome" => $ledger->sum("outcome"),
+          "income" => $ledger->sum("income"),
+          "alias" => $ledger->first()->groupAlias,
+          "name" => $ledger->first()->groupName,
+          "categories" => $ledger->groupBy("display_id")->map(fn($category) => [
+            "total" => $category->sum("total"),
+            "outcome" => $category->sum("outcome"),
+            "income" => $category->sum("income"),
+            "alias" => $category->first()->alias,
+            "name" => $category->first()->display_id,
+            "accounts" => $category->groupBy('account_display_id')->map(fn ($accounts) => [
+              "total" => $accounts->sum("total"),
+              "outcome" => $accounts->sum("outcome"),
+              "income" => $accounts->sum("income"),
+              "alias" => $accounts->first()->account_alias,
+              "name" => $accounts->first()->account_name,
+              "items" => $accounts->all()
+            ])->all(),
+          ]),
+        ]),
+        "total" => $queryResults->sum("total"),
+        "outcome" => $queryResults->sum("outcome"),
+        "income" => $queryResults->sum("income"),
+      ]
+    ];
+  }
 }
