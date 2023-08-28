@@ -70,6 +70,10 @@ class Reconciliation extends Model
             'matched' => $this->status == self::STATUS_COMPLETED,
         ]);
 
+        if($this->difference == 0) {
+            $this->update(['status' => Reconciliation::STATUS_COMPLETED]);
+        }
+
         if ($this->status == self::STATUS_COMPLETED) {
             TransactionLine::whereIn('id', collect($items)->pluck('id'))->update([
                 'matched' => true
