@@ -104,9 +104,9 @@ class Account extends Model
 
     public function reconciliationsPending()
     {
-        return $this->hasMany(Reconciliation::class)->pending()->orderByDesc('date');
+        return $this->hasOne(Reconciliation::class)->pending()->orderByDesc('date');
     }
-
+    
     public function reconciliations()
     {
         return $this->hasMany(Reconciliation::class)->orderByDesc('date');
@@ -216,7 +216,7 @@ class Account extends Model
         return Account::where('accounts.team_id', $teamId)
         ->byDetailTypes($detailTypes)
         ->orderBy('accounts.index')
-        ->withCount('reconciliationsPending')
+        ->with(['reconciliationsPending'])
         ->get();
     }
 

@@ -23,6 +23,11 @@ class Reconciliation extends Model
         'status',
     ];
 
+    public function scopePending($query) {
+        return $query->where('status', self::STATUS_PENDING);
+    }
+
+
     public function entries() {
         return $this->hasMany(ReconciliationEntry::class);
     }
@@ -53,6 +58,42 @@ class Reconciliation extends Model
                 'matched' => true
             ]);
         }
+    }
+
+    public function addEntry($item) {
+        $this->entries()->create([
+            'user_id' => $this->id,
+            'team_id' => $this->team_id,
+            'reconciliation_id' => $this->id,
+            'transaction_id' => $item->transaction_id,
+            'transaction_line_id' => $item->id,
+            'matched' => $this->status == self::STATUS_COMPLETED,
+        ]);
+
+        if ($this->status == self::STATUS_COMPLETED) {
+            TransactionLine::whereIn('id', collect($items)->pluck('id'))->update([
+                'matched' => true
+            ]);
+        }
+    }
+
+    public function checkStatus() {
+        $entries = $this->entries()->select([
+            'id',
+            'transaction_id',
+            'transaction_line_id',
+        ])->get();
+
+        $isMatched = $this->status == self::STATUS_COMPLETED;
+
+
+        ReconciliationEntry::whereIn('id', collect($entries)->pluck('id'))->update([
+            'matched' => $isMatched
+        ]);
+        
+        TransactionLine::whereIn('id', collect($entries)->pluck('transaction_line_id'))->update([
+            'matched' => $isMatched
+        ]);
     }
     
     public function getTransactions($limit = 15) {
