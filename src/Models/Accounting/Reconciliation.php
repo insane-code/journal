@@ -60,6 +60,29 @@ class Reconciliation extends Model
         }
     }
 
+    public function addEntries($items = []) {
+        if (!count($items)) {
+            throw new Exception("Missing transactions");
+        }
+
+        foreach ($items as $item) {
+            $this->entries()->create([
+                'user_id' => $this->id,
+                'team_id' => $this->team_id,
+                'reconciliation_id' => $this->id,
+                'transaction_id' => $item->transaction_id,
+                'transaction_line_id' => $item->id,
+                'matched' => $this->status == self::STATUS_COMPLETED,
+            ]);
+        }
+
+        if ($this->status == self::STATUS_COMPLETED) {
+            TransactionLine::whereIn('id', collect($items)->pluck('id'))->update([
+                'matched' => true
+            ]);
+        }
+    }
+
     public function addEntry($item) {
         $this->entries()->create([
             'user_id' => $this->id,
@@ -94,13 +117,13 @@ class Reconciliation extends Model
         ReconciliationEntry::whereIn('id', collect($entries)->pluck('id'))->update([
             'matched' => $isMatched
         ]);
-        
+
         TransactionLine::whereIn('id', collect($entries)->pluck('transaction_line_id'))->update([
             'matched' => $isMatched
         ]);
     }
-    
-    public function getTransactions($limit = 15) {
+
+    public function getTransactions($limit = 15, $page) {
 
         return Transaction::whereHas('lines', function ($query) {
             $query->where('account_id', $this->account_id);
@@ -108,7 +131,6 @@ class Reconciliation extends Model
         ->join('reconciliation_entries', 'transactions.id', 'reconciliation_entries.transaction_id')
         ->with(['splits','payee', 'category', 'splits.payee','account', 'counterAccount'])
         ->orderByDesc('date')
-        ->limit($limit)
-        ->get();
+        ->paginate($limit);
     }
 }
