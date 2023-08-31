@@ -13,8 +13,10 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('invoice_line_taxes', function (Blueprint $table) {
-            $table->boolean('is_fixed')->default(false);
+        
+        
+        Schema::table('transaction_lines', function (Blueprint $table) {
+            $table->boolean('matched')->default(false);
         });
     }
 
@@ -25,8 +27,8 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('invoice_line_taxes', function (Blueprint $table) {
-            $table->dropColumn('is_fixed');
+        Schema::table('transaction_lines', function (Blueprint $table) {
+            $table->dropColumn('matched');
         });
     }
 };

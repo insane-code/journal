@@ -74,7 +74,7 @@ class ReportHelper {
     ->where([
         'team_id' => $teamId,
         'direction' => Transaction::DIRECTION_CREDIT,
-        'status' => 'verified'
+        'status' => Transaction::STATUS_VERIFIED
     ])
     ->whereNotNull('category_id')
     ->selectRaw('sum(COALESCE(total,0)) as total, YEAR(transactions.date) as year, MONTH(transactions.date) as months')
@@ -88,7 +88,7 @@ class ReportHelper {
     ->where([
         'transactions.team_id' => $teamId,
         'type' => 1,
-        'transactions.status' => 'verified'
+        'transactions.status' => Transaction::STATUS_VERIFIED
     ])
     ->whereNotNull('category_id')
     ->selectRaw('sum(COALESCE(amount,0)) as total, YEAR(transactions.date) as year, MONTH(transactions.date) as months')
@@ -103,7 +103,7 @@ class ReportHelper {
     ->where([
         'transactions.team_id' => $teamId,
         'direction' => Transaction::DIRECTION_CREDIT,
-        'transactions.status' => 'verified'
+        'transactions.status' => Transaction::STATUS_VERIFIED
     ])
     ->whereNotNull('category_id')
     ->selectRaw('sum(COALESCE(total, 0)) as total, date_format(transactions.date, "%Y-%m-01") as date, categories.name, categories.id')
@@ -120,7 +120,7 @@ class ReportHelper {
     ->whereBetween('transactions.date', [$startDate, $endDate])
     ->where([
         'transaction_lines.team_id' => $teamId,
-        'transactions.status' => 'verified',
+        'transactions.status' => Transaction::STATUS_VERIFIED,
     ])
     ->when($transactionableType, fn ($q) => $q->where('transactionable_type', $transactionableType) )
     ->where(function($query) use ($accounts) {
@@ -170,7 +170,7 @@ class ReportHelper {
     ->whereBetween('transactions.date', [$startDate, $endDate])
     ->where([
         'transaction_lines.team_id' => $teamId,
-        'transactions.status' => 'verified',
+        'transactions.status' => Transaction::STATUS_VERIFIED,
     ])
     ->where(function($query) use ($accounts) {
       $query

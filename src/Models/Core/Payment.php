@@ -111,7 +111,7 @@ class Payment extends Model
         "user_id" => $this->payable->user_id,
         "client_id" => $this->payable->client_id,
         "payee_id" => $this->payable->client_id,
-        'status' => 'verified',
+        'status' => Transaction::STATUS_VERIFIED,
         'date' => $this->payment_date,
       ]);
 

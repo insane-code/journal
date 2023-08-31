@@ -10,6 +10,7 @@ use Insane\Journal\Models\Invoice\Invoice;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Insane\Journal\Models\Core\Account;
+use Insane\Journal\Models\Core\Transaction;
 
 class CreateInvoiceTransaction implements ShouldQueue
 {
@@ -56,7 +57,7 @@ class CreateInvoiceTransaction implements ShouldQueue
         $this->formData["counter_account_id"] = $this->formData['counter_account_id'] ?? $this->invoice->invoice_account_id;
         $this->formData["category_id"] = null;
         $this->formData["payee_id"] = $this->invoice->client_id;
-        $this->formData["status"] = "verified";
+        $this->formData["status"] = Transaction::STATUS_VERIFIED;
         $this->formData["transactionable_id"] = $this->invoice->id;
 
         

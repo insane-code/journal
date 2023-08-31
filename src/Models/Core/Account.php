@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Insane\Journal\Models\Accounting\Reconciliation;
 
 class Account extends Model
 {
@@ -101,15 +102,47 @@ class Account extends Model
         return $this->hasMany(TransactionLine::class)->orderByDesc('date');
     }
 
-    public function transactionSplits($limit = 25, $startDate, $endDate)
+    public function reconciliationsPending()
+    {
+        return $this->hasOne(Reconciliation::class)->pending()->orderByDesc('date');
+    }
+    
+    public function reconciliations()
+    {
+        return $this->hasMany(Reconciliation::class)->orderByDesc('date');
+    }
+
+    public function transactionSplits($limit = 25, $startDate, $endDate, $filters = [])
     {
         return Transaction::whereHas('lines', function ($query) {
-            $query->where('account_id', $this->id);
+            $query->where('account_id', $this->id)
+            ->when($filters['direction'] ?? null, fn($q) => $q->where('type', $filters['direction']));
         })
         ->with(['splits','payee', 'category', 'splits.payee','account', 'counterAccount'])
         ->orderByDesc('date')
         ->whereBetween('date', [$startDate, $endDate])
-        ->limit($limit)
+        ->when($limit, fn($q) => $q->limit($limit))
+        ->filterLine($filters)
+        ->get();
+    }
+
+    public function transactionsToReconcile($startDate, $endDate)
+    {
+        return DB::table("transaction_lines")->selectRaw("
+            transaction_lines.id AS id,
+            transaction_lines.transaction_id,
+            transaction_lines.team_id,
+            transaction_lines.user_id
+        ")->where([
+            'transaction_lines.account_id' => $this->id,
+            'transactions.status' => Transaction::STATUS_VERIFIED
+        ])
+        ->whereNull('reconciliation_entries.id')
+        ->join('transactions', 'transactions.id', 'transaction_lines.transaction_id')
+        ->leftJoin('reconciliation_entries', 'reconciliation_entries.transaction_line_id', 'transaction_lines.id')
+        ->orderByDesc('transactions.date')
+        ->when($startDate && $endDate, fn($q) => $q->whereBetween('transactions.date', [$startDate, $endDate]))
+        ->when($endDate, fn($q) => $q->where('transactions.date', '<', $endDate))
         ->get();
     }
 
@@ -135,7 +168,7 @@ class Account extends Model
     public function getBalanceAttribute()
     {
         return $this->transactionLines()
-        ->where('transactions.status', 'verified')
+        ->where('transactions.status', Transaction::STATUS_VERIFIED)
         ->join('transactions', 'transactions.id', 'transaction_lines.transaction_id')
         ->sum(DB::raw("amount * type"));
     }
@@ -183,6 +216,7 @@ class Account extends Model
         return Account::where('accounts.team_id', $teamId)
         ->byDetailTypes($detailTypes)
         ->orderBy('accounts.index')
+        ->with(['reconciliationsPending'])
         ->get();
     }
 
