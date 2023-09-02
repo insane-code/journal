@@ -142,7 +142,7 @@ class Account extends Model
         ->leftJoin('reconciliation_entries', 'reconciliation_entries.transaction_line_id', 'transaction_lines.id')
         ->orderByDesc('transactions.date')
         ->when($startDate && $endDate, fn($q) => $q->whereBetween('transactions.date', [$startDate, $endDate]))
-        ->when($endDate, fn($q) => $q->where('transactions.date', '<', $endDate))
+        ->when($endDate, fn($q) => $q->where('transactions.date', '<=', $endDate))
         ->get();
     }
 

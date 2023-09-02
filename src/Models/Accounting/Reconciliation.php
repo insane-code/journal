@@ -4,6 +4,7 @@ namespace Insane\Journal\Models\Accounting;
 
 use Exception;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\Transaction;
 use Insane\Journal\Models\Core\TransactionLine;
@@ -39,7 +40,7 @@ class Reconciliation extends Model
     public function createEntries($items = []) {
         ReconciliationEntry::query()->where('reconciliation_id', $this->id)->delete();
         if (!count($items)) {
-            throw new Exception("Missing transactions");
+           return;
         }
 
         foreach ($items as $item) {
@@ -62,7 +63,7 @@ class Reconciliation extends Model
 
     public function addEntries($items = []) {
         if (!count($items)) {
-            throw new Exception("Missing transactions");
+            return;
         }
 
         foreach ($items as $item) {
@@ -124,12 +125,14 @@ class Reconciliation extends Model
     }
 
     public function getTransactions($limit = 15, $page) {
-
         return Transaction::whereHas('lines', function ($query) {
             $query->where('account_id', $this->account_id);
         })
-        ->join('reconciliation_entries', 'transactions.id', 'reconciliation_entries.transaction_id')
+        ->join('reconciliation_entries', fn($q) => $q->on('transactions.id', 'reconciliation_entries.transaction_id')
+        ->where('reconciliation_id', $this->id))
         ->with(['splits','payee', 'category', 'splits.payee','account', 'counterAccount'])
+        ->select()
+        ->addSelect(DB::raw('reconciliation_entries.id as entry_id, reconciliation_entries.matched is_matched'))
         ->orderByDesc('date')
         ->paginate($limit);
     }
