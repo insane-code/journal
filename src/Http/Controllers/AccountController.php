@@ -5,7 +5,6 @@ namespace Insane\Journal\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\DB;
 use Insane\Journal\Contracts\DeleteAccounts;
 use Insane\Journal\Events\AccountCreated;
 use Insane\Journal\Events\AccountUpdated;
@@ -37,7 +36,7 @@ class AccountController
                 'team_id' => $teamId
             ])->orderBy('index')->get();
         }
-        return Jetstream::inertia()->render($request, config('journal.accounts_inertia_path') . '/Index', [
+        return inertia(config('journal.accounts_inertia_path') . '/Index', [
             "accounts" => $accounts->toArray(),
             "categories" => Category::where('depth', 0)->with([
                 'subCategories',
@@ -81,7 +80,7 @@ class AccountController
         if ($account->team_id != $teamId) {
             Response::redirect('/accounts');
         }
-        return Jetstream::inertia()->render($request, 'Journal/Accounts/Show', [
+        return inertia('Journal/Accounts/Show', [
             "account" => $account,
             "transactions" => $account->transactions,
         ]);
