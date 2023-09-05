@@ -7,9 +7,9 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Insane\Journal\Models\Core\Account;
 
-class AccountCreated
+class AccountDeleted
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(public Account $account,public array $formData = []) {}
+    public function __construct(public Account $account, public array $formData = []) {}
 }
