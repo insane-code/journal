@@ -4,7 +4,6 @@ namespace Insane\Journal\Models\Core;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class Category extends Model
@@ -16,6 +15,7 @@ class Category extends Model
       'client_id',
       'parent_id',
       'display_id',
+      'account_id',
       'number',
       'name',
       'alias',
@@ -52,21 +52,25 @@ class Category extends Model
         return $this->belongsTo(Category::class, 'parent_id', 'id');
     }
 
+    public function account() {
+        return $this->belongsTo(Account::class);
+    }
+
     public function accounts() {
         return $this->hasMany(Account::class, 'category_id', 'id')->orderBy('index');
     }
 
     public static function findOrCreateByName($session, string $name, int $parentId = null, string $resourceType = 'transactions') {
         $category = Category::where(function($query) use ($name) {
-           return $query->where('display_id', Str::lower(Str::slug($name, "_")))->orWhere('name', $name);
+           return $query->where('display_id', Str::lower(Str::slug(trim($name), "_")))->orWhere('name', trim($name));
         })->where(function ($query) use ($session) {
             return $query->where('team_id', $session['team_id'])->orWhere('team_id', 0);
         })->first();
 
         if (!$category) {
             $category = Category::create([
-                'display_id' => Str::slug($name, "_"),
-                'name' => $name,
+                'display_id' => Str::slug(trim($name), "_"),
+                'name' => trim($name),
                 'parent_id' => $parentId,
                 'user_id' => $session['user_id'],
                 'team_id' => $session['team_id'],
