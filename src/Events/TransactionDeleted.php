@@ -5,8 +5,8 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Insane\Journal\Models\Core\Transaction;
 
-class TransactionCreated {
+class TransactionDeleted {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(public Transaction $transaction, public array $transactionData = []) {}
+    public function __construct(public Transaction $transaction) {}
 }
