@@ -9,6 +9,9 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Insane\Journal\Models\Accounting\Reconciliation;
+use Insane\Journal\Events\AccountCreated;
+use Insane\Journal\Events\AccountUpdated;
+use Insane\Journal\Events\AccountDeleted;
 
 class Account extends Model
 {
@@ -41,6 +44,12 @@ class Account extends Model
       'archived'
     ];
 
+    protected $dispatchesEvents = [
+        'created' => AccountCreated::class,
+        'saved' => AccountUpdated::class,
+        'deleted' => AccountDeleted::class,
+    ];
+
     protected static function booted()
     {
         static::creating(function ($account) {
@@ -66,6 +75,8 @@ class Account extends Model
             self::setNumber($account);
         });
     }
+
+
 
     public function user()
     {
@@ -106,7 +117,7 @@ class Account extends Model
     {
         return $this->hasOne(Reconciliation::class)->pending()->orderByDesc('date');
     }
-    
+
     public function reconciliations()
     {
         return $this->hasMany(Reconciliation::class)->orderByDesc('date');
@@ -114,7 +125,7 @@ class Account extends Model
 
     public function transactionSplits($limit = 25, $startDate, $endDate, $filters = [])
     {
-        return Transaction::whereHas('lines', function ($query) {
+        return Transaction::whereHas('lines', function ($query) use($filters) {
             $query->where('account_id', $this->id)
             ->when($filters['direction'] ?? null, fn($q) => $q->where('type', $filters['direction']));
         })
@@ -273,5 +284,52 @@ class Account extends Model
       ];
 
       Transaction::createTransaction($formData);
+    }
+
+    public function getVerifiedTransactionLines() {
+        return DB::table('transaction_lines')
+            ->selectRaw("COALESCE(SUM(amount * type), 0) as balance")
+            ->where('transaction_lines.account_id', $this->id)
+            ->join('transactions', fn ($q) => $q->on('transactions.id', 'transaction_lines.transaction_id')
+                ->where('status', Transaction::STATUS_VERIFIED)
+        );
+    }
+
+    public function getMonthBalance(string $yearMonth, bool $hasCategories = false)
+    {
+        if (!$this->resource_type_id) {
+            return $this->transactionLines()
+            ->whereHas('transaction', fn ($q) => $q->where('status', Transaction::STATUS_VERIFIED))
+            ->whereRaw("date_format(transaction_lines.date, '%Y-%m') = '$yearMonth'")
+            ->selectRaw("COALESCE(SUM(amount * type), 0) as balance")
+            ->when($hasCategories, fn ($q) => $q->whereRaw('(category_id IS NOT NULL AND category_id != 0)'))
+            ->first();
+        } else {
+            return $this->creditLines()
+            ->whereRaw("date_format(date, '%Y-%m') = '$yearMonth'")
+            ->sum(DB::raw("amount * type"));
+        }
+    }
+
+    public function getMonthFundedSpending(string $yearMonth)
+    {
+        if (!$this->resource_type_id) {
+            return $this->getVerifiedTransactionLines()
+            ->whereRaw('(transaction_lines.category_id IS NOT NULL AND transaction_lines.category_id != 0)')
+            ->whereRaw("date_format(transaction_lines.date, '%Y-%m') = '$yearMonth'")
+            ->where('type', -1)
+            ->first();
+        }
+    }
+
+    public function getMonthPayments(string $yearMonth)
+    {
+        if (!$this->resource_type_id) {
+            $result = $this->getVerifiedTransactionLines()
+            ->whereRaw("date_format(transaction_lines.date, '%Y-%m') = '$yearMonth'")
+            ->where('type', 1);
+
+            return $result->first();
+        }
     }
 }

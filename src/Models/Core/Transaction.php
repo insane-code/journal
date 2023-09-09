@@ -3,8 +3,10 @@
 namespace Insane\Journal\Models\Core;
 
 use Illuminate\Database\Eloquent\Model;
-use Insane\Journal\Events\TransactionCreated;
 use Illuminate\Support\Str;
+use Insane\Journal\Events\TransactionCreated;
+use Insane\Journal\Events\TransactionUpdated;
+use Insane\Journal\Events\TransactionDeleted;
 
 class Transaction extends Model
 {
@@ -37,6 +39,9 @@ class Transaction extends Model
         'status'
     ];
 
+    protected $dispatchesEvents = [
+        'deleted' => TransactionDeleted::class,
+    ];
        /**
      * The "booted" method of the model.
      *
@@ -193,6 +198,7 @@ class Transaction extends Model
         $this->update($data);
         $items = isset($data['items']) ? $data['items'] : [];
         $this->createLines($items);
+        TransactionUpdated::dispatch($this);
         return $this;
     }
 
