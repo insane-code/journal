@@ -28,8 +28,8 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('transaction_lines', function (Blueprint $table) {
-            $table->dropColumn('matched');
+        Schema::table('categories', function (Blueprint $table) {
+            $table->dropColumn('account_id');
         });
     }
 };
