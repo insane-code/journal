@@ -55,7 +55,6 @@ class AccountController
         $postData['team_id'] = $request->user()->current_team_id;
         $account = new Account();
         $account = $account::create($postData);
-        AccountCreated::dispatch($account, $postData);
         if ($request->query('json')) {
             return $response->sendContent($account);
         }
@@ -67,7 +66,6 @@ class AccountController
         $postData['user_id'] = request()->user()->id;
         $postData['team_id'] = request()->user()->current_team_id;
         $updatedAccount = $account->update($postData);
-        AccountUpdated::dispatch($account, $postData);
         if (request()->query('json')) {
             return response()->sendContent($updatedAccount);
         }
