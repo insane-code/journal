@@ -4,6 +4,7 @@ namespace Insane\Journal\Models\Core;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class Category extends Model
@@ -56,8 +57,41 @@ class Category extends Model
         return $this->belongsTo(Account::class);
     }
 
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class, 'category_id')
+        ->orderBy('date', 'desc')
+        ->verified()
+        ->limit(10);
+    }
+
+    public function transactionLines()
+    {
+        return $this->hasMany(TransactionLine::class, 'category_id');
+    }
+
+    public function creditLines()
+    {
+        return $this->hasMany(TransactionLine::class, 'account_id',  'resource_type_id');
+    }
+
+    public function group() {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
     public function accounts() {
         return $this->hasMany(Account::class, 'category_id', 'id')->orderBy('index');
+    }
+
+    public function scopeHasAccounts($query, mixed $accountIds) {
+        if ($accountIds) {
+          return $query->whereHas('accounts', function($query) use ($accountIds) {
+            $query->when($accountIds, function($q) use ($accountIds) {
+              $q->whereIn('accounts.id', $accountIds);
+            });
+          });
+        }
+        return $query;
     }
 
     public static function findOrCreateByName($session, string $name, int $parentId = null, string $resourceType = 'transactions') {
@@ -163,16 +197,25 @@ class Category extends Model
         ->get();
     }
 
-
-    public function scopeHasAccounts($query, mixed $accountIds) {
-      if ($accountIds) {
-        return $query->whereHas('accounts', function($query) use ($accountIds) {
-          $query->when($accountIds, function($q) use ($accountIds) {
-            $q->whereIn('accounts.id', $accountIds);
-          });
-        });
-      }
-      return $query;
+    /**
+     * Get the current balance.
+     *
+     * @return Object
+     */
+    public function getMonthBalance(string $yearMonth)
+    {
+        if (!$this->resource_type_id) {
+            $activity = $this->transactionLines()
+            ->whereHas('transaction', fn ($q) => $q->where('status', Transaction::STATUS_VERIFIED))
+            ->whereRaw("date_format(transaction_lines.date, '%Y-%m') = '$yearMonth'")
+            ->selectRaw("COALESCE(SUM(amount * type), 0) as balance"
+            )->first();
+            return $activity;
+        } else {
+            return $this->creditLines()
+            ->whereRaw("date_format(date, '%Y-%m') = '$yearMonth'")
+            ->sum(DB::raw("amount * type"));
+        }
     }
 
     public static function getCatalog($teamId) {

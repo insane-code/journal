@@ -8,5 +8,5 @@ use Insane\Journal\Models\Core\Transaction;
 class TransactionCreated {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(public Transaction $transaction, public array $transactionData = []) {}
+    public function __construct(public mixed $transaction, public array $transactionData = []) {}
 }
