@@ -2,12 +2,12 @@
 
 namespace Insane\Journal\Http\Controllers;
 
-use Insane\Journal\Models\Core\Category;
+use App\Domains\Journal\Actions\CategoryList;
 
-class CategoryController
+final class CategoryController
 {
   public function getWithClientBalance($uniqueField, $clientId) {
-    $category = Category::byUniqueField($uniqueField, request()->user()->current_team_id);
-    return $category->transactionBalance($clientId);
+    $categoryClientBalances = app(CategoryList::class);
+    return $categoryClientBalances->list(request()->user(), $uniqueField, $clientId);
   }
 }

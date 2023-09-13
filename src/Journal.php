@@ -7,6 +7,7 @@ use Insane\Journal\Contracts\AccountCreates;
 use Insane\Journal\Contracts\AccountDeletes;
 use Insane\Journal\Contracts\AccountStatementLists;
 use Insane\Journal\Contracts\AccountUpdates;
+use Insane\Journal\Contracts\CategoryListClientBalances;
 use Insane\Journal\Contracts\PdfExporter;
 
 class Journal
@@ -67,6 +68,16 @@ class Journal
     public static function showAccountStatementsUsing(string $class): void
     {
         app()->singleton(AccountStatementShow::class, $class);
+    }
+
+
+    /***
+     * 
+     * Category related actions
+     */
+    public static function listCategoryBalanceUsing(string $class): void
+    {
+        app()->singleton(CategoryListClientBalances::class, $class);
     }
 
  
