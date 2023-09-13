@@ -2,7 +2,11 @@
 
 namespace Insane\Journal;
 
-use Insane\Journal\Contracts\DeleteAccounts;
+use App\Domains\Journal\Actions\AccountStatementShow;
+use Insane\Journal\Contracts\AccountCreates;
+use Insane\Journal\Contracts\AccountDeletes;
+use Insane\Journal\Contracts\AccountStatementLists;
+use Insane\Journal\Contracts\AccountUpdates;
 use Insane\Journal\Contracts\PdfExporter;
 
 class Journal
@@ -18,17 +22,7 @@ class Journal
      */
     public static $registersRoutes = true;
 
-      /**
-     * Register a class / callback that should be used to delete teams.
-     *
-     * @param  string  $class
-     * @return void
-     */
-    public static function deleteAccountUsing(string $class)
-    {
-        return app()->singleton(DeleteAccounts::class, $class);
-    }
-
+   // customers / client related setup  
     public static function useCustomerModel(string $model) {
       static::$customerModel = $model;
     }
@@ -41,6 +35,41 @@ class Journal
     public static function listClientsOf($teamId) {
       return (new static::$customerModel)->where('team_id', $teamId)->get();
     }
+
+    /***
+     * account actions
+     */
+    //  
+    public static function createAccountUsing(string $class): void
+    {
+        app()->singleton(AccountCreates::class, $class);
+    }
+
+    public static function updateAccountUsing(string $class): void
+    {
+        app()->singleton(AccountUpdates::class, $class);
+    }
+
+    public static function deleteAccountUsing(string $class): void
+    {
+        app()->singleton(AccountDeletes::class, $class);
+    }
+
+    /***
+     * 
+     * Account statement related actions
+     */
+    public static function listAccountStatementsUsing(string $class): void
+    {
+        app()->singleton(AccountStatementLists::class, $class);
+    }
+
+    public static function showAccountStatementsUsing(string $class): void
+    {
+        app()->singleton(AccountStatementShow::class, $class);
+    }
+
+ 
 
     /**
      * Register a class / callback that should be used to print the invoices.
