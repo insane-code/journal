@@ -8,6 +8,9 @@ use Insane\Journal\Contracts\AccountDeletes;
 use Insane\Journal\Contracts\AccountStatementLists;
 use Insane\Journal\Contracts\AccountUpdates;
 use Insane\Journal\Contracts\CategoryListClientBalances;
+use Insane\Journal\Contracts\InvoicePaymentCreates;
+use Insane\Journal\Contracts\InvoicePaymentDeletes;
+use Insane\Journal\Contracts\InvoicePaymentMarkAsPaid;
 use Insane\Journal\Contracts\PdfExporter;
 
 class Journal
@@ -78,6 +81,25 @@ class Journal
     public static function listCategoryBalanceUsing(string $class): void
     {
         app()->singleton(CategoryListClientBalances::class, $class);
+    }
+    
+    /***
+     * 
+     * Invoice Payment related actions
+     */
+    public static function createInvoicePaymentUsing(string $class): void
+    {
+        app()->singleton(InvoicePaymentCreates::class, $class);
+    }
+
+    public static function deleteInvoicePaymentUsing(string $class): void
+    {
+        app()->singleton(InvoicePaymentDeletes::class, $class);
+    }
+
+    public static function payInvoiceUsing(string $class): void
+    {
+        app()->singleton(InvoicePaymentMarkAsPaid::class, $class);
     }
 
  
