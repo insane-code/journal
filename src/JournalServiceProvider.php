@@ -3,6 +3,7 @@
 namespace Insane\Journal;
 
 use Illuminate\Support\ServiceProvider;
+use Insane\Journal\Console\InstallCommand;
 use Insane\Journal\Console\SetAccountsCommand;
 use Insane\Journal\Console\SetChartAccountsCommand;
 
@@ -22,6 +23,7 @@ class JournalServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
+                InstallCommand::class,
                 SetAccountsCommand::class,
                 SetChartAccountsCommand::class
             ]);
@@ -36,20 +38,6 @@ class JournalServiceProvider extends ServiceProvider
     private function registerRoutes()
     {
         $this->loadRoutesFrom(__DIR__ . '/Http/routes.php');
-    }
-
-    /**
-    * Get route group configuration array.
-    *
-    * @return array
-    */
-    private function routeConfiguration()
-    {
-        return [
-            'namespace'  => "Insane\Journal\Http\Controllers",
-            'middleware' => 'api',
-            'prefix'     => 'api'
-        ];
     }
 
     /**

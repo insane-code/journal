@@ -1,6 +1,6 @@
 <?php
 
-namespace Insane\Treasurer\Console;
+namespace Insane\Journal\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
@@ -13,7 +13,16 @@ class InstallCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'journal:install ';
+    protected $signature = 'journal:install install
+    {--ddd : Indicates if installation follows atmosphere Domain Driven Development}
+    {--accounting : Indicates if accounting modules be installed}
+    {--invoicing : Indicates if invoicing modules should be installed}
+    {--products : Indicates if products modules should be installed}
+    {--taxes : Indicates if taxes should be installed}
+    {--payments : Indicates if payments should be installed}
+    {--orders : Indicates if orders modules should be installed}
+    {--inventory : Indicates if inventory modules should be installed}
+    {--composer=global : Absolute path to the Composer binary which should be used to install packages}';
 
     /**
      * The console command description.
@@ -40,19 +49,36 @@ class InstallCommand extends Command
      */
     protected function installAccounting()
     {
-         // Models...
-        copy(__DIR__.'/../../stubs/app/Models/Account.php', app_path('Models/Account.php'));
-        copy(__DIR__.'/../../stubs/app/Models/Category.php', app_path('Models/Category.php'));
-        copy(__DIR__.'/../../stubs/app/Models/Image.php', app_path('Models/Image.php'));
-        copy(__DIR__.'/../../stubs/app/Models/Invoice.php', app_path('Models/Invoice.php'));
-        copy(__DIR__.'/../../stubs/app/Models/InvoiceLine.php', app_path('Models/InvoiceLine.php'));
-        copy(__DIR__.'/../../stubs/app/Models/Payment.php', app_path('Models/Payment.php'));
-        copy(__DIR__.'/../../stubs/app/Models/Product.php', app_path('Models/Product.php'));
-        copy(__DIR__.'/../../stubs/app/Models/ProductsOption.php', app_path('Models/ProductsOption.php'));
-        copy(__DIR__.'/../../stubs/app/Models/ProductsVariant.php', app_path('Models/ProductsVariant.php'));
-        copy(__DIR__.'/../../stubs/app/Models/Stock.php', app_path('Models/Stock.php'));
-        copy(__DIR__.'/../../stubs/app/Models/Transaction.php', app_path('Models/Transaction.php'));
-        copy(__DIR__.'/../../stubs/app/Models/TransactionLine.php', app_path('Models/TransactionLine.php'));
+
+        // Publish...
+        $this->callSilent('vendor:publish', ['--tag' => 'journal-config', '--force' => true]);
+        $this->callSilent('vendor:publish', ['--tag' => 'journal-migrations', '--force' => true]); 
+        $this->callSilent('journal:set-accounts');
+ 
+        // Storage...
+        $this->callSilent('storage:link');
+
+        $isDD = true;
+        if (!$isDD) {
+            // Models...
+           copy(__DIR__.'/../../stubs/app/Models/Account.php', app_path('Models/Account.php'));
+           copy(__DIR__.'/../../stubs/app/Models/Category.php', app_path('Models/Category.php'));
+           copy(__DIR__.'/../../stubs/app/Models/Image.php', app_path('Models/Image.php'));
+           copy(__DIR__.'/../../stubs/app/Models/Invoice.php', app_path('Models/Invoice.php'));
+           copy(__DIR__.'/../../stubs/app/Models/InvoiceLine.php', app_path('Models/InvoiceLine.php'));
+           copy(__DIR__.'/../../stubs/app/Models/Payment.php', app_path('Models/Payment.php'));
+           copy(__DIR__.'/../../stubs/app/Models/Product.php', app_path('Models/Product.php'));
+           copy(__DIR__.'/../../stubs/app/Models/ProductsOption.php', app_path('Models/ProductsOption.php'));
+           copy(__DIR__.'/../../stubs/app/Models/ProductsVariant.php', app_path('Models/ProductsVariant.php'));
+           copy(__DIR__.'/../../stubs/app/Models/Stock.php', app_path('Models/Stock.php'));
+           copy(__DIR__.'/../../stubs/app/Models/Transaction.php', app_path('Models/Transaction.php'));
+           copy(__DIR__.'/../../stubs/app/Models/TransactionLine.php', app_path('Models/TransactionLine.php'));
+        } else {
+            (new Filesystem)->ensureDirectoryExists(app_path('Domains/Journal'));
+            // domain
+            (new Filesystem)->copyDirectory(__DIR__.'/../../stubs/app/Domains/Journal', app_path('Domains/Journal'));
+        }
+
         $this->info('Inertia scaffolding installed successfully.');
         $this->comment('Please execute the "npm install && npm run dev" command to build your assets.');
     }

@@ -8,7 +8,7 @@ use Illuminate\Validation\ValidationException;
 use Insane\Journal\Contracts\AccountDeletes;
 use Insane\Journal\Models\Core\Account;
 
-class DeleteAccount implements AccountDeletes
+class AccountDelete implements AccountDeletes
 {
     public function delete(User $user, Account $account)
     {

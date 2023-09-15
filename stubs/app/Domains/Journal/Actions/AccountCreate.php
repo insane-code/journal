@@ -5,10 +5,9 @@ namespace App\Domains\Journal\Actions;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Gate;
 use Insane\Journal\Contracts\AccountUpdates;
-use Insane\Journal\Journal;
 use Insane\Journal\Models\Core\Account;
 
-class AccountUpdate implements AccountUpdates
+class AccountCreate implements AccountUpdates
 {
    
     public function update(User $user, Account $account, array $accountData): Account

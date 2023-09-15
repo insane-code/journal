@@ -3,6 +3,7 @@
 namespace Insane\Journal;
 
 use App\Domains\Journal\Actions\AccountStatementShow;
+use App\Domains\Journal\Actions\TransactionBulkApprove;
 use Insane\Journal\Contracts\AccountCreates;
 use Insane\Journal\Contracts\AccountDeletes;
 use Insane\Journal\Contracts\AccountStatementLists;
@@ -12,6 +13,11 @@ use Insane\Journal\Contracts\InvoicePaymentCreates;
 use Insane\Journal\Contracts\InvoicePaymentDeletes;
 use Insane\Journal\Contracts\InvoicePaymentMarkAsPaid;
 use Insane\Journal\Contracts\PdfExporter;
+use Insane\Journal\Contracts\TransactionApproves;
+use Insane\Journal\Contracts\TransactionBulkApproves;
+use Insane\Journal\Contracts\TransactionDeletes;
+use Insane\Journal\Contracts\TransactionLists;
+use Insane\Journal\Contracts\TransactionUpdates;
 
 class Journal
 {
@@ -101,6 +107,44 @@ class Journal
     {
         app()->singleton(InvoicePaymentMarkAsPaid::class, $class);
     }
+
+
+    /***
+     * 
+     * Transactions related actions
+     */
+
+     public static function listTransactionsUsing(string $class): void {
+        app()->singleton(TransactionLists::class, $class);
+     }
+
+     public static function createTransactionsUsing(string $class) {
+        app()->singleton(TransactionCreates::class, $class);
+     }
+
+     public static function showTransactionsUsing(string $class) {
+        app()->singleton(TransactionShows::class, $class);
+     }
+
+     public static function updateTransactionsUsing() {
+        app()->singleton(TransactionUpdates::class, $class);
+     }
+
+     public static function deleteTransactionUsing(string $class) {
+        app()->singleton(TransactionDeletes::class, $class);
+    }
+    
+    public static function approveTransactionUsing(string $class) {
+         app()->singleton(TransactionApproves::class, $class);
+    }
+        
+    public static function bulkApproveTransactionsUsing(string $class) {
+         app()->singleton(TransactionBulkApproves::class, $class);     
+    }
+
+    public static function bulkDeleteTransactionsUsing(string $class) {
+         app()->singleton(TransactionBulkDeletes::class, $class);
+     }
 
  
 

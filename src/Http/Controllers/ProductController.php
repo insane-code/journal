@@ -5,51 +5,29 @@ namespace Insane\Journal\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Redirect;
-use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\Category;
 use Insane\Journal\Models\Core\Tax;
 use Insane\Journal\Models\Product\Product;
-use Laravel\Jetstream\Jetstream;
-
 
 class ProductController
 {
-
-    public function __construct()
-    {
-        $this->model = new Account();
-        $this->searchable = ['name'];
-        $this->validationRules = [];
-    }
-
-    public function index(Request $request) {
-        return Jetstream::inertia()->render($request, config('journal.products_inertia_path') . '/Index', [
+    public function index() {
+        return inertia(config('journal.products_inertia_path') . '/Index', [
             "products" => Product::with(['images', 'price', 'images'])->paginate(),
             "categories" => Category::where('depth', 1)->with(['accounts'])->get(),
         ]);
 
     }
 
-     /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function create(Request $request)
     {
         $teamId = $request->user()->current_team_id;
-        return Jetstream::inertia()->render($request, config('journal.products_inertia_path') . '/Edit', [
+        return inertia(config('journal.products_inertia_path') . '/Edit', [
             'product' => null,
             'availableTaxes' => Tax::where("team_id", $teamId)->get(),
         ]);
     }
 
-
-    /**
-    * Show the form for editing a resource.
-    *
-    * @return \Illuminate\Http\Response
-    */
     public function show(Request $request, $id)
     {
         $product = Product::with(['images', 'price', 'images', 'priceList', 'taxes'])->find($id);
@@ -59,13 +37,13 @@ class ProductController
             Response::redirect('/products');
         }
 
-        return Jetstream::inertia()->render($request, config('journal.products_inertia_path') . '/Show', [
+        return inertia(config('journal.products_inertia_path') . '/Show', [
             'product' => $product,
             'availableTaxes' => Tax::where("team_id", $teamId)->get(),
         ]);
     }
 
-    public function store(Request $request, Response $response) {
+    public function store(Request $request) {
         $postData = $request->post();
         $postData['user_id'] = $request->user()->id;
         $postData['team_id'] = $request->user()->current_team_id;
