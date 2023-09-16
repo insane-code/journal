@@ -1,11 +1,12 @@
 <?php
 
-namespace Insane\Journal\Actions;
+namespace App\Domains\Journal\Actions;
 
+use Insane\Journal\Contracts\AccountDetailTypesCreates;
 use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\AccountDetailType;
 
-class CreateDetailTypes
+class AccountDetailTypesCreate implements AccountDetailTypesCreates
 {
     /**
      * Validate and create a new team for the given user.

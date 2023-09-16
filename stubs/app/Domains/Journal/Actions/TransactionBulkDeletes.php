@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Gate;
 use Insane\Journal\Contracts\TransactionBulkDeletes;
 use Insane\Journal\Models\Core\Transaction;
 
-class TransactionCreate implements TransactionBulkDeletes {
+class TransactionBulkDelete implements TransactionBulkDeletes {
     public function validate(User $user) {
         Gate::forUser($user)->authorize('bulk-delete', Transaction::class);   
     }

@@ -1,20 +1,18 @@
 <?php
 
-namespace Insane\Journal\Actions;
+namespace App\Domains\Journal\Actions;
 
+use Insane\Journal\Contracts\AccountCatalogCreates;
 use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\AccountDetailType;
+use Insane\Journal\Models\Core\Category;
 
-class CreateChartAccounts
+class AccountCatalogCreate implements AccountCatalogCreates
 {
     /**
-     * Validate and create a new team for the given user.
-     *
-     * @param  mixed  $user
-     * @param  array  $input
-     * @return mixed
+     * Creates a new accounts catalog for the given team.
      */
-    public function create($team)
+    public function createCatalog($team)
     {
 
         $generalInfo = [
@@ -36,6 +34,23 @@ class CreateChartAccounts
                 ]));
             }
         }
+    }
 
+    public function createChart(Team $team)
+    {
+        Category::where([
+            'team_id' =>  0,
+            'resource_type' => 'accounts'
+        ])->delete();
+        
+        $categories = config('journal.accounts_categories');
+        $generalInfo = [
+            'team_id' => $team->id,
+            'user_id' => $team->user_id,
+            'depth' => 0,
+            'resource_type' => 'accounts'
+        ];
+
+        Category::saveBulk($categories, $generalInfo);
     }
 }

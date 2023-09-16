@@ -1,9 +1,10 @@
 <?php
 
-namespace Insane\Journal\Contracts;
+namespace App\Domains\Journal\Actions;
 
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Gate;
+use Insane\Journal\Contracts\TransactionLists;
 use Insane\Journal\Models\Core\Category;
 use Insane\Journal\Models\Core\Transaction;
 

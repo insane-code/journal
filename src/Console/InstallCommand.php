@@ -51,9 +51,8 @@ class InstallCommand extends Command
     {
 
         // Publish...
-        $this->callSilent('vendor:publish', ['--tag' => 'journal-config', '--force' => true]);
+        $this->callSilent('vendor:publish', ['--tag' => 'journal:config', '--force' => true]);
         $this->callSilent('vendor:publish', ['--tag' => 'journal-migrations', '--force' => true]); 
-        $this->callSilent('journal:set-accounts');
  
         // Storage...
         $this->callSilent('storage:link');
@@ -77,6 +76,7 @@ class InstallCommand extends Command
             (new Filesystem)->ensureDirectoryExists(app_path('Domains/Journal'));
             // domain
             (new Filesystem)->copyDirectory(__DIR__.'/../../stubs/app/Domains/Journal', app_path('Domains/Journal'));
+            copy(__DIR__.'/../../stubs/app/Providers/JournalServiceProvider.php', app_path('Providers/JournalServiceProvider.php'));
         }
 
         $this->info('Inertia scaffolding installed successfully.');

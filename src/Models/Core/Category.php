@@ -4,6 +4,7 @@ namespace Insane\Journal\Models\Core;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -157,7 +158,6 @@ class Category extends Model
     }
 
     public static function saveBulk(mixed $categories, mixed $extraData) {
-
         foreach ($categories as $index => $category) {
             $newCategory = array_merge($category, $extraData, ['index' => $index]);
             unset($newCategory['childs']);

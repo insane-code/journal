@@ -30,6 +30,7 @@ class CreateTransactionLinesTable extends Migration
             $table->integer('index')->nullable();
             $table->boolean('anchor')->default(0);
             $table->boolean('is_split')->default(0);
+            $table->boolean('matched')->default(false);
             $table->timestamps();
         });
     }

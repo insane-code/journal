@@ -39,6 +39,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('invoice_relations');
+        Schema::dropIfExists('invoice_notes');
     }
 };
