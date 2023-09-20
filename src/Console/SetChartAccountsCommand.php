@@ -4,8 +4,7 @@ namespace Insane\Journal\Console;
 
 use App\Models\Team;
 use Illuminate\Console\Command;
-use Insane\Journal\Actions\CreateChartAccounts;
-use Insane\Journal\Category;
+use Insane\Journal\Contracts\AccountCatalogCreates;
 
 class SetChartAccountsCommand extends Command
 {
@@ -30,18 +29,12 @@ class SetChartAccountsCommand extends Command
      */
     public function handle()
     {
-        $this->setAccountsCharts($this->argument('teamId'));
-    }
-
-
-    /**
-     * Set general chart of accounts categories
-     *
-     * @return void
-     */
-    protected function setAccountsCharts($teamId)
-    {
+        $teamId = $this->argument('teamId');
         $team = Team::find($teamId);
-        (new CreateChartAccounts())->create($team);
+
+        
+        $accountCatalog = app(AccountCatalogCreates::class);
+        $accountCatalog->createChart($team);
+        $accountCatalog->createCatalog($team);
     }
 }

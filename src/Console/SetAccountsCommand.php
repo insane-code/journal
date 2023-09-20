@@ -3,8 +3,7 @@
 namespace Insane\Journal\Console;
 
 use Illuminate\Console\Command;
-use Insane\Journal\Actions\CreateDetailTypes;
-use Insane\Journal\Models\Core\Category;
+use Insane\Journal\Contracts\AccountDetailTypesCreates;
 
 class SetAccountsCommand extends Command
 {
@@ -29,32 +28,7 @@ class SetAccountsCommand extends Command
      */
     public function handle()
     {
-        $this->setAccountsCharts();
-        $this->generateDetailTypes();
-    }
-
-
-    /**
-     * Set general chart of accounts categories
-     *
-     * @return void
-     */
-    protected function setAccountsCharts()
-    {
-        Category::where('team_id', 0)->delete();
-        $categories = config('journal.accounts_categories');
-        $generalInfo = [
-            'team_id' => 0,
-            'user_id' => 0,
-            'depth' => 0,
-            'resource_type' => 'accounts'
-        ];
-
-        Category::saveBulk($categories, $generalInfo);
-
-    }
-
-    protected function generateDetailTypes() {
-        (new CreateDetailTypes())->create();
+        $accountDetailsType = app(AccountDetailTypesCreates::class);
+        $accountDetailsType->create();
     }
 }

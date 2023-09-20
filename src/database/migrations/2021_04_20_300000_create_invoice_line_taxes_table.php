@@ -28,6 +28,7 @@ return new class extends Migration
             $table->decimal('amount_base', 11, 4);
             $table->decimal('rate', 11, 2)->default(0.00);
             $table->integer('type')->default(1);
+            $table->boolean('is_fixed')->default(false);
             $table->timestamps();
         });
     }

@@ -19,6 +19,7 @@ class CreateCategoriesTable extends Migration
             $table->foreignId('user_id');
             $table->foreignId('client_id')->nullable();
             $table->foreignId('parent_id')->nullable();
+            $table->foreignId('account_id')->nullable();
             $table->foreignId('resource_type_id')->nullable();
 
             $table->string('color')->nullable();
