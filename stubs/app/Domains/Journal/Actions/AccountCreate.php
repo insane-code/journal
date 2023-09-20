@@ -4,15 +4,15 @@ namespace App\Domains\Journal\Actions;
 
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Gate;
-use Insane\Journal\Contracts\AccountUpdates;
+use Insane\Journal\Contracts\AccountCreates;
 use Insane\Journal\Models\Core\Account;
 
-class AccountCreate implements AccountUpdates
+class AccountCreate implements AccountCreates
 {
-   
-    public function update(User $user, Account $account, array $accountData): Account
+
+    public function create(User $user, array $accountData): Account
     {
-        $this->validate($user, $account);
+        $this->validate($user);
         $account = new Account();
         $account = Account::create([
             ...$accountData,
@@ -23,9 +23,9 @@ class AccountCreate implements AccountUpdates
         return $account;
     }
 
-    public function validate(mixed $user, mixed $account)
+    public function validate(mixed $user)
     {
-        Gate::forUser($user)->authorize('create', Account::class);   
+        Gate::forUser($user)->authorize('create', Account::class);
     }
 }
 

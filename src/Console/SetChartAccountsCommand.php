@@ -33,7 +33,7 @@ class SetChartAccountsCommand extends Command
         $team = Team::find($teamId);
 
         
-        $accountCatalog = $this->app(AccountCatalogCreates::class);
+        $accountCatalog = app(AccountCatalogCreates::class);
         $accountCatalog->createChart($team);
         $accountCatalog->createCatalog($team);
     }

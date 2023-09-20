@@ -28,7 +28,7 @@ class SetAccountsCommand extends Command
      */
     public function handle()
     {
-        $accountDetailsType = $this->app(AccountDetailTypesCreates::class);
+        $accountDetailsType = app(AccountDetailTypesCreates::class);
         $accountDetailsType->create();
     }
 }

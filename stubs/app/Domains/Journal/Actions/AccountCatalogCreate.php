@@ -2,6 +2,7 @@
 
 namespace App\Domains\Journal\Actions;
 
+use App\Models\Team;
 use Insane\Journal\Contracts\AccountCatalogCreates;
 use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\AccountDetailType;
@@ -42,7 +43,7 @@ class AccountCatalogCreate implements AccountCatalogCreates
             'team_id' =>  0,
             'resource_type' => 'accounts'
         ])->delete();
-        
+
         $categories = config('journal.accounts_categories');
         $generalInfo = [
             'team_id' => $team->id,

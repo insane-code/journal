@@ -17,8 +17,10 @@ use Insane\Journal\Contracts\PdfExporter;
 use Insane\Journal\Contracts\TransactionApproves;
 use Insane\Journal\Contracts\TransactionBulkApproves;
 use Insane\Journal\Contracts\TransactionCategoriesCreates;
+use Insane\Journal\Contracts\TransactionCreates;
 use Insane\Journal\Contracts\TransactionDeletes;
 use Insane\Journal\Contracts\TransactionLists;
+use Insane\Journal\Contracts\TransactionShows;
 use Insane\Journal\Contracts\TransactionUpdates;
 
 class Journal
@@ -34,7 +36,7 @@ class Journal
      */
     public static $registersRoutes = true;
 
-   // customers / client related setup  
+   // customers / client related setup
     public static function useCustomerModel(string $model) {
       static::$customerModel = $model;
     }
@@ -51,7 +53,7 @@ class Journal
     /***
      * account actions
      */
-    //  
+    //
     public static function createAccountUsing(string $class): void
     {
         app()->singleton(AccountCreates::class, $class);
@@ -68,7 +70,7 @@ class Journal
     }
 
     /***
-     * 
+     *
      * Account statement related actions
      */
     public static function listAccountStatementsUsing(string $class): void
@@ -83,16 +85,16 @@ class Journal
 
 
     /***
-     * 
+     *
      * Category related actions
      */
     public static function listCategoryBalanceUsing(string $class): void
     {
         app()->singleton(CategoryListClientBalances::class, $class);
     }
-    
+
     /***
-     * 
+     *
      * Invoice Payment related actions
      */
     public static function createInvoicePaymentUsing(string $class): void
@@ -112,7 +114,7 @@ class Journal
 
 
     /***
-     * 
+     *
      * Transactions related actions
      */
 
@@ -128,20 +130,20 @@ class Journal
         app()->singleton(TransactionShows::class, $class);
      }
 
-     public static function updateTransactionsUsing() {
+     public static function updateTransactionsUsing(string $class) {
         app()->singleton(TransactionUpdates::class, $class);
      }
 
      public static function deleteTransactionUsing(string $class) {
         app()->singleton(TransactionDeletes::class, $class);
     }
-    
+
     public static function approveTransactionUsing(string $class) {
          app()->singleton(TransactionApproves::class, $class);
     }
-        
+
     public static function bulkApproveTransactionsUsing(string $class) {
-         app()->singleton(TransactionBulkApproves::class, $class);     
+         app()->singleton(TransactionBulkApproves::class, $class);
     }
 
     public static function bulkDeleteTransactionsUsing(string $class) {
@@ -159,7 +161,7 @@ class Journal
      public static function createTransactionCategoriesUsing(string $class) {
         app()->singleton(TransactionCategoriesCreates::class, $class);
      }
- 
+
 
     /**
      * Register a class / callback that should be used to print the invoices.

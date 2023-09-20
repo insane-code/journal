@@ -10,6 +10,7 @@ use Insane\Journal\Contracts\TransactionBulkDeletes;
 use Insane\Journal\Contracts\TransactionCreates;
 use Insane\Journal\Contracts\TransactionDeletes;
 use Insane\Journal\Contracts\TransactionLists;
+use Insane\Journal\Contracts\TransactionShows;
 use Insane\Journal\Contracts\TransactionUpdates;
 use Insane\Journal\Models\Core\Transaction;
 
@@ -28,9 +29,13 @@ final class TransactionController
 
     public function show(Transaction $transaction) {
         $showTransaction = app(TransactionShows::class);   
+        $transactionData =  $showTransaction->show(request()->user(), $transaction);
         
+        if (request()->query('json')) {
+            return response()->json($transactionData);
+        }
         return inertia(config('journal.transactions_inertia_path') . '/Index', 
-            $showTransaction->list(request()->user(), $transaction)
+            $showTransaction->show(request()->user(), $transactionData)
         );
     }
 
@@ -45,7 +50,7 @@ final class TransactionController
 
     public function update(Transaction $transaction) {
         $updateTransaction = app(TransactionUpdates::class);   
-        $updateTransaction->update(request()->user(), $transaction, request()->postData());
+        $updateTransaction->update(request()->user(), $transaction, request()->post());
         if (request()->query('json')) {
             return response()->sendContent($transaction);
         }
