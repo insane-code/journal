@@ -113,9 +113,9 @@ class Account extends Model
         return $this->hasMany(TransactionLine::class)->orderByDesc('date');
     }
 
-    public function reconciliationsPending()
+    public function reconciliationLast()
     {
-        return $this->hasOne(Reconciliation::class)->pending()->orderByDesc('date');
+        return $this->hasOne(Reconciliation::class)->orderByDesc('date');
     }
 
     public function reconciliations()
@@ -227,7 +227,7 @@ class Account extends Model
         return Account::where('accounts.team_id', $teamId)
         ->byDetailTypes($detailTypes)
         ->orderBy('accounts.index')
-        ->with(['reconciliationsPending'])
+        ->with(['reconciliationLast'])
         ->get();
     }
 
