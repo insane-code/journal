@@ -51,6 +51,8 @@ class CreateInvoiceLine implements ShouldQueue
                     "quantity" => $item['quantity'],
                     "price" => $item['price'],
                     "amount" => $item['amount'],
+                    "product_image" => $item['product_image'] ?? "",
+                    "meta_data" => $item['meta_data'] ?? [],
                 ]);
     
                 isset($item['taxes']) ? $this->createItemTaxes($item['taxes'], $line) : null;
@@ -68,6 +70,8 @@ class CreateInvoiceLine implements ShouldQueue
                 "quantity" => 1,
                 "price" => $this->formData['total'],
                 "amount" => $this->formData['total'],
+                "product_image" => "",
+                "meta_data" => [],
             ]);
 
         }

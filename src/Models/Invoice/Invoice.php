@@ -3,24 +3,24 @@
 namespace Insane\Journal\Models\Invoice;
 
 use App\Models\User;
+use Insane\Journal\Journal;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Eloquent\Model;
-use Insane\Journal\Jobs\Invoice\CreateInvoiceLine;
-use Insane\Journal\Jobs\Invoice\CreateInvoiceTransaction;
-use Insane\Journal\Models\Core\Account;
-use Insane\Journal\Models\Core\Category;
-use Insane\Journal\Models\Core\Payment;
-use Insane\Journal\Models\Core\Transaction;
 use Illuminate\Support\Facades\Bus;
+use Insane\Journal\Traits\HasPayments;
+use Illuminate\Database\Eloquent\Model;
+use Insane\Journal\Models\Core\Account;
+use Insane\Journal\Models\Core\Payment;
+use Insane\Journal\Events\InvoiceSaving;
+use Insane\Journal\Models\Core\Category;
 use Insane\Journal\Events\InvoiceCreated;
 use Insane\Journal\Events\InvoiceDeleted;
-use Insane\Journal\Events\InvoiceSaving;
+use Insane\Journal\Models\Core\Transaction;
+use Insane\Journal\Traits\IPayableDocument;
+use Insane\Journal\Jobs\Invoice\CreateInvoiceLine;
 use Insane\Journal\Jobs\Invoice\CreateExpenseDetails;
 use Insane\Journal\Jobs\Invoice\CreateInvoicePayments;
 use Insane\Journal\Jobs\Invoice\CreateInvoiceRelations;
-use Insane\Journal\Journal;
-use Insane\Journal\Traits\HasPayments;
-use Insane\Journal\Traits\IPayableDocument;
+use Insane\Journal\Jobs\Invoice\CreateInvoiceTransaction;
 
 class Invoice extends Model implements IPayableDocument
 {
@@ -498,7 +498,7 @@ class Invoice extends Model implements IPayableDocument
     }
 
     public function createPaymentTransaction(Payment $payment) {
-        if (method_exists($this->invoiceable, 'createPaymentTransaction')) {
+        if ($this->invoiceable && method_exists($this->invoiceable, 'createPaymentTransaction')) {
             return $this->invoiceable->createPaymentTransaction($payment, $this);
         } else {
             $direction = $this->getTransactionDirection() ?? Transaction::DIRECTION_DEBIT;
