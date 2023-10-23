@@ -4,14 +4,14 @@ namespace Insane\Journal\Models\Core;
 
 use App\Models\Team;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Insane\Journal\Models\Accounting\Reconciliation;
+use Illuminate\Database\Eloquent\Model;
 use Insane\Journal\Events\AccountCreated;
-use Insane\Journal\Events\AccountUpdated;
 use Insane\Journal\Events\AccountDeleted;
+use Insane\Journal\Events\AccountUpdated;
+use Insane\Journal\Models\Accounting\Reconciliation;
 
 class Account extends Model
 {
@@ -37,6 +37,8 @@ class Account extends Model
       'description',
       'currency_code',
       'opening_balance',
+      'credit_limit',
+      'credit_closing_day',
       'index',
       'archivable',
       'balance_type',
@@ -130,6 +132,7 @@ class Account extends Model
             ->when($filters['direction'] ?? null, fn($q) => $q->where('type', $filters['direction']));
         })
         ->with(['splits','payee', 'category', 'splits.payee','account', 'counterAccount'])
+        ->where('status', Transaction::STATUS_VERIFIED)
         ->orderByDesc('date')
         ->whereBetween('date', [$startDate, $endDate])
         ->when($limit, fn($q) => $q->limit($limit))
