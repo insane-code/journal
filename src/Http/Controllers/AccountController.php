@@ -5,11 +5,12 @@ namespace Insane\Journal\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Insane\Journal\Contracts\AccountCreates;
-use Insane\Journal\Contracts\DeleteAccounts;
 use Insane\Journal\Models\Core\Account;
-use Insane\Journal\Models\Core\AccountDetailType;
 use Insane\Journal\Models\Core\Category;
+use Insane\Journal\Contracts\AccountCreates;
+use Insane\Journal\Contracts\AccountUpdates;
+use Insane\Journal\Contracts\DeleteAccounts;
+use Insane\Journal\Models\Core\AccountDetailType;
 
 final class AccountController
 {
