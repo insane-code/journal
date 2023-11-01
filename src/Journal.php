@@ -2,26 +2,27 @@
 
 namespace Insane\Journal;
 
-use Insane\Journal\Contracts\AccountCatalogCreates;
+use Insane\Journal\Contracts\PdfExporter;
 use Insane\Journal\Contracts\AccountCreates;
 use Insane\Journal\Contracts\AccountDeletes;
-use Insane\Journal\Contracts\AccountDetailTypesCreates;
-use Insane\Journal\Contracts\AccountStatementLists;
-use Insane\Journal\Contracts\AccountStatementShows;
 use Insane\Journal\Contracts\AccountUpdates;
-use Insane\Journal\Contracts\CategoryListClientBalances;
-use Insane\Journal\Contracts\InvoicePaymentCreates;
-use Insane\Journal\Contracts\InvoicePaymentDeletes;
-use Insane\Journal\Contracts\InvoicePaymentMarkAsPaid;
-use Insane\Journal\Contracts\PdfExporter;
-use Insane\Journal\Contracts\TransactionApproves;
-use Insane\Journal\Contracts\TransactionBulkApproves;
-use Insane\Journal\Contracts\TransactionCategoriesCreates;
-use Insane\Journal\Contracts\TransactionCreates;
-use Insane\Journal\Contracts\TransactionDeletes;
 use Insane\Journal\Contracts\TransactionLists;
 use Insane\Journal\Contracts\TransactionShows;
+use Insane\Journal\Contracts\TransactionCreates;
+use Insane\Journal\Contracts\TransactionDeletes;
 use Insane\Journal\Contracts\TransactionUpdates;
+use Insane\Journal\Contracts\TransactionApproves;
+use Insane\Journal\Contracts\AccountCatalogCreates;
+use Insane\Journal\Contracts\AccountStatementLists;
+use Insane\Journal\Contracts\AccountStatementShows;
+use Insane\Journal\Contracts\InvoicePaymentCreates;
+use Insane\Journal\Contracts\InvoicePaymentDeletes;
+use Insane\Journal\Contracts\TransactionBulkDeletes;
+use Insane\Journal\Contracts\TransactionBulkApproves;
+use Insane\Journal\Contracts\InvoicePaymentMarkAsPaid;
+use Insane\Journal\Contracts\AccountDetailTypesCreates;
+use Insane\Journal\Contracts\CategoryListClientBalances;
+use Insane\Journal\Contracts\TransactionCategoriesCreates;
 
 class Journal
 {
