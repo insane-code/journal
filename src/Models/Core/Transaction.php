@@ -2,11 +2,11 @@
 
 namespace Insane\Journal\Models\Core;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Model;
 use Insane\Journal\Events\TransactionCreated;
-use Insane\Journal\Events\TransactionUpdated;
 use Insane\Journal\Events\TransactionDeleted;
+use Insane\Journal\Events\TransactionUpdated;
 
 class Transaction extends Model
 {
@@ -253,7 +253,7 @@ class Transaction extends Model
                     "concept" => $item['concept'] ?? $payee?->name . " " . $this->description,
                     "payee_id" =>  $payee->id,
                     "type"=> $this->direction == Transaction::DIRECTION_DEBIT ? 1 : -1,
-                    "account_id" => $item['account_id'] ?? $items[0]['account_id'],
+                    "account_id" => $this?->account_id ?? $item['account_id'] ?? $items[0]['account_id'],
                     "category_id" =>  $item['category_id'],
                     "team_id" => $this->team_id,
                     "user_id" => $this->user_id,
