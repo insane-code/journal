@@ -20,9 +20,12 @@ class InvoiceLine extends Model
       'price', 
       'quantity', 
       'subtotal', 
-      'discount'
+      'discount',
+      'meta_data',
+      'product_image'
     ];
     protected $with = ['taxes'];
+    protected $casts = ['meta_data' => 'array'];
 
     public function product() {
         return $this->belongsTo(Product::class);

@@ -5,10 +5,10 @@ namespace Insane\Journal\Http\Controllers;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Insane\Journal\Models\Core\Category;
-use Insane\Journal\Models\Core\Payment;
-use Insane\Journal\Models\Product\Product;
 use Laravel\Jetstream\Jetstream;
+use Insane\Journal\Models\Core\Payment;
+use Insane\Journal\Models\Core\Category;
+use Insane\Journal\Models\Product\Product;
 
 class PaymentsController
 {
@@ -117,7 +117,7 @@ class PaymentsController
         }
 
         if ($invoice && $invoice->debt <= 0) {
-            $error = "This invoice is already paid";
+            $error = __("This invoice is already paid");
         }
 
         if ($error) {
