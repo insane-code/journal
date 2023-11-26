@@ -2,11 +2,10 @@
 
 namespace Insane\Journal\Models\Core;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Foundation\Auth\User;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Category extends Model
 {
@@ -187,11 +186,11 @@ class Category extends Model
 
     public function transactionBalance($clientId) {
       return TransactionLine::selectRaw("sum(amount * transaction_lines.type) balance, accounts.*, categories.name cat_name")
-        ->whereIn('account_id', $this->accounts->pluck('id')->toArray())
+        ->whereIn('transaction_lines.account_id', $this->accounts->pluck('id')->toArray())
         ->where([
           'payee_id' => $clientId,
         ])
-        ->groupBy('account_id', 'payee_id')
+        ->groupBy('transaction_lines.account_id', 'payee_id')
         ->join('accounts', 'accounts.id', 'transaction_lines.account_id')
         ->leftJoin('categories', 'categories.id', 'accounts.category_id')
         ->get();
