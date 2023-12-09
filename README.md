@@ -46,6 +46,8 @@ Action classes typically perform a single action and correspond to a single Jour
 Currently Journal power some of my apps:
 - [loger(atmosphere)](https://github.com/jesusantguerrero/atmosphere)
 - [icloan(prestapp)](https://github.com/jesusantguerrero/prestapp)
+- Academia (comming soon)
+- Neatlancer (comming soon)
 
 ## Contributing
 
