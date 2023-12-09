@@ -7,6 +7,7 @@ use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\DB;
 use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\Category;
+use Insane\Journal\Models\Core\Payment;
 use Insane\Journal\Models\Core\Transaction;
 use Insane\Journal\Models\Invoice\Invoice;
 
@@ -110,6 +111,54 @@ class ReportHelper {
     ->groupByRaw('date_format(transactions.date, "%Y-%m"), categories.id')
     ->join('categories', 'transactions.category_id', '=', 'categories.id')
     ->get();
+  }
+
+  public static function getExpensesByAccount(int $teamId, $startDate = null, $endDate = null, $groupBy = "display_id", $accounts = ['expenses'], $transactionableType = Payment::class) {
+    $endDate = $endDate ?? Carbon::now()->endOfMonth()->format('Y-m-d');
+    $startDate = $startDate ?? Carbon::now()->startOfMonth()->format('Y-m-d');
+
+    return DB::table('transaction_lines')
+    ->whereBetween('transactions.date', [$startDate, $endDate])
+    ->where([
+        'transaction_lines.team_id' => $teamId,
+        'transactions.status' => Transaction::STATUS_VERIFIED,
+    ])
+    ->when($transactionableType, fn ($q) => $q->where('transactionable_type', $transactionableType) )
+    ->where(function($query) use ($accounts) {
+      $query
+      ->whereIn('accounts.display_id', $accounts)
+      ->orWhereIn('categories.display_id', $accounts)
+      ->orWhereIn('g.display_id', $accounts);
+    })
+    ->selectRaw('
+      sum(COALESCE(amount * transaction_lines.type, 0)) as total,
+      SUM(CASE
+          WHEN transaction_lines.type = 1 THEN transaction_lines.amount
+          ELSE 0
+      END) as income,
+      SUM(CASE
+        WHEN transaction_lines.type = -1 THEN transaction_lines.amount
+        ELSE 0
+      END) outcome,
+      accounts.id account_id,
+      group_concat(concat(transaction_lines.amount * transaction_lines.type, ":", transaction_lines.id)) details,
+      date_format(transaction_lines.date, "%Y-%m-01") as date,
+      accounts.display_id account_display_id,
+      accounts.name account_name,
+      accounts.alias account_alias,
+      categories.name,
+      categories.id,
+      categories.display_id,
+      categories.alias,
+      g.display_id groupName,
+      g.alias groupAlias,
+      MONTH(transactions.date) as months'
+    )->groupByRaw('date_format(transactions.date, "%Y-%m"), accounts.id, categories.id')
+    ->join('accounts', 'accounts.id', '=', 'transaction_lines.account_id')
+    ->join('categories', 'accounts.category_id', '=', 'categories.id')
+    ->join('transactions', 'transactions.id', '=', 'transaction_id')
+    ->join(DB::raw('categories g'), 'g.id', 'categories.parent_id')
+
   }
 
   public static function getTransactionsByAccount(int $teamId, array $accounts, $startDate = null, $endDate = null, $groupBy = "display_id", $transactionableType = null) {
