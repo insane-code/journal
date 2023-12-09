@@ -4,9 +4,9 @@
 [![Total Downloads](https://img.shields.io/packagist/dt/insane/journal.svg?style=flat-square)](https://packagist.org/packages/insane/journal)
 
 
-Journal is package that serves as a base for an accounting laravel apps powered by jetstream/inertia (CRM, Budgeting apps, stores etc). Journal provides the implementation for account ledger, double entry transactions, payees, account reconciliations, and more.
+Journal is a package that serves as a base for accounting Laravel apps powered by Jetstream/inertia (CRM, Budgeting apps, stores, etc). Journal provides the implementation for account ledger, double entry transactions, payees, account reconciliations, and more.
 
-Actions, providers and policies are exported to give more flexibility.
+Actions, providers, and policies are exported to give more flexibility.
 
 ## Installation
 Once you have a project with jetstream + inertia scaffolding 
@@ -28,7 +28,7 @@ journal:install
 
 ## Usage
 
-Journal don't publish controllers or routes. Instead, Journal let you customize its behavior through actions.
+**Journal** don't publish controllers or routes. Instead, **Journal** lets you customize its behavior through actions.
 During the installation process actions are published to your application's `app/Domains/Journal/Actions` directory
 
 Action classes typically perform a single action and correspond to a single Journal feature, such as creating an account or deleting a category. You are free to customize these classes if you would like to tweak the backend behavior of Journal.
@@ -43,11 +43,11 @@ Action classes typically perform a single action and correspond to a single Jour
 
 
 ## Examples
-Currently Journal power some of my apps:
-- [loger(atmosphere)](https://github.com/jesusantguerrero/atmosphere)
-- [icloan(prestapp)](https://github.com/jesusantguerrero/prestapp)
-- Academia (comming soon)
-- Neatlancer (comming soon)
+Currently, Journal powers some of my apps:
+- [Loger(atmosphere)](https://github.com/jesusantguerrero/atmosphere)
+- [IC Loan(prestapp)](https://github.com/jesusantguerrero/prestapp)
+- Academia (coming soon)
+- Neatlancer (coming soon)
 
 ## Contributing
 
