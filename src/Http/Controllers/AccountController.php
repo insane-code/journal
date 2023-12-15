@@ -5,14 +5,12 @@ namespace Insane\Journal\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Insane\Journal\Contracts\DeleteAccounts;
-use Insane\Journal\Events\AccountCreated;
-use Insane\Journal\Events\AccountUpdated;
-use Insane\Journal\Helpers\ReportHelper;
-use Insane\Journal\Models\Core\Account;
-use Insane\Journal\Models\Core\AccountDetailType;
-use Insane\Journal\Models\Core\Category;
 use Laravel\Jetstream\Jetstream;
+use Insane\Journal\Models\Core\Account;
+use Insane\Journal\Helpers\ReportHelper;
+use Insane\Journal\Models\Core\Category;
+use Insane\Journal\Contracts\DeleteAccounts;
+use Insane\Journal\Models\Core\AccountDetailType;
 
 
 class AccountController
@@ -92,7 +90,7 @@ class AccountController
         return Redirect()->back();
     }
 
-    public function statementsIndex(Request $request, string $category = "income") {
+    public function statementsIndex() {
         $categories = [
             "financial" => [
                 "label" => "Financial Statements",
@@ -181,7 +179,7 @@ class AccountController
             ]
         ];
 
-        return Jetstream::inertia()->render($request, config('journal.statements_inertia_path') . '/Index', [
+        return inertia(config('journal.statements_inertia_path') . '/Index', [
             "categories" => $categories,
         ]);
     }
@@ -189,7 +187,6 @@ class AccountController
     public function statements(Request $request, string $reportName = "income") {
         $filters = $request->query('filters');
         $accountId = $filters ? $filters['account'] : null;
-
         [
             "ledger" => $ledger,
             "categoryAccounts" => $categoryAccounts
@@ -197,7 +194,7 @@ class AccountController
             "account_id" => $accountId
         ]);
 
-        return Jetstream::inertia()->render($request, config('journal.statements_inertia_path') . '/Category', [
+        return inertia(config('journal.statements_inertia_path') . '/Category', [
             "categories" => $categoryAccounts,
             "ledger" => $ledger->groupBy('display_id'),
             'categoryType' => $reportName
