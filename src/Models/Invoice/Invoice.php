@@ -352,6 +352,16 @@ class Invoice extends Model implements IPayableDocument
         return $this;
     }
 
+    public function addLine($lines = []) {
+        $this->updateDocument([
+            ...$this->toArray(),
+            "items" => [
+                ...$this->lines,
+                ...$lines
+            ]
+        ]);
+    }
+
     public static function checkStatus($invoice)
     {
         $status = $invoice->status;
