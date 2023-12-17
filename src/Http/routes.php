@@ -2,12 +2,12 @@
 // Write your routes here
 
 use Illuminate\Support\Facades\Route;
-use Insane\Journal\Http\Controllers\AccountController;
-use Insane\Journal\Http\Controllers\CategoryController;
-use Insane\Journal\Http\Controllers\InvoiceController;
-use Insane\Journal\Http\Controllers\PaymentsController;
-use Insane\Journal\Http\Controllers\ProductController;
 use Insane\Journal\Http\Controllers\ReportController;
+use Insane\Journal\Http\Controllers\AccountController;
+use Insane\Journal\Http\Controllers\InvoiceController;
+use Insane\Journal\Http\Controllers\ProductController;
+use Insane\Journal\Http\Controllers\CategoryController;
+use Insane\Journal\Http\Controllers\PaymentsController;
 use Insane\Journal\Http\Controllers\TransactionController;
 
 
