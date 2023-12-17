@@ -3,13 +3,13 @@
 namespace Insane\Journal\Helpers;
 
 use Carbon\Carbon;
-use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\DB;
 use Insane\Journal\Models\Core\Account;
-use Insane\Journal\Models\Core\Category;
 use Insane\Journal\Models\Core\Payment;
-use Insane\Journal\Models\Core\Transaction;
+use Insane\Journal\Models\Core\Category;
+use Illuminate\Database\Query\JoinClause;
 use Insane\Journal\Models\Invoice\Invoice;
+use Insane\Journal\Models\Core\Transaction;
 
 class ReportHelper {
   public function revenueReport($teamId, $methodName = 'payments') {
@@ -157,7 +157,7 @@ class ReportHelper {
     ->join('accounts', 'accounts.id', '=', 'transaction_lines.account_id')
     ->join('categories', 'accounts.category_id', '=', 'categories.id')
     ->join('transactions', 'transactions.id', '=', 'transaction_id')
-    ->join(DB::raw('categories g'), 'g.id', 'categories.parent_id')
+    ->join(DB::raw('categories g'), 'g.id', 'categories.parent_id');
 
   }
 
@@ -211,45 +211,53 @@ class ReportHelper {
     return $groupBy ? $results->groupBy($groupBy) : $results;
   }
 
+  public static function getCreditCardSpentTransactions(int $teamId, $accountIds = ['liabilities']) {
+    return  DB::table(DB::raw('categories g'))
+    ->selectRaw('SUM(transaction_lines.amount * transaction_lines.type) as total,
+      accounts.id account_id,
+      date_format(transactions.date, "%Y-%m-01") as date,
+      accounts.display_id account_display_id,
+      accounts.name account_name,
+      accounts.alias account_alias,
+      categories.name,
+      categories.id,
+      categories.display_id,
+      categories.alias,
+      g.display_id groupName,
+      g.alias groupAlias,
+      MONTH(transactions.date) as months'
+    )
+    ->join('categories', 'g.id', '=', 'categories.parent_id')
+    ->join('accounts', 'accounts.category_id', '=', 'categories.id')
+    ->join('transaction_lines', 'transaction_lines.account_id', '=', 'accounts.id')
+    ->join('transactions', fn ($q)=> $q->on('transactions.id',  'transaction_lines.transaction_id'))
+    ->orderByRaw('g.index,categories.index, accounts.index,accounts.number')
+    ->where(fn ($q) => $q->where([
+        'transactions.status' => Transaction::STATUS_VERIFIED,
+        'accounts.team_id' => $teamId
+      ])->orWhereNull('transactions.status')
+    )
+    ->whereIn('g.display_id', $accountIds)
+    ->first();
+  }
+
   public static function getAccountTransactionsByMonths(int $teamId, array $accounts, $startDate = null, $endDate = null, $groupBy = null, $transactionableType = null) {
     $endDate = $endDate ?? Carbon::now()->endOfMonth()->format('Y-m-d');
     $startDate = $startDate ?? Carbon::now()->startOfMonth()->format('Y-m-d');
 
-    return DB::table('transaction_lines')
-    ->whereBetween('transactions.date', [$startDate, $endDate])
-    ->where([
-        'transaction_lines.team_id' => $teamId,
-        'transactions.status' => Transaction::STATUS_VERIFIED,
-    ])
-    ->where(function($query) use ($accounts) {
-      $query
-      ->whereIn('accounts.display_id', $accounts)
-      ->orWhereIn('categories.display_id', $accounts)
-      ->orWhereIn('g.display_id', $accounts);
-    })
+    $statementGroup = DB::table(DB::raw('categories g'))
+    ->whereIn('g.display_id', $accounts) 
     ->selectRaw('
-      sum(COALESCE(amount * transaction_lines.type, 0)) as total,
+      sum(COALESCE(amount * transaction_lines.type * g.type, 0)) as total,
       SUM(CASE
-          WHEN transaction_lines.type = 1 THEN transaction_lines.amount
+          WHEN transaction_lines.type = g.type THEN transaction_lines.amount
           ELSE 0
       END) as income,
       SUM(CASE
-        WHEN transaction_lines.type = -1 THEN transaction_lines.amount
+        WHEN transaction_lines.type != g.type THEN transaction_lines.amount
         ELSE 0
       END) outcome,
       accounts.id account_id,
-      group_concat(CASE
-        WHEN transaction_lines.type = -1
-        THEN concat(transaction_lines.amount * transaction_lines.type, ":", transaction_lines.id, ":" , accounts.display_id, "|paymentId:", transactions.transactionable_id, "|transactionType:", transactions.transactionable_type)
-        ELSE ""
-        END
-      ) outgoing_details,
-      group_concat(CASE
-        WHEN transaction_lines.type = 1
-        THEN concat(transaction_lines.amount * transaction_lines.type, ":", transaction_lines.id, ":" , accounts.display_id)
-        ELSE ""
-        END
-      ) income_details,
       date_format(transaction_lines.date, "%Y-%m-01") as date,
       accounts.display_id account_display_id,
       accounts.name account_name,
@@ -260,18 +268,63 @@ class ReportHelper {
       categories.alias,
       g.display_id groupName,
       g.alias groupAlias,
-      transactions.transactionable_id,
       MONTH(transactions.date) as months'
     )->when($groupBy, fn ($q) => $q->groupByRaw($groupBy))
-    ->join('accounts', 'accounts.id', '=', 'transaction_lines.account_id')
-    ->join('categories', 'accounts.category_id', '=', 'categories.id')
-    ->join('transactions', function (JoinClause $join) use ($transactionableType) {
-      $join->on('transactions.id', '=', 'transaction_id')
-           ->when($transactionableType, fn ($q) => $q->where('transactions.transactionable_type', $transactionableType));
+    ->join('categories', 'g.id', '=', 'categories.parent_id')
+    ->join('accounts', 'accounts.category_id', '=', 'categories.id')
+    ->leftJoin(DB::raw('transaction_lines'), function ($join) {
+      $join->on('transaction_lines.account_id', 'accounts.id');
     })
-    ->join(DB::raw('categories g'), 'g.id', 'categories.parent_id')
-    ->orderByRaw('g.index')
+    ->leftJoin('transactions', function (JoinClause $join) use ($transactionableType, $startDate, $endDate) {
+      $join->on('transactions.id', '=', 'transaction_lines.transaction_id')
+        // ->where([
+        //   'transactions.status' => Transaction::STATUS_VERIFIED,
+        // ])
+        ->when($transactionableType, fn ($q) => $q->where('transactions.transactionable_type', $transactionableType));
+    })
+    ->where(fn ($q) => $q->where([
+        'transactions.status' => Transaction::STATUS_VERIFIED,
+      ])->orWhereNull('transactions.status')
+    )
+    ->where([
+      'accounts.team_id' => $teamId,
+    ])
+    // ->whereBetween('transactions.date', [$startDate, $endDate])
+    ->orderByRaw('g.index, categories.index, accounts.index, accounts.number')
     ->get();
+
+    $equity = DB::table(DB::raw('transaction_lines tl'))
+    ->selectRaw("
+        COALESCE(SUM(CASE WHEN g.display_id IN ('assets', 'income') AND tl.date < '{$startDate}' THEN amount * tl.type ELSE 0 end), 0) AS previous_retained_earnings,
+        COALESCE(SUM(CASE WHEN g.display_id IN ('income', 'assets') AND tl.date >= '{$startDate}' AND tl.date <= '{$endDate}' THEN amount * tl.type ELSE 0 END), 0) * g.type AS net_income,
+        COALESCE(SUM(CASE WHEN g.display_id = 'expenses' THEN ABS(amount * tl.type) ELSE 0 END), 0) AS dividends,
+        g.display_id ledger
+      ")
+      ->join('accounts', 'tl.account_id', '=', 'accounts.id')
+      ->join('categories', 'accounts.category_id', '=', 'categories.id')
+      ->join(DB::raw('categories g'), 'g.id', '=', 'categories.parent_id')
+      ->leftJoin('transactions', 'transactions.id', '=', 'tl.transaction_id')
+      ->whereIn('g.display_id', ['income', 'expenses', 'assets'])
+      ->where(fn ($q) => $q->where([
+        'transactions.status' => Transaction::STATUS_VERIFIED,
+      ])->orWhereNull('transactions.status'))
+      ->first();
+
+      $dividends = self::getCreditCardSpentTransactions($teamId);
+
+    return $statementGroup->map(function ($account) use ($equity, $dividends) {
+        if ($account->account_display_id == 'owner_equity_previous') {
+          $account->total = $equity->previous_retained_earnings;
+          $account->income = $equity->previous_retained_earnings;
+          $account->outcome = 0; 
+        }
+        if ($account->account_display_id == 'owner_equity') {
+          $account->total = $equity->net_income + $dividends->total;
+          $account->income =  $equity->net_income;
+          $account->outcome = $dividends->total; 
+        }
+        return $account;
+    });
   }
 
   public static function getAccountTransactionsByPeriod(int $teamId, array $accounts, $startDate = null, $endDate = null, $groupBy = "display_id") {
@@ -385,13 +438,15 @@ class ReportHelper {
         "categories" => ["assets", "liabilities", "equity"]
       ],
       "balance-sheet" => [
-        "categories" => ["assets", "liabilities", "equity"]
+        "categories" => ["assets", "liabilities", "equity"],
+        "groupBy" => "account_display_id"
       ],
       "income-statement" => [
         "categories" => ["income", "expenses"]
       ],
       "account-balance" => [
-        "categories" => ["assets", "liabilities", "income", "expenses", "equity"],
+        "categories" => ["assets", "liabilities", "equity", "income", "expenses"],
+        "groupBy" => "account_display_id"
       ],
       "payments" => [
         "categories" => ["real_state", "expected_payments_owners", "real_state_operative", "expected_commissions_owners"],

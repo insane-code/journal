@@ -23,13 +23,11 @@ final class AccountStatementController
         $accountStatement = app(AccountStatementShows::class);
 
         [
-            "ledger" => $ledger,
-            "categoryAccounts" => $categoryAccounts
+            "ledger" => $categoryAccounts,
         ] = $accountStatement->show(request()->user(), $reportName, $accountId);
 
         return inertia(config('journal.statements_inertia_path') . '/Category', [
             "categories" => $categoryAccounts,
-            "ledger" => $ledger->groupBy('display_id'),
             'categoryType' => $reportName
         ]);
     }
