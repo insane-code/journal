@@ -431,26 +431,50 @@ class Invoice extends Model implements IPayableDocument
     public static function createInvoiceAccount($invoice)
     {
        if ($invoice->invoice_account_id) return $invoice->invoice_account_id;
-        $accounts = Account::where([
-            'display_id' =>  'sales',
-            'team_id' => $invoice->team_id
-        ])->limit(1)->get();
-
-        if (count($accounts)) {
-           return $accounts[0]->id;
-        } else {
-           $category = Category::where('display_id', 'operating_income')->first();
-           $account = Account::create([
-                "team_id" => $invoice->team_id,
-                "client_id" => 0,
-                "user_id" => $invoice->user_id,
-                "category_id" => $category->id,
-                "display_id" => "sales",
-                "name" => "Sales",
-                "currency_code" => "DOP"
-            ]);
-            return $account->id;
-        }
+       if ($invoice->isOutgoingMovement()) {
+           $accounts = Account::where([
+               'display_id' =>  'general_expenses',
+               'team_id' => $invoice->team_id
+           ])->limit(1)->get();
+   
+           if (count($accounts)) {
+              return $accounts[0]->id;
+           } else {
+              $category = Category::where('display_id', 'operating_expense')->first();
+              $account = Account::create([
+                   "team_id" => $invoice->team_id,
+                   "client_id" => 0,
+                   "user_id" => $invoice->user_id,
+                   "category_id" => $category->id,
+                   "display_id" => "general_expenses",
+                   "name" => "General Expenses",
+                   "alias" => __("General Expenses"),
+                   "currency_code" => "DOP"
+               ]);
+               return $account->id;
+           }
+       } else {
+           $accounts = Account::where([
+               'display_id' =>  'sales',
+               'team_id' => $invoice->team_id
+           ])->limit(1)->get();
+   
+           if (count($accounts)) {
+              return $accounts[0]->id;
+           } else {
+              $category = Category::where('display_id', 'operating_income')->first();
+              $account = Account::create([
+                   "team_id" => $invoice->team_id,
+                   "client_id" => 0,
+                   "user_id" => $invoice->user_id,
+                   "category_id" => $category->id,
+                   "display_id" => "sales",
+                   "name" => "Sales",
+                   "currency_code" => "DOP"
+               ]);
+               return $account->id;
+           }
+       }
     }
 
     public function getInvoiceData() {
