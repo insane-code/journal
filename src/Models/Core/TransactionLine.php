@@ -36,7 +36,8 @@ class TransactionLine extends Model
         'index',
         'anchor',
         'type',
-        'is_split'
+        'is_split',
+        'matched'
     ];
 
     public function user()

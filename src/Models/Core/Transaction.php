@@ -2,11 +2,11 @@
 
 namespace Insane\Journal\Models\Core;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Model;
 use Insane\Journal\Events\TransactionCreated;
-use Insane\Journal\Events\TransactionUpdated;
 use Insane\Journal\Events\TransactionDeleted;
+use Insane\Journal\Events\TransactionUpdated;
 
 class Transaction extends Model
 {
@@ -167,7 +167,7 @@ class Transaction extends Model
     }
 
 
-    static public function createTransaction($transactionData) {
+    static public function createTransaction($transactionData, bool $isMatched = false) {
         $data = self::sanitizeData($transactionData);
 
         $transaction = Transaction::where([
@@ -185,14 +185,14 @@ class Transaction extends Model
         } else {
             $items = isset($data['items']) ? $data['items'] : [];
             $transaction = Transaction::create($data);
-            $transaction->createLines($items);
+            $transaction->createLines($items, $isMatched);
         }
 
         TransactionCreated::dispatch($transaction);
         return $transaction;
     }
 
-    public function updateTransaction($transactionData) {
+    public function updateTransaction($transactionData, bool $isMatched = false) {
         $data = self::sanitizeData($transactionData, $this);
 
         $this->update($data);
@@ -211,7 +211,7 @@ class Transaction extends Model
         }
     }
 
-    public function createLines($items = []) {
+    public function createLines($items = [], bool $isMatched = false) {
         TransactionLine::query()->where('transaction_id', $this->id)->delete();
         if (!count($items)) {
             $this->lines()->create([
@@ -225,7 +225,8 @@ class Transaction extends Model
                 "payee_id" => $this->payee_id,
                 "category_id" => $this->category_id,
                 "team_id" => $this->team_id,
-                "user_id" => $this->user_id
+                "user_id" => $this->user_id,
+                "matched" => $isMatched,
             ]);
 
             $this->lines()->create([
@@ -238,7 +239,8 @@ class Transaction extends Model
                 "account_id" => $this->counter_account_id ?? $this->payee?->account_id,
                 "category_id" => 0,
                 "team_id" => $this->team_id,
-                "user_id" => $this->user_id
+                "user_id" => $this->user_id,
+                "matched" => $isMatched,
             ]);
 
         } else if ($this->has_splits) {
@@ -258,6 +260,7 @@ class Transaction extends Model
                     "team_id" => $this->team_id,
                     "user_id" => $this->user_id,
                     "is_split" => true,
+                    "matched" => $isMatched,
                 ]);
 
                 $this->lines()->create([
@@ -270,7 +273,8 @@ class Transaction extends Model
                     "account_id" => $payee?->account_id,
                     "payee_id" =>  $payee->id,
                     "team_id" => $this->team_id,
-                    "user_id" => $this->user_id
+                    "user_id" => $this->user_id,
+                    "matched" => $isMatched,
                 ]);
             }
         } else {
@@ -285,7 +289,8 @@ class Transaction extends Model
                     "category_id" => $item['category_id'],
                     "payee_id" => $item['payee_id'] ?? $this->payee_id,
                     "team_id" => $this->team_id,
-                    "user_id" => $this->user_id
+                    "user_id" => $this->user_id,
+                    "matched" => $isMatched,
                 ]);
             }
         }

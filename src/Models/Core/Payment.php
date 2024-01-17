@@ -2,9 +2,10 @@
 
 namespace Insane\Journal\Models\Core;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Payment extends Model
 {
@@ -70,6 +71,11 @@ class Payment extends Model
         return $this->morphTo();
     }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function account()
     {
         return $this->belongsTo(Account::class);
@@ -79,29 +85,29 @@ class Payment extends Model
        return $this->morphOne(Transaction::class, "transactionable");
     }
 
-       //  Utils
-       public static function setNumber($payment)
-       {
-           $isInvalidNumber = true;
-   
-           if ($payment->number) {
-               $isInvalidNumber = Payment::where([
-                   "team_id" => $payment->team_id,
-                   "number" => $payment->number,
-               ])->whereNot([
-                   "id" => $payment->id
-               ])->get();
-   
-               $isInvalidNumber = count($isInvalidNumber);
-           }
-   
-           if ($isInvalidNumber) {
-               $result = Payment::where([
-                   "team_id" => $payment->team_id,
-               ])->max('number');
-               $payment->number = $result + 1;
-           }
-       }
+    //  Utils
+    public static function setNumber($payment)
+    {
+        $isInvalidNumber = true;
+
+        if ($payment->number) {
+            $isInvalidNumber = Payment::where([
+                "team_id" => $payment->team_id,
+                "number" => $payment->number,
+            ])->whereNot([
+                "id" => $payment->id
+            ])->get();
+
+            $isInvalidNumber = count($isInvalidNumber);
+        }
+
+        if ($isInvalidNumber) {
+            $result = Payment::where([
+                "team_id" => $payment->team_id,
+            ])->max('number');
+            $payment->number = $result + 1;
+        }
+    }
 
     public function createTransaction() {
       $transactionData = $this->payable->createPaymentTransaction($this);
