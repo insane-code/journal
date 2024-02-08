@@ -13,10 +13,23 @@ class Transaction extends Model
     const DIRECTION_DEBIT = 'DEPOSIT';
     const DIRECTION_CREDIT = 'WITHDRAW';
     const DIRECTION_ENTRY = 'ENTRY';
+
     const STATUS_DRAFT = 'draft';
     const STATUS_PLANNED = 'planned';
     const STATUS_VERIFIED = 'verified';
     const STATUS_CANCELED = 'canceled';
+
+    const ENTRY_TYPE_OPENING = 'opening';
+    const ENTRY_TYPE_TRANSFER = 'transfer';
+    const ENTRY_TYPE_CLOSING = 'closing';
+    const ENTRY_TYPE_ADJUSTING = 'adjusting';
+    const ENTRY_TYPE_EXPENSE_ACCRUAL = 'expense_accrual';
+    const ENTRY_TYPE_REVENUE_ACCRUAL = 'revenue_accrual';
+    const ENTRY_TYPE_EXPENSE_DEFERRAL = 'expense_referral';
+    const ENTRY_TYPE_REVENUE_DEFERRAL = 'revenue_referral';
+    const ENTRY_TYPE_COMPOUND = 'compound';
+    const ENTRY_TYPE_REVERSING = 'reversing';
+
 
     protected $fillable = [
         'team_id',
