@@ -13,19 +13,16 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('products_options_values', function (Blueprint $table) {
+        Schema::create('accounting_locks', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id');
             $table->foreignId('team_id');
-            $table->foreignId('product_id');
-            $table->foreignId('products_option_id');
-
-            // content
-            $table->string('name');
-            $table->json('hexColors')->nullable();
-            $table->enum('price_modifier_operator', ['plus', 'minus']);
-            $table->enum('price_modifier_type', ['fixed', 'percent']);
-            $table->decimal('price_modifier_amount', 11, 2);
+            // context
+            $table->string('name')->nullable();
+            $table->date('transactions_lock_date');
+            $table->date('tax_return_lock_date')->nullable();            
+            $table->date('all_users_lock_date')->nullable();            
+            // structure
             $table->timestamps();
         });
     }
@@ -37,6 +34,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('products_options_values');
+        Schema::dropIfExists('accounting_locks');
     }
 };
