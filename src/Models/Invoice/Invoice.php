@@ -489,7 +489,7 @@ class Invoice extends Model implements IPayableDocument
 
     public function getPaidAmount() {
         try {
-            $selection = DB::select(DB::raw('SELECT invoice_id, sum(amount) as total
+            $selection = DB::select("SELECT invoice_id, sum(amount) as total
             FROM (SELECT payable_id as invoice_id, amount
             from payments
             WHERE payable_type=?
@@ -497,7 +497,7 @@ class Invoice extends Model implements IPayableDocument
              SELECT invoice_id, amount
              FROM invoice_notes
             ) AS combine
-            WHERE invoice_id=? limit 1'), [Invoice::class, $this->id]);
+            WHERE invoice_id=? limit 1", [Invoice::class, $this->id]);
             return $selection[0]->total ?? 0;
         } catch (\Exception $e) {
             echo $e->getMessage();
