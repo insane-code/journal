@@ -1,6 +1,6 @@
 <?php
 
-namespace Insane\Journal\Jobs\quote;
+namespace Insane\Journal\Jobs\Quote;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
