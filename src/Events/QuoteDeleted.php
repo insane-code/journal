@@ -5,7 +5,7 @@ use Insane\Journal\Models\Quote\Quote;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Broadcasting\InteractsWithSockets;
 
-class QuoteCreated {
+class QuoteDeleted {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(public Quote  $quote) {}
