@@ -1,12 +1,11 @@
 <?php
 namespace Insane\Journal\Events;
 use Illuminate\Queue\SerializesModels;
-use Insane\Journal\Models\Core\Transaction;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Broadcasting\InteractsWithSockets;
 
-class TransactionUpdated implements TransactionEvent {
+class TransactionLineCreated {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(public Transaction $transaction, public array $transactionData = []) {}
+    public function __construct(public mixed $transactionLine, public array $transactionData = []) {}
 }

@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
 {
@@ -58,7 +58,7 @@ return new class extends Migration
             $table->boolean('taxes_included')->default(false);
 
             $table->string('category_type')->nullable();
-            $table->enum('type', ['INVOICE','EXPENSE'])->default('INVOICE');
+            $table->enum('type', ['INVOICE','EXPENSE', 'CREDIT_NOTE', 'DEBIT_NOTE'])->default('INVOICE');
             $table->enum('status', ['draft','unpaid','partial', 'paid', 'canceled', 'overdue'])->default('draft');
 
             // structure

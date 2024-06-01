@@ -3,8 +3,10 @@
 namespace Insane\Journal\Models\Core;
 use App\Models\Team;
 use App\Models\User;
+use Freesgen\Atmosphere\Models\Label;
 use Illuminate\Database\Eloquent\Model;
 use \Znck\Eloquent\Traits\BelongsToThrough;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class TransactionLine extends Model
 {
@@ -21,7 +23,8 @@ class TransactionLine extends Model
         'payee',
         'category',
         'accountFrom',
-        'accountTo'
+        'accountTo',
+        'labels'
     ];
 
     protected $fillable = [
@@ -70,6 +73,11 @@ class TransactionLine extends Model
         return $this->belongsToThrough(Account::class, Transaction::class, null, '', [
             Account::class => 'counter_account_id'
         ]);
+    }
+
+    public function labels(): MorphToMany
+    {
+        return $this->morphToMany(Label::class, 'resource', 'label_resource');
     }
 
     public function payee()

@@ -132,7 +132,7 @@ class Account extends Model
             ->when($filters['direction'] ?? null, fn($q) => $q->where('type', $filters['direction']));
         })
         ->with(['splits','payee', 'category', 'splits.payee','account', 'counterAccount'])
-        ->where('status', Transaction::STATUS_VERIFIED)
+        ->where('transactions.status', Transaction::STATUS_VERIFIED)
         ->orderByDesc('date')
         ->whereBetween('date', [$startDate, $endDate])
         ->when($limit, fn($q) => $q->limit($limit))
@@ -291,7 +291,7 @@ class Account extends Model
 
     public function getVerifiedTransactionLines() {
         return DB::table('transaction_lines')
-            ->selectRaw("COALESCE(SUM(amount * type), 0) as balance")
+            ->selectRaw("COALESCE(SUM(amount * transaction_lines.type), 0) as balance")
             ->where('transaction_lines.account_id', $this->id)
             ->join('transactions', fn ($q) => $q->on('transactions.id', 'transaction_lines.transaction_id')
                 ->where('status', Transaction::STATUS_VERIFIED)

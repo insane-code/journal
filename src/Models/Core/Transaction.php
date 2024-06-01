@@ -3,6 +3,7 @@
 namespace Insane\Journal\Models\Core;
 
 use Illuminate\Support\Str;
+use Freesgen\Atmosphere\Models\Label;
 use Illuminate\Database\Eloquent\Model;
 use Insane\Journal\Events\TransactionCreated;
 use Insane\Journal\Events\TransactionDeleted;
@@ -136,6 +137,28 @@ class Transaction extends Model
         $this->updateQuietly(['total' => $total]);
     }
 
+
+    static public function  createLabel($transactionData, $newLabelData){
+        $labelId = $transactionData["label_id"] ?? null;
+        $isNewLabel = Str::contains($labelId, "new::");
+
+        if ($labelId  && !$isNewLabel) {
+            $label = Label::find($labelId);
+        } else if ($labelId == 'new' || $isNewLabel) {
+            $labelName = $transactionData['label_name'] ?? trim(Str::replace('new::', '', $transactionData["label_id"])) ?? null;
+            if ($labelName) {
+                $label = Label::firstOrCreate([
+                    ...$newLabelData,
+                    "name" => $labelName,
+                    "labelable_type" => TransactionLine::class
+                ]);
+               
+            }
+        }
+
+        return $label;
+    }
+
     static public function sanitizeData($transactionData, Transaction $transaction = null) {
         $account = Account::find($transactionData['account_id']);
         $currencyCode = $transactionData['currency_code'] ?? $account->currency_code;
@@ -181,14 +204,16 @@ class Transaction extends Model
         ])->first();
 
         if ($transaction) {
-            $transaction->updateTransaction($data);
+            if ($transaction->status !== 'verified') {
+                $transaction->updateTransaction($data);
+            }
         } else {
             $items = isset($data['items']) ? $data['items'] : [];
             $transaction = Transaction::create($data);
-            $transaction->createLines($items);
+            $transaction->createLines($items, $data);
         }
 
-        TransactionCreated::dispatch($transaction);
+        event(New TransactionCreated($transaction, $data));
         return $transaction;
     }
 
@@ -197,8 +222,8 @@ class Transaction extends Model
 
         $this->update($data);
         $items = isset($data['items']) ? $data['items'] : [];
-        $this->createLines($items);
-        TransactionUpdated::dispatch($this);
+        $this->createLines($items, $data);
+        event(new TransactionUpdated($this, $transactionData));
         return $this;
     }
 
@@ -211,10 +236,10 @@ class Transaction extends Model
         }
     }
 
-    public function createLines($items = []) {
+    public function createLines($items = [], $data = []) {
         TransactionLine::query()->where('transaction_id', $this->id)->delete();
         if (!count($items)) {
-            $this->lines()->create([
+            $anchorLine = $this->lines()->create([
                 "amount" => $this->total,
                 "date" => $this->date,
                 "concept" => $this->description,
@@ -228,7 +253,15 @@ class Transaction extends Model
                 "user_id" => $this->user_id
             ]);
 
-            $this->lines()->create([
+            $label = self::createLabel($data, [
+                "user_id" => $anchorLine->user_id,
+                "team_id" => $anchorLine->team_id,
+            ]);
+    
+
+            $anchorLine->labels()->save($label);
+
+             $this->lines()->create([
                 "amount" => $this->total,
                 "date" => $this->date,
                 "concept" => $this->description,
@@ -245,7 +278,7 @@ class Transaction extends Model
             foreach ($items as $item) {
                 $payee = $this->guessPayee($item);
 
-                $this->lines()->create([
+                $anchorLine = $this->lines()->create([
                     "date" => $this->date,
                     "index" => 0,
                     "anchor" => 1,
@@ -260,7 +293,11 @@ class Transaction extends Model
                     "is_split" => true,
                 ]);
 
-                $this->lines()->create([
+                $anchorLine->labels()->create([
+                    "label_id" =>  $data["label_id"]
+                ]);
+
+               $this->lines()->create([
                     "type"=> $this->direction == Transaction::DIRECTION_DEBIT ? -1 : 1,
                     "index" => 1,
                     "date" => $this->date,
@@ -275,7 +312,7 @@ class Transaction extends Model
             }
         } else {
             foreach ($items as $item) {
-                $this->lines()->create([
+                $anchorLine = $this->lines()->create([
                     "date" => $this->date,
                     "amount" => $item['amount'],
                     "concept" => $item['concept'],

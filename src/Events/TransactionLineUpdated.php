@@ -5,8 +5,8 @@ use Insane\Journal\Models\Core\Transaction;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Broadcasting\InteractsWithSockets;
 
-class TransactionUpdated implements TransactionEvent {
+class TransactionLineUpdated {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(public Transaction $transaction, public array $transactionData = []) {}
+    public function __construct(public Transaction $transaction) {}
 }

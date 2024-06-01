@@ -209,6 +209,13 @@ class Category extends Model
             ->whereRaw("date_format(transaction_lines.date, '%Y-%m') = '$yearMonth'")
             ->selectRaw("COALESCE(SUM(amount * type), 0) as balance"
             )->first();
+
+            // if ($this->name == "Services and servers") {
+            //     $this->transactionLines()
+            //     ->whereHas('transaction', fn ($q) => $q->where('status', Transaction::STATUS_VERIFIED))
+            //     ->whereRaw("date_format(transaction_lines.date, '%Y-%m') = '$yearMonth'")
+            //     ->dd();
+            // }
             return $activity;
         } else {
             return $this->creditLines()
