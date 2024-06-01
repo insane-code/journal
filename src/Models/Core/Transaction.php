@@ -37,7 +37,9 @@ class Transaction extends Model
         'has_splits',
         'is_transfer',
         'currency_code',
-        'status'
+        'status',
+        'reference',
+        'meta_data'
     ];
 
     protected $dispatchesEvents = [
