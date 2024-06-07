@@ -144,6 +144,8 @@ class Transaction extends Model
         $labelId = $transactionData["label_id"] ?? null;
         $isNewLabel = Str::contains($labelId, "new::");
 
+        if (!$labelId) return null;
+
         if ($labelId  && !$isNewLabel) {
             $label = Label::find($labelId);
         } else if ($labelId == 'new' || $isNewLabel) {
@@ -259,9 +261,12 @@ class Transaction extends Model
                 "user_id" => $anchorLine->user_id,
                 "team_id" => $anchorLine->team_id,
             ]);
-    
 
-            $anchorLine->labels()->save($label);
+            if ($label) {
+                $anchorLine->labels()->save($label);
+            }
+
+
 
              $this->lines()->create([
                 "amount" => $this->total,
