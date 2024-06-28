@@ -8,8 +8,8 @@ use Illuminate\Http\Response;
 use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\Category;
 use Insane\Journal\Contracts\AccountCreates;
+use Insane\Journal\Contracts\AccountDeletes;
 use Insane\Journal\Contracts\AccountUpdates;
-use Insane\Journal\Contracts\DeleteAccounts;
 use Insane\Journal\Models\Core\AccountDetailType;
 
 final class AccountController
@@ -69,7 +69,7 @@ final class AccountController
     }
 
     public function destroy(Request $request, Account $account) {
-        $accountDelete = app(DeleteAccounts::class);
+        $accountDelete = app(AccountDeletes::class);
         $accountDelete->delete(request()->user(), $account);
         return Redirect()->back();
     }

@@ -266,20 +266,18 @@ class Transaction extends Model
                 $anchorLine->labels()->save($label);
             }
 
-
-
-             $this->lines()->create([
-                "amount" => $this->total,
-                "date" => $this->date,
-                "concept" => $this->description,
-                "payee_id" => $this->payee_id,
-                "index" => 1,
-                "type"=> $this->direction == Transaction::DIRECTION_DEBIT ? -1 : 1,
-                "account_id" => $this->counter_account_id ?? $this->payee?->account_id,
-                "category_id" => 0,
-                "team_id" => $this->team_id,
-                "user_id" => $this->user_id
-            ]);
+            $this->lines()->create([
+            "amount" => $this->total,
+            "date" => $this->date,
+            "concept" => $this->description,
+            "payee_id" => $this->payee_id,
+            "index" => 1,
+            "type"=> $this->direction == Transaction::DIRECTION_DEBIT ? -1 : 1,
+            "account_id" => $this->counter_account_id ?? $this->payee?->account_id,
+            "category_id" => 0,
+            "team_id" => $this->team_id,
+            "user_id" => $this->user_id
+        ]);
 
         } else if ($this->has_splits) {
             foreach ($items as $item) {
@@ -300,9 +298,14 @@ class Transaction extends Model
                     "is_split" => true,
                 ]);
 
-                $anchorLine->labels()->create([
-                    "label_id" =>  $data["label_id"]
+                $label = self::createLabel($data, [
+                    "user_id" => $anchorLine->user_id,
+                    "team_id" => $anchorLine->team_id,
                 ]);
+    
+                if ($label) {
+                    $anchorLine->labels()->save($label);
+                }
 
                $this->lines()->create([
                     "type"=> $this->direction == Transaction::DIRECTION_DEBIT ? -1 : 1,

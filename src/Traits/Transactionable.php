@@ -1,8 +1,8 @@
 <?php
 namespace Insane\Journal\Traits;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Model;
 use Insane\Journal\Models\Core\Account;
 use Insane\Journal\Models\Core\Category;
 use Insane\Journal\Models\Core\Transaction;
@@ -57,7 +57,7 @@ abstract class Transactionable extends Model
             "name" => "{$payable->client?->names} Account",
             "currency_code" => "DOP"
         ]);
-       
+
         return $account->id;
     }
 
@@ -91,7 +91,7 @@ abstract class Transactionable extends Model
         $formData["account_id"] = isset($formData['account_id']) ? $formData['account_id'] : $this->getAccountId();
         $formData["counter_account_id"] = $this->client_account_id;
         $formData["status"] = "verified";
-        
+
         if ($this->transaction) {
             $transaction = $this->transaction()->update($formData);
         } else {

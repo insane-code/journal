@@ -2,9 +2,9 @@
 
 namespace Insane\Journal\Models\Core;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Payment extends Model
 {
@@ -24,6 +24,7 @@ class Payment extends Model
         'concept',
         'notes',
         'account_id',
+        // 'transaction_id',
         'account_name',
         'number',
         'amount',
@@ -37,7 +38,9 @@ class Payment extends Model
     protected static function booted()
     {
         static::created(function ($payment) {
-           $payment->createTransaction();
+            if ($payment->transaction_id) {
+                $payment->createTransaction();
+            };
         });
 
         static::creating(function ($payment) {
@@ -83,7 +86,7 @@ class Payment extends Model
        public static function setNumber($payment)
        {
            $isInvalidNumber = true;
-   
+
            if ($payment->number) {
                $isInvalidNumber = Payment::where([
                    "team_id" => $payment->team_id,
@@ -91,10 +94,10 @@ class Payment extends Model
                ])->whereNot([
                    "id" => $payment->id
                ])->get();
-   
+
                $isInvalidNumber = count($isInvalidNumber);
            }
-   
+
            if ($isInvalidNumber) {
                $result = Payment::where([
                    "team_id" => $payment->team_id,
