@@ -129,4 +129,8 @@ class Product extends Model
         }
         return $product;
     }
+
+    public function updateStock() {
+        
+    }
 }
