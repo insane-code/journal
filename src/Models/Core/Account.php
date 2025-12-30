@@ -127,12 +127,13 @@ class Account extends Model
 
     public function transactionSplits($limit = 25, $startDate, $endDate, $filters = [])
     {
+        $status = $filters['status'] ?? Transaction::STATUS_VERIFIED;
         return Transaction::whereHas('lines', function ($query) use($filters) {
             $query->where('account_id', $this->id)
             ->when($filters['direction'] ?? null, fn($q) => $q->where('type', $filters['direction']));
         })
         ->with(['splits','payee', 'category', 'splits.payee','account', 'counterAccount'])
-        ->where('transactions.status', Transaction::STATUS_VERIFIED)
+        ->where('transactions.status', $status)
         ->orderByDesc('date')
         ->whereBetween('date', [$startDate, $endDate])
         ->when($limit, fn($q) => $q->limit($limit))
