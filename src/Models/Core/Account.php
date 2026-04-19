@@ -34,6 +34,7 @@ class Account extends Model
       'display_id',
       'name',
       'alias',
+      'bank_code',
       'description',
       'currency_code',
       'opening_balance',
