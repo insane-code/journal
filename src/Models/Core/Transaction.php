@@ -193,6 +193,16 @@ class Transaction extends Model
         return $transactionData;
     }
 
+    /**
+     * Strip array keys that aren't column-backed before mass-assigning.
+     * Without this, callers passing `items` / `payee_label` will trigger
+     * MassAssignmentException when Model::preventSilentlyDiscardingAttributes is on.
+     */
+    private static function fillableData(array $data): array {
+        unset($data['items'], $data['payee_label']);
+        return $data;
+    }
+
 
     static public function createTransaction($transactionData) {
         $data = self::sanitizeData($transactionData);
@@ -213,7 +223,7 @@ class Transaction extends Model
             }
         } else {
             $items = isset($data['items']) ? $data['items'] : [];
-            $transaction = Transaction::create($data);
+            $transaction = Transaction::create(self::fillableData($data));
             $transaction->createLines($items, $data);
         }
 
@@ -224,7 +234,7 @@ class Transaction extends Model
     public function updateTransaction($transactionData) {
         $data = self::sanitizeData($transactionData, $this);
 
-        $this->update($data);
+        $this->update(self::fillableData($data));
         $items = isset($data['items']) ? $data['items'] : [];
         $this->createLines($items, $data);
         event(new TransactionUpdated($this, $transactionData));
