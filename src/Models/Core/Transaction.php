@@ -199,6 +199,18 @@ class Transaction extends Model
      * MassAssignmentException when Model::preventSilentlyDiscardingAttributes is on.
      */
     private static function fillableData(array $data): array {
+        // Some callers carry provenance in a camelCase `metaData` array. The
+        // column is the JSON `meta_data` (no cast on Transaction), so normalize
+        // it here: without this it is silently dropped in production and throws
+        // under Model::preventSilentlyDiscardingAttributes in dev.
+        if (array_key_exists('metaData', $data)) {
+            if (!isset($data['meta_data'])) {
+                $data['meta_data'] = is_array($data['metaData'])
+                    ? json_encode($data['metaData'])
+                    : $data['metaData'];
+            }
+            unset($data['metaData']);
+        }
         unset($data['items'], $data['payee_label']);
         return $data;
     }

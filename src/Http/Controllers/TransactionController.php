@@ -44,7 +44,7 @@ final class TransactionController
         $createTransaction = app(TransactionCreates::class);   
         $transaction = $createTransaction->create(request()->user(), request()->post());
         if (request()->query('json')) {
-            return response()->sendContent($transaction);
+            return response()->json($transaction);
         }
         return Redirect()->back();
     }
