@@ -295,13 +295,15 @@ class Invoice extends Model implements IPayableDocument
 
     public static function calculateTotal($invoice)
     {
-        $total = InvoiceLine::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(price) as price, sum(discount) as discount, sum(amount) as amount')->get();
+        // `amount` is the line total (quantity * price, signed); `price` is the unit price and
+        // only matches it when quantity is 1, so the subtotal has to come from `amount`.
+        $total = InvoiceLine::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(discount) as discount, sum(amount) as amount')->get();
         $totalTax = InvoiceLineTax::where(["invoice_id" =>  $invoice->id])->selectRaw('sum(amount * type) as amount')->get();
 
         $discount = $total[0]['discount'] ?? 0;
         $taxTotal = $totalTax[0]['amount'] ?? 0;
         $invoiceTotal =  ($total[0]['amount'] ?? 0);
-        $invoice->subtotal = $total[0]['price'] ?? 0;
+        $invoice->subtotal = $invoiceTotal;
         $invoice->discount = $discount;
         $invoice->total = $invoiceTotal + $taxTotal - $discount;
         self::checkPayments($invoice);
