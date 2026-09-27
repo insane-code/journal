@@ -112,6 +112,13 @@ class InvoiceController
         return redirect("/invoices");
     }
 
+    /**
+     * Invoice of the current team, 404 for anything else.
+     */
+    private function findTeamInvoice($invoiceId): Invoice {
+      return Invoice::where('team_id', request()->user()->current_team_id)->findOrFail($invoiceId);
+    }
+
     private function getInvoiceSecured($invoiceId, $secured = true) {
       $invoice = Invoice::find($invoiceId);
       if ($secured && ($invoice->team_id !== request()->user()->current_team_id || $this->getRequestType() !== $invoice->type)) {
@@ -188,6 +195,7 @@ class InvoiceController
 
 
     public function print(Invoice $invoice) {
+      abort_unless((int) $invoice->team_id === (int) request()->user()->current_team_id, 404);
       $exporter = app(PdfExporter::class);
       $exporter->process($invoice);
       return $exporter->previewAs($invoice->concept);
@@ -197,10 +205,7 @@ class InvoiceController
       $postData = $request->post();
       $postData['user_id'] = $request->user()->id;
       $postData['team_id'] = $request->user()->current_team_id;
-      $invoice = Invoice::where([
-          'team_id'=> $request->user()->id,
-          'id' => $id
-      ])->first();
+      $invoice = $this->findTeamInvoice($id);
       $invoice->delete();
       if ($request->query('json')) {
           return $response->sendContent($invoice);
@@ -215,8 +220,8 @@ class InvoiceController
     */
     public function publicPreview(int $invoiceId)
     {
+      $invoice = $this->findTeamInvoice($invoiceId);
       try {
-        $invoice = $this->getInvoiceSecured($invoiceId, false);
         $isJson = request()->query('json');
         $response = [
           'invoice' => $invoice->getInvoiceData(),
@@ -243,7 +248,7 @@ class InvoiceController
    */
     public function addPayment(Request $request, Response $response, $id)
     {
-        $invoice = Invoice::find($id);
+        $invoice = $this->findTeamInvoice($id);
         $postData = $request->post();
         
         try {
@@ -261,7 +266,7 @@ class InvoiceController
 
     public function markAsPaid(Request $request, $id)
     {
-        $invoice = Invoice::find($id);
+        $invoice = $this->findTeamInvoice($id);
         $invoice->markAsPaid();
         return redirect()->back();
     }
@@ -277,7 +282,7 @@ class InvoiceController
      */
     public function deletePayment(Response $response, $id, $paymentId)
     {
-        $resource = Invoice::find($id);
+        $resource = $this->findTeamInvoice($id);
         $resource->deletePayment($paymentId);
         $resource->save();
         return $response->send($resource);

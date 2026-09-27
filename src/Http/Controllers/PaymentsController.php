@@ -16,7 +16,7 @@ class PaymentsController
     public function index(Request $request)
     {
         return Jetstream::inertia()->render($request, config('journal.payments_inertia_path') . '/Index', [
-            "invoices" => Payment::orderByDesc('payment_date')->paginate()->through(function ($invoice) {
+            "invoices" => Payment::where('team_id', $request->user()->current_team_id)->orderByDesc('payment_date')->paginate()->through(function ($invoice) {
                 return [
                     "id" => $invoice->id,
                     "concept" => $invoice->concept,
@@ -150,6 +150,7 @@ class PaymentsController
      */
     public function destroy(Response $response, Payment $payment)
     {
+        abort_unless((int) $payment->team_id === (int) request()->user()->current_team_id, 404);
         $payment->payable->deletePayment($payment->id);
         return $response->send($payment);
     }
