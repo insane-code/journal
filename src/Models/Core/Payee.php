@@ -26,6 +26,24 @@ class Payee extends Model
             ])->limit(1)->get();
 
         if (!count($payee)) {
+            $teamId = $session['team_id'];
+
+            // Honor payee aliases (a merged-away name resolves to its canonical
+            // payee) when the host app provides the table, so a re-imported or
+            // re-entered name doesn't re-create a duplicate that was merged away.
+            if (\Illuminate\Support\Facades\Schema::hasTable('payee_aliases')) {
+                $alias = \Illuminate\Support\Facades\DB::table('payee_aliases')
+                    ->where('team_id', $teamId)
+                    ->where('name', $name)
+                    ->first();
+                if ($alias) {
+                    $aliased = Payee::where('team_id', $teamId)->find($alias->payee_id);
+                    if ($aliased) {
+                        return $aliased;
+                    }
+                }
+            }
+
             return Payee::create([
                 'name' => $name,
                 'user_id' => $session['user_id'],

@@ -160,9 +160,15 @@ class Category extends Model
         foreach ($categories as $index => $category) {
             $newCategory = array_merge($category, $extraData, ['index' => $index]);
             unset($newCategory['childs']);
+            // The shipped journal config uses a capitalized `Description` key
+            // while the model's fillable is lowercase `description`. Strict mode
+            // (`preventSilentlyDiscardingAttributes`) flags the mismatch — so
+            // map the capitalized key to the canonical field before persisting.
+            if (array_key_exists('Description', $newCategory)) {
+                $newCategory['description'] = $newCategory['description'] ?? $newCategory['Description'];
+                unset($newCategory['Description']);
+            }
             $parentCategory = Category::create($newCategory);
-
-
 
             if (isset($category['childs'])) {
                 Category::saveBulk($category['childs'], array_merge(
