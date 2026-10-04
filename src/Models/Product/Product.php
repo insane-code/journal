@@ -2,15 +2,24 @@
 
 namespace Insane\Journal\Models\Product;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Insane\Journal\Models\Core\Image;
 use Insane\Journal\Models\Core\Tax;
+use Insane\Journal\Models\Core\Image;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Product extends Model
 {
     use HasFactory;
-    protected $fillable = ['team_id','user_id', 'name', 'sku', 'description', 'available'];
+    protected $fillable = [
+        'team_id',
+        'user_id', 
+        'name', 
+        'sku', 
+        'description', 
+        'available',
+        'income_account_id',
+        'expense_account_id',
+    ];
 
     public function images()
     {
@@ -119,5 +128,9 @@ class Product extends Model
             $product->options()->create(array_merge($data['options'], ['user_id' => $product->user_id, 'team_id' => $product->team_id]));
         }
         return $product;
+    }
+
+    public function updateStock() {
+        
     }
 }

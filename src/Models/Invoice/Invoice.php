@@ -3,24 +3,24 @@
 namespace Insane\Journal\Models\Invoice;
 
 use App\Models\User;
+use Insane\Journal\Journal;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Eloquent\Model;
-use Insane\Journal\Jobs\Invoice\CreateInvoiceLine;
-use Insane\Journal\Jobs\Invoice\CreateInvoiceTransaction;
-use Insane\Journal\Models\Core\Account;
-use Insane\Journal\Models\Core\Category;
-use Insane\Journal\Models\Core\Payment;
-use Insane\Journal\Models\Core\Transaction;
 use Illuminate\Support\Facades\Bus;
+use Insane\Journal\Traits\HasPayments;
+use Illuminate\Database\Eloquent\Model;
+use Insane\Journal\Models\Core\Account;
+use Insane\Journal\Models\Core\Payment;
+use Insane\Journal\Events\InvoiceSaving;
+use Insane\Journal\Models\Core\Category;
 use Insane\Journal\Events\InvoiceCreated;
 use Insane\Journal\Events\InvoiceDeleted;
-use Insane\Journal\Events\InvoiceSaving;
+use Insane\Journal\Models\Core\Transaction;
+use Insane\Journal\Traits\IPayableDocument;
+use Insane\Journal\Jobs\Invoice\CreateInvoiceLine;
 use Insane\Journal\Jobs\Invoice\CreateExpenseDetails;
 use Insane\Journal\Jobs\Invoice\CreateInvoicePayments;
 use Insane\Journal\Jobs\Invoice\CreateInvoiceRelations;
-use Insane\Journal\Journal;
-use Insane\Journal\Traits\HasPayments;
-use Insane\Journal\Traits\IPayableDocument;
+use Insane\Journal\Jobs\Invoice\CreateInvoiceTransaction;
 
 class Invoice extends Model implements IPayableDocument
 {
@@ -354,6 +354,16 @@ class Invoice extends Model implements IPayableDocument
         return $this;
     }
 
+    public function addLine($lines = []) {
+        $this->updateDocument([
+            ...$this->toArray(),
+            "items" => [
+                ...$this->lines,
+                ...$lines
+            ]
+        ]);
+    }
+
     public static function checkStatus($invoice)
     {
         $status = $invoice->status;
@@ -423,26 +433,50 @@ class Invoice extends Model implements IPayableDocument
     public static function createInvoiceAccount($invoice)
     {
        if ($invoice->invoice_account_id) return $invoice->invoice_account_id;
-        $accounts = Account::where([
-            'display_id' =>  'sales',
-            'team_id' => $invoice->team_id
-        ])->limit(1)->get();
-
-        if (count($accounts)) {
-           return $accounts[0]->id;
-        } else {
-           $category = Category::where('display_id', 'operating_income')->first();
-           $account = Account::create([
-                "team_id" => $invoice->team_id,
-                "client_id" => 0,
-                "user_id" => $invoice->user_id,
-                "category_id" => $category->id,
-                "display_id" => "sales",
-                "name" => "Sales",
-                "currency_code" => "DOP"
-            ]);
-            return $account->id;
-        }
+       if ($invoice->isOutgoingMovement()) {
+           $accounts = Account::where([
+               'display_id' =>  'general_expenses',
+               'team_id' => $invoice->team_id
+           ])->limit(1)->get();
+   
+           if (count($accounts)) {
+              return $accounts[0]->id;
+           } else {
+              $category = Category::where('display_id', 'operating_expense')->first();
+              $account = Account::create([
+                   "team_id" => $invoice->team_id,
+                   "client_id" => 0,
+                   "user_id" => $invoice->user_id,
+                   "category_id" => $category->id,
+                   "display_id" => "general_expenses",
+                   "name" => "General Expenses",
+                   "alias" => __("General Expenses"),
+                   "currency_code" => "DOP"
+               ]);
+               return $account->id;
+           }
+       } else {
+           $accounts = Account::where([
+               'display_id' =>  'sales',
+               'team_id' => $invoice->team_id
+           ])->limit(1)->get();
+   
+           if (count($accounts)) {
+              return $accounts[0]->id;
+           } else {
+              $category = Category::where('display_id', 'operating_income')->first();
+              $account = Account::create([
+                   "team_id" => $invoice->team_id,
+                   "client_id" => 0,
+                   "user_id" => $invoice->user_id,
+                   "category_id" => $category->id,
+                   "display_id" => "sales",
+                   "name" => "Sales",
+                   "currency_code" => "DOP"
+               ]);
+               return $account->id;
+           }
+       }
     }
 
     public function getInvoiceData() {
@@ -457,7 +491,7 @@ class Invoice extends Model implements IPayableDocument
 
     public function getPaidAmount() {
         try {
-            $selection = DB::select(DB::raw('SELECT invoice_id, sum(amount) as total
+            $selection = DB::select("SELECT invoice_id, sum(amount) as total
             FROM (SELECT payable_id as invoice_id, amount
             from payments
             WHERE payable_type=?
@@ -465,7 +499,7 @@ class Invoice extends Model implements IPayableDocument
              SELECT invoice_id, amount
              FROM invoice_notes
             ) AS combine
-            WHERE invoice_id=? limit 1'), [Invoice::class, $this->id]);
+            WHERE invoice_id=? limit 1", [Invoice::class, $this->id]);
             return $selection[0]->total ?? 0;
         } catch (\Exception $e) {
             echo $e->getMessage();
@@ -500,7 +534,7 @@ class Invoice extends Model implements IPayableDocument
     }
 
     public function createPaymentTransaction(Payment $payment) {
-        if (method_exists($this->invoiceable, 'createPaymentTransaction')) {
+        if ($this->invoiceable && method_exists($this->invoiceable, 'createPaymentTransaction')) {
             return $this->invoiceable->createPaymentTransaction($payment, $this);
         } else {
             $direction = $this->getTransactionDirection() ?? Transaction::DIRECTION_DEBIT;

@@ -14,10 +14,23 @@ class Transaction extends Model
     const DIRECTION_DEBIT = 'DEPOSIT';
     const DIRECTION_CREDIT = 'WITHDRAW';
     const DIRECTION_ENTRY = 'ENTRY';
+
     const STATUS_DRAFT = 'draft';
     const STATUS_PLANNED = 'planned';
     const STATUS_VERIFIED = 'verified';
     const STATUS_CANCELED = 'canceled';
+
+    const ENTRY_TYPE_OPENING = 'opening';
+    const ENTRY_TYPE_TRANSFER = 'transfer';
+    const ENTRY_TYPE_CLOSING = 'closing';
+    const ENTRY_TYPE_ADJUSTING = 'adjusting';
+    const ENTRY_TYPE_EXPENSE_ACCRUAL = 'expense_accrual';
+    const ENTRY_TYPE_REVENUE_ACCRUAL = 'revenue_accrual';
+    const ENTRY_TYPE_EXPENSE_DEFERRAL = 'expense_referral';
+    const ENTRY_TYPE_REVENUE_DEFERRAL = 'revenue_referral';
+    const ENTRY_TYPE_COMPOUND = 'compound';
+    const ENTRY_TYPE_REVERSING = 'reversing';
+
 
     protected $fillable = [
         'team_id',
@@ -216,7 +229,7 @@ class Transaction extends Model
     }
 
 
-    static public function createTransaction($transactionData) {
+    static public function createTransaction($transactionData, bool $isMatched = false) {
         $data = self::sanitizeData($transactionData);
 
         $transaction = Transaction::where([
@@ -236,19 +249,19 @@ class Transaction extends Model
         } else {
             $items = isset($data['items']) ? $data['items'] : [];
             $transaction = Transaction::create(self::fillableData($data));
-            $transaction->createLines($items, $data);
+            $transaction->createLines($items, $data, $isMatched);
         }
 
         event(New TransactionCreated($transaction, $data));
         return $transaction;
     }
 
-    public function updateTransaction($transactionData) {
+    public function updateTransaction($transactionData, bool $isMatched = false) {
         $data = self::sanitizeData($transactionData, $this);
 
         $this->update(self::fillableData($data));
         $items = isset($data['items']) ? $data['items'] : [];
-        $this->createLines($items, $data);
+        $this->createLines($items, $data, $isMatched);
         event(new TransactionUpdated($this, $transactionData));
         return $this;
     }
@@ -262,7 +275,7 @@ class Transaction extends Model
         }
     }
 
-    public function createLines($items = [], $data = []) {
+    public function createLines($items = [], $data = [], bool $isMatched = false) {
         TransactionLine::query()->where('transaction_id', $this->id)->delete();
         if (!count($items)) {
             $anchorLine = $this->lines()->create([
@@ -276,7 +289,8 @@ class Transaction extends Model
                 "payee_id" => $this->payee_id,
                 "category_id" => $this->category_id,
                 "team_id" => $this->team_id,
-                "user_id" => $this->user_id
+                "user_id" => $this->user_id,
+                "matched" => $isMatched,
             ]);
 
             $label = self::createLabel($data, [
@@ -318,6 +332,7 @@ class Transaction extends Model
                     "team_id" => $this->team_id,
                     "user_id" => $this->user_id,
                     "is_split" => true,
+                    "matched" => $isMatched,
                 ]);
 
                 $label = self::createLabel($data, [
@@ -339,7 +354,8 @@ class Transaction extends Model
                     "account_id" => $payee?->account_id,
                     "payee_id" =>  $payee->id,
                     "team_id" => $this->team_id,
-                    "user_id" => $this->user_id
+                    "user_id" => $this->user_id,
+                    "matched" => $isMatched,
                 ]);
             }
         } else {
@@ -354,7 +370,8 @@ class Transaction extends Model
                     "category_id" => $item['category_id'],
                     "payee_id" => $item['payee_id'] ?? $this->payee_id,
                     "team_id" => $this->team_id,
-                    "user_id" => $this->user_id
+                    "user_id" => $this->user_id,
+                    "matched" => $isMatched,
                 ]);
             }
         }

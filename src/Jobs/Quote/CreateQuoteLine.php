@@ -1,31 +1,22 @@
 <?php
 
-namespace Insane\Journal\Jobs\Invoice;
+namespace Insane\Journal\Jobs\Quote;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
+use Insane\Journal\Models\Quote\Quote;
 use Illuminate\Queue\InteractsWithQueue;
-use Insane\Journal\Models\Invoice\Invoice;
+use Insane\Journal\Models\Quote\QuoteLine;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Insane\Journal\Models\Invoice\InvoiceLine;
-use Insane\Journal\Models\Invoice\InvoiceLineTax;
+use Insane\Journal\Models\Quote\QuoteLineTax;
 
-class CreateInvoiceLine implements ShouldQueue
+class CreateQuoteLine implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $invoice;
-    protected $formData;
-    /**
-     * Create a new job instance.
-     *
-     * @return void
-     */
-    public function __construct(Invoice $invoice, $formData)
+    public function __construct(public Quote $quote,public array $formData)
     {
-        $this->invoice = $invoice;
-        $this->formData = $formData;
     }
 
     /**
@@ -35,17 +26,16 @@ class CreateInvoiceLine implements ShouldQueue
      */
     public function handle()
     {
-        InvoiceLine::query()->where('invoice_id', $this->invoice->id)->delete();
-        InvoiceLineTax::query()->where('invoice_id', $this->invoice->id)->delete();
+        QuoteLine::query()->where('quote_id', $this->quote->id)->delete();
+        QuoteLineTax::query()->where('quote_id', $this->quote->id)->delete();
         if (isset($this->formData['items']) && count($this->formData['items'])) {
             foreach ($this->formData['items'] as $index => $item) {
-                $line = $this->invoice->lines()->create([
-                    "team_id" => $this->invoice->team_id,
-                    "user_id" => $this->invoice->user_id,
+                $line = $this->quote->lines()->create([
+                    "team_id" => $this->quote->team_id,
+                    "user_id" => $this->quote->user_id,
                     "concept" => $item['concept'],
                     "category_id" => $item['category_id'] ?? null,
-                    "account_id" => $item['account_id'] ?? null,
-                    "date" => $item['date'] ?? $this->invoice->date,
+                    "date" => $item['date'] ?? $this->quote->date,
                     "index" => $item['index'] ?? $index,
                     "product_id" => $item['product_id'] ?? null,
                     "quantity" => $item['quantity'],
@@ -58,13 +48,12 @@ class CreateInvoiceLine implements ShouldQueue
                 isset($item['taxes']) ? $this->createItemTaxes($item['taxes'], $line) : null;
             }
         } else {   
-            $line = $this->invoice->lines()->create([
-                "team_id" => $this->invoice->team_id,
-                "user_id" => $this->invoice->user_id,
-                "concept" => $this->invoice->concept,
+            $line = $this->quote->lines()->create([
+                "team_id" => $this->quote->team_id,
+                "user_id" => $this->quote->user_id,
+                "concept" => $this->quote->concept,
                 "category_id" => null,
-                "account_id" =>  null,
-                "date" => $this->invoice->date,
+                "date" => $this->quote->date,
                 "index" => 0,
                 "product_id" => null,
                 "quantity" => 1,
@@ -76,8 +65,8 @@ class CreateInvoiceLine implements ShouldQueue
 
         }
         
-        $this->invoice->save();
-        return $this->invoice;
+        $this->quote->save();
+        return $this->quote;
     }
 
     private function createItemTaxes($taxes, $line) {
@@ -86,10 +75,10 @@ class CreateInvoiceLine implements ShouldQueue
                     $taxRate = (double) $tax['rate'];
                     $taxLineTotal = (double) $taxRate * $line->amount / 100;
                     $line->taxes()->create([
-                        "team_id" => $this->invoice->team_id,
-                        "user_id" => $this->invoice->user_id,
-                        "invoice_id" => $this->invoice->id,
-                        "invoice_line_id" => $line->id,
+                        "team_id" => $this->quote->team_id,
+                        "user_id" => $this->quote->user_id,
+                        "quote_id" => $this->quote->id,
+                        "quote_line_id" => $line->id,
                         "tax_id" => $tax['id'],
                         "name" => $tax['name'],
                         "is_fixed" => $tax['is_fixed'],

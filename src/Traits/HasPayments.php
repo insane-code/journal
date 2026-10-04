@@ -42,7 +42,7 @@ trait HasPayments
     {
         $paid = $this->payments->sum('amount');
         if ($paid >= $this->total) {
-            throw new Exception("This invoice is already paid");
+            throw new Exception(__("This invoice is already paid"));
         }
 
         $debt = $this->total - $paid;

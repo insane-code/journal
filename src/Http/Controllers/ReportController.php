@@ -4,10 +4,10 @@ namespace Insane\Journal\Http\Controllers;
 
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Insane\Journal\Helpers\CategoryHelper;
-use Insane\Journal\Models\Core\Category;
 use Laravel\Jetstream\Jetstream;
+use Illuminate\Support\Facades\DB;
+use Insane\Journal\Models\Core\Category;
+use Insane\Journal\Helpers\CategoryHelper;
 
 
 class ReportController

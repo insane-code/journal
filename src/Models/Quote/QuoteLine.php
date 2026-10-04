@@ -1,18 +1,16 @@
 <?php
 
-namespace Insane\Journal\Models\Invoice;
+namespace Insane\Journal\Models\Quote;
 
 use Illuminate\Database\Eloquent\Model;
 use Insane\Journal\Models\Product\Product;
 
-class InvoiceLine extends Model
+class QuoteLine extends Model
 {
     protected $fillable = [
       'team_id',
       'user_id',
       'product_id', 
-      'account_id',
-      'category_id',
       'date',
       'concept', 
       'amount', 
@@ -31,23 +29,11 @@ class InvoiceLine extends Model
         return $this->belongsTo(Product::class);
     }
 
-    public function invoice() {
-        return $this->belongsTo(Invoice::class);
+    public function quote() {
+        return $this->belongsTo(Quote::class);
     }
 
     public function taxes() {
-        return $this->hasMany(InvoiceLineTax::class);
-    }
-
-    static public function updateStock($lineItem) {
-        if ($lineItem->product) {
-            $lineItem->product->updateStock();
-        }
-    }
-
-    static public function updateStockFromService($productId) {
-        $product = Product::find($productId);
-        $product->updateStock();
-        return $product;
+        return $this->hasMany(QuoteLineTax::class);
     }
 }
