@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasColumn('accounts', 'credit_min_payment')) {
+            return;
+        }
+
         Schema::table('accounts', function (Blueprint $table) {
             $table->decimal('credit_min_payment')->default(0.00);
             $table->integer('credit_closing_day')->nullable();
