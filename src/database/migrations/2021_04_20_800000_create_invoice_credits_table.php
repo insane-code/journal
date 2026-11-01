@@ -14,6 +14,11 @@ return new class extends Migration
      */
     public function up()
     {
+        // Renamed when 0.x was merged into master: 0.x databases already have it.
+        if (Schema::hasTable('invoice_notes')) {
+            return;
+        }
+
         Schema::create('invoice_notes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable();

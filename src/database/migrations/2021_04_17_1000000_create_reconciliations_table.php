@@ -13,6 +13,11 @@ return new class extends Migration
      */
     public function up()
     {
+        // Renamed when 0.x was merged into master: 0.x databases already have it.
+        if (Schema::hasTable('reconciliations')) {
+            return;
+        }
+
         Schema::create('reconciliations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable();
